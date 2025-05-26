@@ -8,6 +8,10 @@ const mongoose = require('mongoose');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var productRouter = require('./routes/products');
+<<<<<<< HEAD
+=======
+var categoryRouter = require('./routes/category');
+>>>>>>> Hương
 
 var app = express();
 
