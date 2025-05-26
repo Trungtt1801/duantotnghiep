@@ -1,4 +1,4 @@
-// http://localhost:3000/product/
+// http://localhost:3000/products/
 var express = require('express');
 var router = express.Router();
 const productController = require('../mongo/controllers/productsController');
