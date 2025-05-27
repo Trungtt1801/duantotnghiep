@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 const ObjectId = Schema.Types.ObjectId;
 
 const variantSchema = new Schema({
-  product_id: { type: ObjectId, required: true }, // ✅ XÓA ref
+  product_id: { type: ObjectId, required: true, ref: 'products' },
   color: { type: String, required: true },
   sizes: [
     {
@@ -13,8 +13,8 @@ const variantSchema = new Schema({
     }
   ]
 }, {
-  timestamps: true
+  timestamps: true,
+  collection: 'productvariant'
 });
 
-
-module.exports = mongoose.models.productvariant || mongoose.model('productvariant', variantSchema);
+module.exports = mongoose.models.ProductVariant || mongoose.model('ProductVariant', variantSchema);
