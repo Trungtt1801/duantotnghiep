@@ -5,7 +5,7 @@ const categoryController = require('../mongo/controllers/categoryController');
 router.get('/', async (req, res) => {
     try {
         const result = await categoryController.getAllCate();
-        return res.status(200).json({ status: true, result });
+        return res.status(200).json({ status: true}, result );
     } catch (error) {
         console.error(error);
         return res.status(500).json({ status: false, message: 'Lỗi lấy dữ liệu danh mục' });
@@ -20,7 +20,7 @@ router.get('/:id', async (req, res) => {
         if (!result) {
             return res.status(404).json({ status: false, message: 'Danh mục không tồn tại' });
         }
-        return res.status(200).json({ status: true, result });
+        return res.status(200).json({ status: true});
     } catch (error) {
         console.error(error);
         return res.status(500).json({ status: false, message: 'Lỗi lấy chi tiết danh mục' });
@@ -32,7 +32,7 @@ router.post('/addcate', async (req, res) => {
     try {
         const data = req.body;
         const result = await categoryController.addCate(data);
-        return res.status(201).json({ status: true, message: 'Thêm danh mục thành công', result });
+        return res.status(201).json({ status: true, message: 'Thêm danh mục thành công'},result);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ status: false, message: 'Lỗi thêm danh mục' });
@@ -48,7 +48,7 @@ router.put('/updatecate/:id', async (req, res) => {
         if (!result) {
             return res.status(404).json({ status: false, message: 'Danh mục không tồn tại' });
         }
-        return res.status(200).json({ status: true, message: 'Cập nhật danh mục thành công', result });
+        return res.status(200).json({ status: true, message: 'Cập nhật danh mục thành công'},result);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ status: false, message: 'Lỗi cập nhật danh mục' });
