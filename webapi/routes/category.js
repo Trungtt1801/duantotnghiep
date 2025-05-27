@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
         return res.status(500).json({ status: false, message: 'Lỗi lấy dữ liệu danh mục' });
     }
 });
-//http://localhost:3000/category/678f2951fc13ae039f7955cd
+//http://localhost:3000/category/678f2951fc13ae039f7955cd // 500 
 // Lấy chi tiết danh mục theo ID
 router.get('/:id', async (req, res) => {
     try {
