@@ -64,7 +64,7 @@ async function addProduct(data) {
         await productVariantModel.create({
           product_id: newProduct._id,
           color: v.color,
-          sizes: v.sizes
+          sizes: v.sizes,
         });
       }
     }
@@ -78,4 +78,3 @@ async function addProduct(data) {
     throw err;
   }
 }
-

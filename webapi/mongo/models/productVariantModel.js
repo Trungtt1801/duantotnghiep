@@ -4,12 +4,16 @@ const ObjectId = Schema.Types.ObjectId;
 
 const variantSchema = new Schema({
   product_id: { type: ObjectId, required: true, ref: 'products' },
-  color: { type: String, required: true },
-  sizes: [
+  variants: [
     {
-      size: { type: String, required: true },
-      quantity: { type: Number, required: true },
-      sku: { type: String, required: true }
+      color: { type: String, required: true },
+      sizes: [
+        {
+          size: { type: String, required: true },
+          quantity: { type: Number, required: true },
+          sku: { type: String, required: true }
+        }
+      ]
     }
   ]
 }, {
