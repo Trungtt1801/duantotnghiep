@@ -46,9 +46,9 @@ async function getProductById(id) {
   }
 }
 
-async function addProduct(req, res) {
+async function addProduct(data) {
   try {
-    const { name, images, price, sale, material, category_id } = req.body;
+    const { name, images, price, sale, material, variants } = data;
 
     const newProduct = await productsModel.create({
       name,
@@ -56,18 +56,26 @@ async function addProduct(req, res) {
       price,
       sale,
       material,
-      category_id,
     });
 
-    res.status(201).json({
+    // Tạo variants tương ứng nếu có
+    if (variants && variants.length > 0) {
+      for (let v of variants) {
+        await productVariantModel.create({
+          product_id: newProduct._id,
+          color: v.color,
+          sizes: v.sizes
+        });
+      }
+    }
+
+    return {
       message: "Thêm sản phẩm thành công!",
       product: newProduct,
-    });
+    };
   } catch (err) {
     console.error("Lỗi khi thêm sản phẩm:", err);
-    res.status(500).json({
-      message: "Thêm sản phẩm thất bại!",
-      error: err.message,
-    });
+    throw err;
   }
 }
+

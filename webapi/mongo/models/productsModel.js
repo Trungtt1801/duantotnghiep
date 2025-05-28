@@ -11,8 +11,8 @@ const productSchema = new Schema({
   create_at: { type: Date, default: Date.now },
 
   category_id: {
-    categoryName: { type: String, required: true },
-    categoryId: { type: ObjectId, required: true, ref: 'categories' }
+    categoryName: { type: String, required: false },
+    categoryId: { type: ObjectId, required: false , ref: 'categories' }
   }
 
 });

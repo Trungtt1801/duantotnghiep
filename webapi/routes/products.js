@@ -81,32 +81,32 @@ router.get("/:id", async (req, res) => {
 
  // http://localhost:3000/products/addproduct
 
-// router.post("/addproduct", upload.array("images", 10), async (req, res) => {
-//     try {
-//         const data = req.body;
+router.post("/addproduct", upload.array("images", 10), async (req, res) => {
+  try {
+    const data = req.body;
 
-//         // Parse nested JSON fields from FormData
-//         const category_id = JSON.parse(data.category_id);
-//         const variants = JSON.parse(data.variants);
+    // Parse variants
+    const variants = data.variants ? JSON.parse(data.variants) : [];
 
-//         const images = req.files.map(file => file.filename);
+    // Lấy danh sách tên file ảnh
+    const images = req.files.map(file => file.filename);
 
-//         const newProduct = {
-//             name: data.name,
-//             price: Number(data.price),
-//             sale: Number(data.sale),
-//             material: data.material,
-//             category_id,
-//             variants,
-//             images
-//         };
+    const newProduct = {
+      name: data.name,
+      price: Number(data.price),
+      sale: Number(data.sale),
+      material: data.material,
+      images,
+      variants
+    };
 
-//         const result = await productController.addProduct(newProduct);
-//         return res.status(200).json({ status: true, result });
-//     } catch (error) {
-//         console.error("Error adding product:", error);
-//         return res.status(500).json({ status: false, message: "Lỗi thêm sản phẩm" });
-//     }
-// });
+    const result = await productController.addProduct(newProduct);
+    return res.status(200).json({ status: true, result });
+  } catch (error) {
+    console.error("Error adding product:", error);
+    return res.status(500).json({ status: false, message: "Lỗi thêm sản phẩm" });
+  }
+});
+
 
 module.exports = router;
