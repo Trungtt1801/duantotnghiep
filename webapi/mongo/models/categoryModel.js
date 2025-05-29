@@ -1,10 +1,15 @@
-// kết nối  tạo collection categories
-const mongoose = require('mongoose')
-const Schema = mongoose.Schema
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+const childCategorySchema = new Schema({
+  name: { type: String, required: true },
+  slug: { type: String, required: true }
+});
 
 const categorySchema = new Schema({
-    name: {type: String, require: true},
-})
+  name: { type: String, required: true },
+  slug: { type: String, required: true },
+  children: [childCategorySchema]
+});
 
-module.exports = mongoose.models.category || 
-mongoose.model('category', categorySchema);
+module.exports = mongoose.models.Category || mongoose.model('Category', categorySchema);
