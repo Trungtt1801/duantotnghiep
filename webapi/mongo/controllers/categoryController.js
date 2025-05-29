@@ -62,8 +62,6 @@ async function updateCate(id, data) {
         throw new Error('Lỗi cập nhật danh mục');
     }
 }
-
-
 async function deleteCate(id) {
     try {
         const cate = await categoriesModel.findById(id);
