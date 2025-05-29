@@ -57,7 +57,7 @@ router.get("/:id", async (req, res) => {
     }
 
     const updatedProduct = {
-      ...(product._doc || product), // Fix bug khi không có _doc
+      ...(product._doc || product),
       images: product.images?.map((imgName) =>
         imgName.startsWith("http") ? imgName : baseUrl + imgName
       ),
