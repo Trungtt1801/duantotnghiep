@@ -1,5 +1,12 @@
 const Cart = require('../models/cart.model');
 
+const getAllCart = async(req, res)=>{
+  try {
+    a
+  } catch (error) {
+    res.status(500).json({message: "Lỗi không lấy được dữ liệu cart ", error: error.message});
+  }
+}
 const addToCart = async (req, res) => {
   try {
     const { user_id, product_id, quantity, total_price } = req.body;
