@@ -1,13 +1,6 @@
 const productsModel = require("../models/productsModel");
 const productVariantModel = require("../models/productVariantModel");
 const mongoose = require("mongoose");
-
-module.exports = {
-  getProducts,
-  getProductById,
-  addProduct,
-};
-
 async function getProducts() {
   try {
     const products = await productsModel.find({});
@@ -78,3 +71,4 @@ async function addProduct(data) {
     throw err;
   }
 }
+module.exports = { getProducts, getProductById, addProduct};

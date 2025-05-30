@@ -24,12 +24,20 @@ router.get("/", async (req, res) => {
     const result = await productController.getProducts();
     const baseUrl = "http://localhost:3000/images/";
 
-    const updatedProducts = result.map((product) => ({
-      ...product._doc,
-      images: product.images?.map((imgName) =>
-        imgName.startsWith("http") ? imgName : baseUrl + imgName
-      ),
-    }));
+    // Lặp qua từng sản phẩm để lấy variant tương ứng
+    const updatedProducts = await Promise.all(
+      result.map(async (product) => {
+        const variantsDoc = await productVariantModel.findOne({ product_id: product._id });
+
+        return {
+          ...product._doc,
+          images: product.images?.map((imgName) =>
+            imgName.startsWith("http") ? imgName : baseUrl + imgName
+          ),
+          variants: variantsDoc ? variantsDoc.variants : []
+        };
+      })
+    );
 
     return res.status(200).json([{ status: true }, ...updatedProducts]);
   } catch (error) {

@@ -1,40 +1,13 @@
-const Cart = require('../models/cart.model');
+const cartModel = require('../models/cartModel');
 
-const getAllCart = async(req, res)=>{
+async function getAllCart(){
   try {
-    a
+    return await cartModel.find({})
   } catch (error) {
-    res.status(500).json({message: "Lỗi không lấy được dữ liệu cart ", error: error.message});
+       console.error('Lỗi lấy dữ liệu giỏ hàng: ', error.message);
+        throw new Error('Lỗi lấy dữ liệu giỏ hàng');
   }
 }
-const addToCart = async (req, res) => {
-  try {
-    const { user_id, product_id, quantity, total_price } = req.body;
 
-    // Kiểm tra dữ liệu
-    if (!user_id || !product_id || !quantity || !total_price) {
-      return res.status(400).json({ message: 'Thiếu thông tin giỏ hàng' });
-    }
 
-    // Tạo mới bản ghi cart
-    const newCartItem = new Cart({
-      user_id,
-      product_id,
-      quantity,
-      total_price
-    });
-
-    await newCartItem.save();
-
-    res.status(201).json({
-      message: 'Thêm vào giỏ hàng thành công',
-      cart: newCartItem
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Lỗi server', error: error.message });
-  }
-};
-
-module.exports = {
-  addToCart
-};
+module.exports = {getAllCart};
