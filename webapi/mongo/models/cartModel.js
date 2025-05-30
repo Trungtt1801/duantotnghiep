@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-
 const formatDateVN = require('../../until/formDate');
 
 const cartItemSchema = new Schema({
