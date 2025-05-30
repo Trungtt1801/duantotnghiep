@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-
+const formatDateVN = require('../../until/formDate'); 
 const userSchema = new Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
@@ -12,5 +12,14 @@ const userSchema = new Schema({
   },
   role: { type: Number, required: true, default: 1 },
 }, { timestamps: true });
+
+userSchema.methods.toJSON = function () {
+  const obj = this.toObject();
+
+  if (obj.createdAt) obj.createdAt = formatDateVN(obj.createdAt);
+  if (obj.updatedAt) obj.updatedAt = formatDateVN(obj.updatedAt);
+
+  return obj;
+};
 
 module.exports = mongoose.models.User || mongoose.model('User', userSchema);
