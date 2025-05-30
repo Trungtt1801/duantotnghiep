@@ -19,6 +19,7 @@ router.post("/addcart", async (req, res) => {
     res.status(200).json(newCart);
   } catch (error) {
     res.status(500).json({ message: error.message });
+    // heheh
   }
 });
 
