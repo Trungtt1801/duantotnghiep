@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const productController = require("../mongo/controllers/productsController");
 const productVariantModel = require("../mongo/models/productVariantModel");
+const productsModel = require("../mongo/models/productsModel");
 
 const multer = require("multer");
 
@@ -90,29 +91,40 @@ router.get("/:id", async (req, res) => {
 router.post("/addproduct", upload.array("images", 10), async (req, res) => {
   try {
     const data = req.body;
-
     const variants = data.variants ? JSON.parse(data.variants) : [];
-
     const images = req.files.map((file) => file.filename);
 
-    const newProduct = {
+    // Tạo document sản phẩm
+    const newProduct = new productsModel({
       name: data.name,
       price: Number(data.price),
       sale: Number(data.sale),
       material: data.material,
       images,
-      variants,
-    };
+    });
 
-    const result = await productController.addProduct(newProduct);
-   return res.status(200).json({status: true, message: "Thêm sản phẩm thành công!", product: result});
+    const savedProduct = await newProduct.save();
 
+    if (variants.length > 0) {
+      const variantDoc = new productVariantModel({
+        product_id: savedProduct._id,
+        variants: variants,
+      });
+
+      await variantDoc.save();
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Thêm sản phẩm thành công!",
+      product: savedProduct,
+    });
   } catch (error) {
     console.error("Error adding product:", error);
-    return res
-      .status(500)
-      .json({ status: false, message: "Lỗi thêm sản phẩm" });
+    return res.status(500).json({
+      status: false,
+      message: "Lỗi thêm sản phẩm",
+    });
   }
 });
-
 module.exports = router;
