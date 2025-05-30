@@ -94,7 +94,6 @@ router.post("/addproduct", upload.array("images", 10), async (req, res) => {
     const variants = data.variants ? JSON.parse(data.variants) : [];
     const images = req.files.map((file) => file.filename);
 
-    // Tạo document sản phẩm
     const newProduct = new productsModel({
       name: data.name,
       price: Number(data.price),
