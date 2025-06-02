@@ -10,8 +10,15 @@ var usersRouter = require('./routes/user');
 var productRouter = require('./routes/products');
 var categoryRouter = require('./routes/category');
 var cartRouter = require('./routes/cart');
+<<<<<<< HEAD
 var productvariantRouter = require('./routes/productVariant')
 var cartRouter = require('./routes/cart');
+=======
+var productvariantRouter = require('./routes/productvariant');
+var cartRouter = require('./routes/cart');
+
+
+>>>>>>> 8a2617a296800faabdeb7b373c8192cb0d6efc4f
 var app = express();
 
 // view engine setup
