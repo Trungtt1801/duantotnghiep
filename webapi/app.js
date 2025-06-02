@@ -1,7 +1,4 @@
-require('dotenv').config({ path: './token.env' }); // ✅ Đường dẫn chính xác
-console.log("✅ PRIVATE_KEY:", process.env.PRIVATE_KEY); // kiểm tra
-
-
+require('dotenv').config();
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');

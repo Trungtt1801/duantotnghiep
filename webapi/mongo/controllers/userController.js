@@ -48,25 +48,23 @@ async function register(data) {
 async function login(data) {
   try {
     const { email, password } = data;
-
-    let user = await usersModel.findOne({ email }).select('+password');
+    const user = await usersModel.findOne({ email }).select('+password');
     if (!user) {
       throw new Error('Email chưa được đăng ký!');
     }
-
     const isPasswordValid = bcryptjs.compareSync(password, user.password);
     if (!isPasswordValid) {
       throw new Error('Sai mật khẩu!');
     }
 
-    const userData = { ...user._doc };
-    delete userData.password;
-
+    const { password: _, ...userData } = user.toObject();
     return userData;
+
   } catch (error) {
-    console.error(error.message);
+    console.error('Lỗi trong login controller:', error.message);
     throw new Error(error.message || 'Lỗi đăng nhập');
   }
 }
+
 
 module.exports = { register, getAllUsers, login };

@@ -44,20 +44,11 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     const user = await userController.login({ email, password });
 
-    if (!user) {
-      return res
-        .status(401)
-        .json({
-          status: false,
-          message: "Tên đăng nhập hoặc mật khẩu không đúng",
-        });
-    }
+    const jwtSecret = process.env.PRIVATE_KEY || "defaultSecretKey";
 
-    // Tạo token cho cả user và admin
-    console.log("PRIVATE_KEY = ", process.env.PRIVATE_KEY); // kiểm tra in ra
     const token = jwt.sign(
       { email: user.email, role: user.role },
-      process.env.PRIVATE_KEY, // phải có giá trị
+      jwtSecret,
       { expiresIn: "2h", subject: user._id.toString() }
     );
 
@@ -65,13 +56,15 @@ router.post("/login", async (req, res) => {
       status: true,
       message: "Đăng nhập thành công",
       token,
-      user,
+      user
     });
   } catch (error) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ status: false, message: "Lỗi đăng nhập", error: error.message });
+    return res.status(500).json({
+      status: false,
+      message: "Lỗi đăng nhập",
+      error: error.message
+    });
   }
 });
+
 module.exports = router;
