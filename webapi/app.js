@@ -9,14 +9,9 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/user');
 var productRouter = require('./routes/products');
 var categoryRouter = require('./routes/category');
-<<<<<<< HEAD
 var cartRouter = require('./routes/cart');
-=======
-var productvariantRouter = require('./routes/productvariant');
+var productvariantRouter = require('./routes/productVariant')
 var cartRouter = require('./routes/cart');
-
->>>>>>> Trung
-
 var app = express();
 
 // view engine setup
@@ -33,10 +28,7 @@ app.use('/', indexRouter);
 app.use('/user', usersRouter); 
 app.use('/products', productRouter); 
 app.use('/category', categoryRouter);
-<<<<<<< HEAD
-=======
 app.use('/variant', productvariantRouter);
->>>>>>> Trung
 app.use('/cart', cartRouter);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

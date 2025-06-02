@@ -6,8 +6,6 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-<<<<<<< HEAD
-=======
 router.post('/addcart', function(req, res, next){
     const { user_id, product_id, quantity, total_price } = req.body;
     
@@ -33,5 +31,4 @@ router.post('/addcart', function(req, res, next){
     });
 }
 )
->>>>>>> Trung
 module.exports = router;
