@@ -1,6 +1,26 @@
-const categoriesModel = require("../models/productsModel");
-const productVariantModel = require("../models/productVariantModel");
-exports.createOrder = async (req, res) => {
+const orderModel = require('../models/orderModel');
+
+async function getAllOrders() {
+  try {
+    return await orderModel.find().populate('user_id address_id voucher_id');
+  } catch (error) {
+    console.error('Lỗi lấy danh sách đơn hàng:', error.message);
+    throw new Error('Lỗi lấy danh sách đơn hàng');
+  }
+}
+
+async function getOrderById(id) {
+  try {
+    const order = await orderModel.findById(id).populate('user_id address_id voucher_id');
+    if (!order) throw new Error('Không tìm thấy đơn hàng');
+    return order;
+  } catch (error) {
+    console.error('Lỗi lấy đơn hàng theo ID:', error.message);
+    throw new Error('Lỗi lấy đơn hàng');
+  }
+}
+
+async function createOrder(data) {
   try {
     const {
       user_id,
@@ -8,9 +28,13 @@ exports.createOrder = async (req, res) => {
       voucher_id,
       total_price,
       payment_method,
-    } = req.body;
+    } = data;
 
-    const newOrder = new Order({
+    if (!user_id || !total_price || !payment_method) {
+      throw new Error('Thiếu thông tin bắt buộc');
+    }
+
+    const newOrder = new orderModel({
       user_id,
       address_id,
       voucher_id,
@@ -18,37 +42,37 @@ exports.createOrder = async (req, res) => {
       payment_method,
     });
 
-    const savedOrder = await newOrder.save();
-    res.status(201).json({ message: 'Tạo đơn hàng thành công', order_id: savedOrder._id });
+    return await newOrder.save();
   } catch (error) {
-    res.status(500).json({ error: 'Tạo đơn hàng thất bại' });
+    console.error('Lỗi tạo đơn hàng:', error.message);
+    throw new Error('Lỗi tạo đơn hàng');
   }
-};
+}
 
-exports.getAllOrders = async (req, res) => {
+async function deleteOrder(id) {
   try {
-    const orders = await Order.find().populate('user_id address_id voucher_id');
-    res.json(orders);
-  } catch (error) {
-    res.status(500).json({ error: 'Không lấy được danh sách đơn hàng' });
-  }
-};
+    const order = await orderModel.findById(id);
+    if (!order) throw new Error('Đơn hàng không tồn tại');
 
-exports.getOrderById = async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id).populate('user_id address_id voucher_id');
-    if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
-    res.json(order);
+    return await orderModel.findByIdAndDelete(id);
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi khi lấy đơn hàng' });
+    console.error('Lỗi xoá đơn hàng:', error.message);
+    throw new Error('Lỗi xoá đơn hàng');
   }
-};
+}
 
-exports.deleteOrder = async (req, res) => {
+async function updateOrderStatus(id, newStatus) {
   try {
-    await Order.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Xoá đơn hàng thành công' });
+    const order = await orderModel.findById(id);
+    if (!order) throw new Error('Không tìm thấy đơn hàng');
+
+    order.status_order = newStatus;
+    return await order.save();
   } catch (error) {
-    res.status(500).json({ error: 'Không thể xoá đơn hàng' });
+    console.error('Lỗi cập nhật trạng thái đơn hàng:', error.message);
+    throw new Error('Lỗi cập nhật trạng thái đơn hàng');
   }
+}
+
+module.exports = {getAllOrders,getOrderById,createOrder,createOrder,updateOrderStatus,
 };
