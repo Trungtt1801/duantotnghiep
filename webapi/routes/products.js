@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
+
 const productController = require("../mongo/controllers/productsController");
 const productVariantModel = require("../mongo/models/productVariantModel");
 const productsModel = require("../mongo/models/productsModel");
@@ -99,32 +101,54 @@ router.get("/:id", async (req, res) => {
 router.post("/addproduct", upload.array("images", 10), async (req, res) => {
   try {
     const data = req.body;
-    const variants = data.variants ? JSON.parse(data.variants) : [];
-    const images = req.files.map((file) => file.filename);
 
-    const newProduct = new productsModel({
+    // Kiểm tra bắt buộc
+    if (!data.name || !data.price || !data.category_id) {
+      return res.status(400).json({
+        status: false,
+        message: "Vui lòng điền đầy đủ tên sản phẩm, giá và danh mục!",
+      });
+    }
+
+    // Parse variants
+    let variants = [];
+    try {
+      variants = data.variants ? JSON.parse(data.variants) : [];
+    } catch (err) {
+      return res.status(400).json({
+        status: false,
+        message: "Dữ liệu variants không hợp lệ!",
+      });
+    }
+
+    // Parse images
+    const images = req.files?.length ? req.files.map(file => file.filename) : [];
+
+    // Kiểm tra category_id
+    if (!mongoose.Types.ObjectId.isValid(data.category_id)) {
+      return res.status(400).json({
+        status: false,
+        message: "ID danh mục không hợp lệ!",
+      });
+    }
+
+    // Gửi sang controller
+    const sendData = {
       name: data.name,
       price: Number(data.price),
-      sale: Number(data.sale),
-      material: data.material,
+      sale: Number(data.sale || 0),
+      material: data.material || "",
       images,
-    });
+      variants,
+      category_id: data.category_id,
+    };
 
-    const savedProduct = await newProduct.save();
-
-    if (variants.length > 0) {
-      const variantDoc = new productVariantModel({
-        product_id: savedProduct._id,
-        variants: variants,
-      });
-
-      await variantDoc.save();
-    }
+    const result = await productController.addProduct(sendData);
 
     return res.status(200).json({
       status: true,
-      message: "Thêm sản phẩm thành công!",
-      product: savedProduct,
+      message: result.message,
+      product: result.product,
     });
   } catch (error) {
     console.error("Error adding product:", error);
@@ -134,4 +158,7 @@ router.post("/addproduct", upload.array("images", 10), async (req, res) => {
     });
   }
 });
+
+
+
 module.exports = router;

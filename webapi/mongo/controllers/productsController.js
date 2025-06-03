@@ -1,5 +1,6 @@
 const productsModel = require("../models/productsModel");
 const productVariantModel = require("../models/productVariantModel");
+const categoryModel = require("../models/categoryModel"); 
 const mongoose = require("mongoose");
 async function getProducts() {
   try {
@@ -39,27 +40,43 @@ async function getProductById(id) {
   }
 }
 
-async function addProduct(data) {
+const addProduct = async (data) => {
   try {
-    const { name, images, price, sale, material, variants } = data;
+    const {
+      name,
+      images,
+      price,
+      sale,
+      material,
+      variants,
+      category_id, // là chuỗi ID
+    } = data;
 
+    // Tìm danh mục
+    const category = await categoryModel.findById(category_id);
+    if (!category) {
+      throw new Error("Không tìm thấy danh mục!");
+    }
+
+    // Tạo sản phẩm
     const newProduct = await productsModel.create({
       name,
       images,
       price,
       sale,
       material,
+      category_id: {
+        categoryName: category.name,
+        categoryId: category._id,
+      },
     });
 
-    // Tạo variants tương ứng nếu có
+    // Tạo variants nếu có
     if (variants && variants.length > 0) {
-      for (let v of variants) {
-        await productVariantModel.create({
-          product_id: newProduct._id,
-          color: v.color,
-          sizes: v.sizes,
-        });
-      }
+      await productVariantModel.create({
+        product_id: newProduct._id,
+        variants,
+      });
     }
 
     return {
@@ -70,5 +87,5 @@ async function addProduct(data) {
     console.error("Lỗi khi thêm sản phẩm:", err);
     throw err;
   }
-}
+};
 module.exports = { getProducts, getProductById, addProduct};
