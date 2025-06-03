@@ -29,14 +29,16 @@ router.get("/", async (req, res) => {
     // Lặp qua từng sản phẩm để lấy variant tương ứng
     const updatedProducts = await Promise.all(
       result.map(async (product) => {
-        const variantsDoc = await productVariantModel.findOne({ product_id: product._id });
+        const variantsDoc = await productVariantModel.findOne({
+          product_id: product._id,
+        });
 
         return {
           ...product._doc,
           images: product.images?.map((imgName) =>
             imgName.startsWith("http") ? imgName : baseUrl + imgName
           ),
-          variants: variantsDoc ? variantsDoc.variants : []
+          variants: variantsDoc ? variantsDoc.variants : [],
         };
       })
     );
@@ -121,10 +123,10 @@ router.post("/addproduct", upload.array("images", 10), async (req, res) => {
       });
     }
 
-    // Parse images
-    const images = req.files?.length ? req.files.map(file => file.filename) : [];
+    const images = req.files?.length
+      ? req.files.map((file) => file.filename)
+      : [];
 
-    // Kiểm tra category_id
     if (!mongoose.Types.ObjectId.isValid(data.category_id)) {
       return res.status(400).json({
         status: false,
@@ -132,7 +134,6 @@ router.post("/addproduct", upload.array("images", 10), async (req, res) => {
       });
     }
 
-    // Gửi sang controller
     const sendData = {
       name: data.name,
       price: Number(data.price),
@@ -158,7 +159,5 @@ router.post("/addproduct", upload.array("images", 10), async (req, res) => {
     });
   }
 });
-
-
 
 module.exports = router;
