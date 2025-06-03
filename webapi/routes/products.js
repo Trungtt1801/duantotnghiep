@@ -98,9 +98,9 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// http://localhost:3000/products/addproduct
+// http://localhost:3000/products/create
 
-router.post("/addproduct", upload.array("images", 10), async (req, res) => {
+router.post("/create", upload.array("images", 10), async (req, res) => {
   try {
     const data = req.body;
 

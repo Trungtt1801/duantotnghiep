@@ -1,3 +1,4 @@
+require('dotenv').config();
 var express = require("express");
 var router = express.Router();
 const userController = require("../mongo/controllers/userController");
@@ -64,6 +65,26 @@ router.post("/login", async (req, res) => {
       message: "Lỗi đăng nhập",
       error: error.message
     });
+  }
+});
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    await userController.forgotPassword(email);
+    return res.status(200).json({status: true, message: "Email đặt lại mật khẩu đã được gửi!"});
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({status: false, message: "Lỗi gửi email đặt lại mật khẩu", error: error.message});
+  }
+});
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;  // Lấy cả 2 từ body
+    const message = await userController.resetPassword(token, newPassword);
+    return res.status(200).json({ status: true, message });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ status: false, message: error.message });
   }
 });
 

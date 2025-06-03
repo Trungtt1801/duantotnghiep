@@ -40,7 +40,7 @@ router.delete('/delete/:id', async (req, res) =>{
   }
 })
  
-router.post('/addcart', function(req, res, next){
+router.post('/create', function(req, res, next){
     const { user_id, product_id, quantity, total_price } = req.body;
     
     // Kiểm tra dữ liệu

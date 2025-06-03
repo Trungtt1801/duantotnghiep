@@ -8,7 +8,6 @@ router.get('/', async (req, res) => {
     try {
         const result = await categoryController.getAllCate();
          return res.status(200).json( result );
-         return res.status(200).json({ status: true, result });
      } catch (error) {
         console.error(error);
         return res.status(500).json({ status: false, message: 'Lỗi lấy dữ liệu danh mục' });
@@ -32,13 +31,12 @@ router.get('/:id', async (req, res) => {
 });
 
 // [POST] Thêm mới danh mục
-// http://localhost:3000/category/ 
-router.post('/', async (req, res) => {
+// http://localhost:3000/category/create
+router.post('/create', async (req, res) => {
     try {
         const data = req.body;
         const result = await categoryController.addCate(data);
          return res.status(200).json({ status: true, message: 'Thêm danh mục thành công',result});
-         return res.status(200).json(result);
      } catch (error) {
         console.error(error);
         return res.status(500).json({ status: false, message: 'Lỗi thêm danh mục' });
