@@ -1,5 +1,5 @@
 const orderModel = require('../models/orderModel');
-
+require('../models/addressModel');
 async function getAllOrders() {
   return await orderModel.find().populate('user_id address_id voucher_id');
 }
@@ -67,9 +67,10 @@ async function updatePayment(id, { transaction_status, transaction_code }) {
   const order = await orderModel.findById(id);
   if (!order) throw new Error('Không tìm thấy đơn hàng');
   order.transaction_status = transaction_status;
-  order.transaction_code = transaction_code;
+  if (transaction_code !== undefined) order.transaction_code = transaction_code;
   return await order.save();
 }
+
 
 async function cancelOrder(id, isAdmin = false) {
   const order = await orderModel.findById(id);
@@ -85,15 +86,13 @@ async function filterOrders(query) {
   if (user_id) filter.user_id = user_id;
   if (status_order) filter.status_order = status_order;
   if (fromDate || toDate) {
-    filter.order_date = {};
-    if (fromDate) filter.order_date.$gte = new Date(fromDate);
-    if (toDate) filter.order_date.$lte = new Date(toDate);
+    filter.createdAt = {};
+    if (fromDate) filter.createdAt.$gte = new Date(fromDate);
+    if (toDate) filter.createdAt.$lte = new Date(toDate);
   }
   return await orderModel.find(filter)
-    .sort({ order_date: -1 })
-    .populate('user_id', 'name')
-    .populate('address_id')
-    .populate('voucher_id');
+    .sort({ createdAt: -1 })
+    .populate('user_id address_id voucher_id');
 }
 
 module.exports = {

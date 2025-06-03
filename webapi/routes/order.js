@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../mongo/controllers/orderController');
+
 // [GET] Lấy tất cả đơn hàng
 // URL: http://localhost:3000/orders
 router.get('/', async (req, res) => {
@@ -10,21 +11,6 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ status: false, message: 'Lỗi lấy danh sách đơn hàng' });
-  }
-});
-
-// [GET] Lấy đơn hàng theo ID
-// URL: http://localhost:3000/orders/:id
-router.get('/:id', async (req, res) => {
-  try {
-    const result = await orderController.getOrderById(req.params.id);
-    if (!result) {
-      return res.status(404).json({ status: false, message: 'Không tìm thấy đơn hàng' });
-    }
-    return res.status(200).json({ status: true, result });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ status: false, message: 'Lỗi lấy đơn hàng' });
   }
 });
 
@@ -94,6 +80,21 @@ router.get('/filter', async (req, res) => {
     return res.status(200).json({ status: true, result });
   } catch (error) {
     return res.status(500).json({ status: false, message: 'Lỗi lọc đơn hàng' });
+  }
+});
+
+// [GET] Lấy đơn hàng theo ID
+// URL: http://localhost:3000/orders/:id
+router.get('/:id', async (req, res) => {
+  try {
+    const result = await orderController.getOrderById(req.params.id);
+    if (!result) {
+      return res.status(404).json({ status: false, message: 'Không tìm thấy đơn hàng' });
+    }
+    return res.status(200).json({ status: true, result });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ status: false, message: 'Lỗi lấy đơn hàng' });
   }
 });
 

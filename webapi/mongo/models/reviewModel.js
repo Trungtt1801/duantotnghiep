@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const formatDateVN = require('../../until/formDate'); 
 
 const reviewSchema = new Schema({
   order_id: {
@@ -28,5 +29,12 @@ const reviewSchema = new Schema({
     trim: true
   }
 }, { timestamps: true });
+reviewSchema.methods.toJSON = function () {
+  const obj = this.toObject();
 
+  if (obj.createdAt) obj.createdAt = formatDateVN(obj.createdAt);
+  if (obj.updatedAt) obj.updatedAt = formatDateVN(obj.updatedAt);
+
+  return obj;
+};
 module.exports = mongoose.models.review || mongoose.model('review', reviewSchema);
