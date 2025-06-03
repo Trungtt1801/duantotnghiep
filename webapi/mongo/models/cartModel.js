@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+const formatDateVN = require('../../until/formDate');
 
-const formatDateVN = require('../../until/formDate'); 
-const cartItemSchema = new mongoose.Schema({
-  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  product_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+const cartItemSchema = new Schema({
+  user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  product_id: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
   quantity: { type: Number, required: true },
-  total_price: { type: Number, required: true }
 }, { timestamps: true });
 
-userSchema.methods.toJSON = function () {
+cartItemSchema.methods.toJSON = function () {
   const obj = this.toObject();
 
   if (obj.createdAt) obj.createdAt = formatDateVN(obj.createdAt);
@@ -16,4 +16,5 @@ userSchema.methods.toJSON = function () {
 
   return obj;
 };
-module.exports = mongoose.model('CartItem', cartItemSchema);
+
+module.exports = mongoose.models.Cart || mongoose.model('Cart', cartItemSchema);

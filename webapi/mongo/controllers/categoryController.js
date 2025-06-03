@@ -26,7 +26,15 @@ async function addCate(data) {
         const { name, slug, parentId } = data;
         if (!name) throw new Error('Tên danh mục không được để trống');
         if (!slug) throw new Error('Slug danh mục không được để trống');
+        
 
+        if (typeof children === 'string') {
+            try {
+                children = JSON.parse(children);
+            } catch (err) {
+                throw new Error('Dữ liệu children không hợp lệ (không phải JSON)');
+            }
+        }
         const newCate = new categoriesModel({
             name,
             slug,
@@ -36,7 +44,7 @@ async function addCate(data) {
         return await newCate.save();
     } catch (error) {
         console.error('Lỗi thêm danh mục:', error.message);
-        throw new Error('Lỗi thêm danh mục');
+        throw new Error(error.message || 'Lỗi thêm danh mục');
     }
 }
 

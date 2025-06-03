@@ -1,3 +1,4 @@
+require('dotenv').config();
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
@@ -16,6 +17,7 @@ var voucherRouter = require('./routes/voucher');
 var addressRouter = require('./routes/address');
 var reviewRouter = require('./routes/review');
 var orderDetailRouter = require('./routes/orderDetail');
+var cartRouter = require('./routes/cart');
 var app = express();
 
 // view engine setup

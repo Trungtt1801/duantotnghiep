@@ -1,11 +1,18 @@
-var express = require('express');
+var express = require("express");
 var router = express.Router();
+const cartController = require("../mongo/controllers/cartController");
 
-/* GET home page. */
-router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
+router.get("/", async (req, res) => {
+  try {
+    const result = await cartController.getAllCart();
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ status: false, message: "Lỗi lấy dữ liệu giỏ hàng" });
+  }
 });
-
 router.post('/addcart', function(req, res, next){
     const { user_id, product_id, quantity, total_price } = req.body;
     

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const ObjectId = Schema.Types.ObjectId;
 
@@ -11,10 +11,9 @@ const productSchema = new Schema({
   create_at: { type: Date, default: Date.now },
 
   category_id: {
-    categoryName: { type: String, required: false },
-    categoryId: { type: ObjectId, required: false , ref: 'categories' }
-  }
-
+    categoryName: { type: String, required: true },
+    categoryId: { type: ObjectId, required: true, ref: "Category" }, // tên đúng với model
+  },
 });
 
-module.exports = mongoose.models.products || mongoose.model('products', productSchema);
+module.exports = mongoose.models.products || mongoose.model("products", productSchema);
