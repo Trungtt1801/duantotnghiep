@@ -12,9 +12,11 @@ var productRouter = require('./routes/products');
 var categoryRouter = require('./routes/category');
 var cartRouter = require('./routes/cart');
 var productvariantRouter = require('./routes/productVariant');
-var cartRouter = require('./routes/cart');
+ var cartRouter = require('./routes/cart');
 
-var app = express();
+ var orderRouter = require('./routes/order');
+var orderDetailRouter = require('./routes/orderDetail');
+ var app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -32,6 +34,8 @@ app.use('/products', productRouter);
 app.use('/category', categoryRouter);
 app.use('/variant', productvariantRouter);
 app.use('/cart', cartRouter);
+app.use('/order', orderRouter);
+app.use('/orderDetail', orderDetailRouter);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));

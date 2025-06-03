@@ -23,9 +23,10 @@ async function getCateById(id) {
 
 async function addCate(data) {
     try {
-        let { name, slug, children } = data;
+         let { name, slug, children } = data;
 
-        if (!name) throw new Error('Tên danh mục không được để trống');
+         const { name, slug, parentId } = data;
+         if (!name) throw new Error('Tên danh mục không được để trống');
         if (!slug) throw new Error('Slug danh mục không được để trống');
         
 
@@ -39,7 +40,7 @@ async function addCate(data) {
         const newCate = new categoriesModel({
             name,
             slug,
-            children: children || []
+            parentId: parentId || null
         });
 
         return await newCate.save();
@@ -51,7 +52,7 @@ async function addCate(data) {
 
 async function updateCate(id, data) {
     try {
-        const { name, slug, children } = data;
+        const { name, slug, parentId } = data;
         const category = await categoriesModel.findById(id);
         if (!category) {
             throw new Error('Danh mục không tồn tại');
@@ -59,10 +60,9 @@ async function updateCate(id, data) {
 
         category.name = name || category.name;
         category.slug = slug || category.slug;
-        
-        // Nếu có truyền children lên thì ghi đè luôn
-        if (Array.isArray(children)) {
-            category.children = children;
+
+        if (parentId !== undefined) {
+            category.parentId = parentId;
         }
 
         return await category.save();
@@ -71,13 +71,15 @@ async function updateCate(id, data) {
         throw new Error('Lỗi cập nhật danh mục');
     }
 }
+
 async function deleteCate(id) {
     try {
         const cate = await categoriesModel.findById(id);
         if (!cate) throw new Error('Không tìm thấy danh mục');
-
         const pros = await productsModel.find({ 'cate_id.categoryId': id });
-        if (pros.length > 0) throw new Error('Danh mục có sản phẩm không thể xóa');
+        if (pros.length > 0) throw new Error('Danh mục có sản phẩm không thể xóa');// níu danh mục có sản phẩm thì kh xoá
+        const childCates = await categoriesModel.find({ parentId: id });
+        if (childCates.length > 0) throw new Error('Danh mục có danh mục con, không thể xóa');
 
         const result = await categoriesModel.findByIdAndDelete(id);
         return result;
@@ -87,4 +89,4 @@ async function deleteCate(id) {
     }
 }
 
-module.exports = { getAllCate, getCateById, addCate, updateCate, deleteCate };
+module.exports = {getAllCate,getCateById,addCate,updateCate,deleteCate};

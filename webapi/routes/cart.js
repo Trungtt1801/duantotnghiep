@@ -13,7 +13,7 @@ router.get("/", async (req, res) => {
       .json({ status: false, message: "Lỗi lấy dữ liệu giỏ hàng" });
   }
 });
-router.post("/addcart", async (req, res) => {
+ router.post("/addcart", async (req, res) => {
   try {
     const newCart = await cartController.addCart(req.body);
     res.status(200).json(newCart);
@@ -39,4 +39,30 @@ router.delete('/delete/:id', async (req, res) =>{
     return res.status(500).json({status: false, message: "Lỗi xóa giỏ hàng"});
   }
 })
-module.exports = router;
+ 
+router.post('/addcart', function(req, res, next){
+    const { user_id, product_id, quantity, total_price } = req.body;
+    
+    // Kiểm tra dữ liệu
+    if (!user_id || !product_id || !quantity || !total_price) {
+        return res.status(400).json({ message: 'Thiếu thông tin giỏ hàng' });
+    }
+    
+    // Tạo mới bản ghi giỏ hàng
+    const newCartItem = {
+        user_id,
+        product_id,
+        quantity,
+        total_price
+    };
+    
+  
+    console.log('Thêm vào giỏ hàng:', newCartItem);
+    
+    res.status(201).json({
+        message: 'Thêm vào giỏ hàng thành công',
+        cart: newCartItem
+    });
+}
+)
+ module.exports = router;
