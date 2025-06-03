@@ -7,7 +7,7 @@ const AddressSchema = new Schema({
   phone: { type: String, required: true },           
   address: { type: String, required: true },         
   status: { type: Boolean, default: false },         // Địa chỉ mặc định hay không
-  user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true } 
+  user_id: { type: Schema.Types.ObjectId, ref: 'users', required: true } 
 }, {
   timestamps: true
 });

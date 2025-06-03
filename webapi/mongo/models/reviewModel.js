@@ -5,17 +5,17 @@ const formatDateVN = require('../../until/formDate');
 const reviewSchema = new Schema({
   order_id: {
     type: Schema.Types.ObjectId,
-    ref: 'Order',
+    ref: 'orders',
     required: true
   },
   productdetail_id: {
     type: Schema.Types.ObjectId,
-    ref: 'ProductDetail',
+    ref: 'productDetails',
     required: true
   },
   review_id: {
     type: Schema.Types.ObjectId,
-    ref: 'review',
+    ref: 'reviews',
     required: true
   },
   rating: {

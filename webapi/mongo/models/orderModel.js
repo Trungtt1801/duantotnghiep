@@ -15,7 +15,7 @@ const OrderSchema = new Schema({
   evaluate: String,
   payment_method: {
     type: String,
-    enum: ['COD', 'Credit Card', 'Bank Transfer', 'Momo', 'ZaloPay'],
+    enum: ['COD','Momo'],
     required: true,
   },
   transaction_code: String,

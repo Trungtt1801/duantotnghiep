@@ -38,7 +38,7 @@ app.use('/variant', productvariantRouter);
 app.use('/cart', cartRouter);
 app.use('/address', addressRouter);
 app.use('/orders', orderRouter);
-app.use('/voucher', orderRouter);
+app.use('/voucher', voucherRouter);
 app.use('/review', reviewRouter);
 app.use('/orderDetail', orderDetailRouter);
 

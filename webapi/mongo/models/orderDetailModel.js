@@ -3,14 +3,14 @@ const Schema = mongoose.Schema;
 const formatDateVN = require('../../until/formDate');
 
 const OrderDetailSchema = new Schema({
-  orderDetail_id: {
+  order_id: {
     type: Schema.Types.ObjectId,
-    ref: 'OrderDetail',
+    ref: 'order',
     required: true,
   },
   productdetail_id: {
     type: Schema.Types.ObjectId,
-    ref: 'ProductDetail',
+    ref: 'productDetails',
     required: true,
   },
   quantity: {
