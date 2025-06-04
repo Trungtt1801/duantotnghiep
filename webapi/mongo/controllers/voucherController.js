@@ -23,11 +23,13 @@ async function getVoucherById(id) {
 // Tạo voucher mới
 async function addVoucher(data) {
     try {
+        console.log('DỮ LIỆU NHẬN VỀ:', data);
+
         const { value, voucher_code, min_total, max_total, quantity, is_active, expired_at } = data;
 
-        if (!value || !voucher_code) {
-            throw new Error('Thiếu thông tin bắt buộc');
-        }
+       if (value === undefined || voucher_code === undefined || voucher_code === '') {
+    throw new Error('Thiếu thông tin bắt buộc');
+}
 
         const existing = await voucherModel.findOne({ voucher_code });
         if (existing) throw new Error('Mã voucher đã tồn tại');
