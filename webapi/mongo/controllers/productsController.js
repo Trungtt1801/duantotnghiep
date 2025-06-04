@@ -65,6 +65,7 @@ const addProduct = async (data) => {
       price,
       sale,
       material,
+      isHidden: false,
       category_id: {
         categoryName: category.name,
         categoryId: category._id,
@@ -88,4 +89,19 @@ const addProduct = async (data) => {
     throw err;
   }
 };
-module.exports = { getProducts, getProductById, addProduct};
+
+async function searchProductsByName(nameKeyword) {
+  try {
+    // Regex không phân biệt hoa thường, tìm tên chứa từ khóa
+    const products = await productsModel.find({
+      name: { $regex: nameKeyword, $options: "i" },
+    });
+
+    return products;
+  } catch (error) {
+    console.error("Lỗi khi tìm kiếm sản phẩm theo tên:", error);
+    throw error;
+  }
+}
+
+module.exports = { getProducts, getProductById, addProduct, searchProductsByName};
