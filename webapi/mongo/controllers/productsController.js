@@ -92,9 +92,16 @@ const addProduct = async (data) => {
 
 async function searchProductsByName(nameKeyword) {
   try {
-    // Regex không phân biệt hoa thường, tìm tên chứa từ khóa
+    // Tách từ, chèn .* giữa các từ để tìm linh hoạt
+    const keywordRegex = nameKeyword
+      .trim()
+      .split(/\s+/)
+      .join(".*"); // "trường phổ thông" => "trường.*phổ.*thông"
+
+    const regex = new RegExp(keywordRegex, "i");
+
     const products = await productsModel.find({
-      name: { $regex: nameKeyword, $options: "i" },
+      name: { $regex: regex },
     });
 
     return products;
@@ -103,5 +110,6 @@ async function searchProductsByName(nameKeyword) {
     throw error;
   }
 }
+
 
 module.exports = { getProducts, getProductById, addProduct, searchProductsByName};
