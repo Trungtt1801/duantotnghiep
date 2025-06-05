@@ -3,7 +3,7 @@ const router = express.Router();
 const orderDetailController = require('../mongo/controllers/orderDetailController');
 
 // [GET] Lấy chi tiết đơn hàng theo order_id
-// GET http://localhost:3000/order-detail/:orderId
+// GET http://localhost:3000/orderDetail/:orderId
 router.get('/:orderId', async (req, res) => {
   try {
     const result = await orderDetailController.getDetailsByOrderId(req.params.orderId);
@@ -15,7 +15,7 @@ router.get('/:orderId', async (req, res) => {
 });
 
 // [POST] Thêm chi tiết đơn hàng
-// POST http://localhost:3000/order-detail/
+// POST http://localhost:3000/orderDetail/
 router.post('/', async (req, res) => {
   try {
     const result = await orderDetailController.addOrderDetail(req.body);
@@ -27,7 +27,7 @@ router.post('/', async (req, res) => {
 });
 
 // [DELETE] Xoá toàn bộ chi tiết theo order_id
-// DELETE http://localhost:3000/order-detail/:orderId
+// DELETE http://localhost:3000/orderDetail/:orderId
 router.delete('/:orderId', async (req, res) => {
   try {
     const result = await orderDetailController.deleteDetailsByOrderId(req.params.orderId);

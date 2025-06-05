@@ -6,16 +6,18 @@ var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const mongoose = require("mongoose");
 
-var indexRouter = require("./routes/index");
-var usersRouter = require("./routes/user");
-var productRouter = require("./routes/products");
-var categoryRouter = require("./routes/category");
-var cartRouter = require("./routes/cart");
-var productvariantRouter = require("./routes/productVariant");
-var cartRouter = require("./routes/cart");
-
-var orderRouter = require("./routes/order");
-var orderDetailRouter = require("./routes/orderDetail");
+var indexRouter = require('./routes/index');
+var usersRouter = require('./routes/user');
+var productRouter = require('./routes/products');
+var categoryRouter = require('./routes/category');
+var cartRouter = require('./routes/cart');
+var productvariantRouter = require('./routes/productVariant');
+var orderRouter = require('./routes/order');
+var voucherRouter = require('./routes/voucher');
+var addressRouter = require('./routes/address');
+var reviewRouter = require('./routes/review');
+var orderDetailRouter = require('./routes/orderDetail');
+var cartRouter = require('./routes/cart');
 var app = express();
 
 // view engine setup
@@ -28,16 +30,19 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use("/", indexRouter);
-app.use("/user", usersRouter);
-app.use("/products", productRouter);
-app.use("/category", categoryRouter);
-app.use("/variant", productvariantRouter);
-app.use("/cart", cartRouter);
-app.use("/order", orderRouter);
-app.use("/orderDetail", orderDetailRouter);
-// catch 404 and forward to error handler
-app.use(function (req, res, next) {
+app.use('/', indexRouter);
+app.use('/user', usersRouter); 
+app.use('/products', productRouter); 
+app.use('/category', categoryRouter);
+app.use('/variant', productvariantRouter);
+app.use('/cart', cartRouter);
+app.use('/address', addressRouter);
+app.use('/orders', orderRouter);
+app.use('/voucher', voucherRouter);
+app.use('/review', reviewRouter);
+app.use('/orderDetail', orderDetailRouter);
+
+app.use(function(req, res, next) {
   next(createError(404));
 });
 // kết nối database mogoose

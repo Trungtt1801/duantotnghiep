@@ -1,29 +1,40 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const formatDateVN = require('../../until/formDate');
+const formatDateVN = require('../../until/formDate'); 
 
-const OrderDetailSchema = new Schema({
+const reviewSchema = new Schema({
   order_id: {
     type: Schema.Types.ObjectId,
-    ref: 'order',
-    required: true,
+    ref: 'orders',
+    required: true
   },
   productdetail_id: {
     type: Schema.Types.ObjectId,
     ref: 'productDetails',
-    required: true,
+    required: true
   },
-  quantity: {
+  review_id: {
+    type: Schema.Types.ObjectId,
+    ref: 'reviews',
+    required: true
+  },
+  rating: {
     type: Number,
     required: true,
+    min: 1,
+    max: 5
   },
+  content: {
+    type: String,
+    trim: true
+  }
 }, { timestamps: true });
-
-OrderDetailSchema.methods.toJSON = function () {
+reviewSchema.methods.toJSON = function () {
   const obj = this.toObject();
+
   if (obj.createdAt) obj.createdAt = formatDateVN(obj.createdAt);
   if (obj.updatedAt) obj.updatedAt = formatDateVN(obj.updatedAt);
+
   return obj;
 };
-
-module.exports = mongoose.models.orderDetail || mongoose.model('orderDetail', OrderDetailSchema);
+module.exports = mongoose.models.review || mongoose.model('review', reviewSchema);
