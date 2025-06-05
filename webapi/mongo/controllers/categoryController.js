@@ -1,173 +1,92 @@
-const orderModel = require('../models/orderModel');
-require('../models/addressModel');
+const categoriesModel = require('../models/categoryModel');
+const productsModel = require('../models/productsModel');
 
-async function getAllOrders() {
+async function getAllCate() {
     try {
-        return await orderModel.find().populate('user_id address_id voucher_id');
+        return await categoriesModel.find();
     } catch (error) {
-        console.error('Lỗi lấy tất cả đơn hàng:', error.message);
-        throw new Error('Lỗi khi lấy danh sách đơn hàng');
+        console.error('Lỗi lấy dữ liệu danh mục:', error.message);
+        throw new Error('Lỗi lấy dữ liệu danh mục');
     }
 }
 
-async function getOrderById(id) {
+async function getCateById(id) {
     try {
-        const order = await orderModel.findById(id).populate('user_id address_id voucher_id');
-        if (!order) throw new Error('Không tìm thấy đơn hàng');
-        return order;
+        const category = await categoriesModel.findById(id);
+        if (!category) throw new Error('Danh mục không tồn tại');
+        return category;
     } catch (error) {
-        console.error('Lỗi lấy đơn hàng theo ID:', error.message);
-        throw new Error(error.message || 'Lỗi khi lấy đơn hàng');
+        console.error('Lỗi lấy chi tiết danh mục:', error.message);
+        throw new Error('Lỗi lấy chi tiết danh mục');
     }
 }
 
-async function addOrder(data) {
+async function addCate(data) {
     try {
-        const {
-            user_id,
-            address_id,
-            voucher_id,
-            total_price,
-            payment_method,
-            transaction_code,
-            transaction_status
-        } = data;
+        let { name, slug, parentId, children } = data;
 
-        if (!user_id || !total_price || !payment_method) {
-            throw new Error('Thiếu thông tin bắt buộc');
+        if (!name) throw new Error('Tên danh mục không được để trống');
+        if (!slug) throw new Error('Slug danh mục không được để trống');
+
+        if (typeof children === 'string') {
+            try {
+                children = JSON.parse(children);
+            } catch (err) {
+                throw new Error('Dữ liệu children không hợp lệ (không phải JSON)');
+            }
         }
 
-        const newOrder = new orderModel({
-            user_id,
-            address_id,
-            voucher_id,
-            total_price,
-            payment_method,
-            transaction_code,
-            transaction_status
+        const newCate = new categoriesModel({
+            name,
+            slug,
+            parentId: parentId || null
         });
 
-        return await newOrder.save();
+        return await newCate.save();
     } catch (error) {
-        console.error('Lỗi thêm đơn hàng:', error.message);
-            throw new Error(error.message || 'Lỗi khi thêm đơn hàng');
+        console.error('Lỗi thêm danh mục:', error.message);
+        throw new Error(error.message || 'Lỗi thêm danh mục');
     }
 }
 
-async function deleteOrder(id, isAdmin = false) {
-  const order = await orderModel.findById(id);
-  if (!order) throw new Error('Đơn hàng không tồn tại');
 
-  if (order.status_order !== 'cancelled') {
-    throw new Error('Chỉ có thể xóa đơn hàng đã bị hủy');
-  }
-
-  if (!isAdmin) {
-    throw new Error('Bạn không có quyền xóa đơn hàng này');
-  }
-
-  return await orderModel.findByIdAndDelete(id);
-}
-
-async function confirmOrder(id) {
+async function updateCate(id, data) {
     try {
-        const order = await orderModel.findById(id);
-        if (!order) throw new Error('Không tìm thấy đơn hàng');
-        if (order.status_order !== 'pending') {
-            throw new Error('Chỉ đơn hàng ở trạng thái pending mới được xác nhận');
-        }
-        order.status_order = 'confirmed';
-        return await order.save();
-    } catch (error) {
-        console.error('Lỗi xác nhận đơn hàng:', error.message);
-        throw new Error(error.message || 'Lỗi khi xác nhận đơn hàng');
-    }
-}
-
-async function updateOrderStatus(id, status) {
-    try {
-        const allowed = ['confirmed', 'shipped', 'delivered', 'cancelled'];
-        if (!allowed.includes(status)) throw new Error('Trạng thái không hợp lệ');
-
-        const order = await orderModel.findById(id);
-        if (!order) throw new Error('Không tìm thấy đơn hàng');
-
-        order.status_order = status;
-        return await order.save();
-    } catch (error) {
-        console.error('Lỗi cập nhật trạng thái đơn hàng:', error.message);
-        throw new Error(error.message || 'Lỗi khi cập nhật trạng thái đơn hàng');
-    }
-}
-
-async function updatePayment(id, { transaction_status, transaction_code }) {
-    try {
-        const allowed = ['unpaid', 'paid', 'failed', 'refunded'];
-        if (!allowed.includes(transaction_status)) throw new Error('Trạng thái thanh toán không hợp lệ');
-
-        const order = await orderModel.findById(id);
-        if (!order) throw new Error('Không tìm thấy đơn hàng');
-
-        order.transaction_status = transaction_status;
-        if (transaction_code !== undefined) {
-            order.transaction_code = transaction_code;
+        const { name, slug, parentId } = data;
+        const category = await categoriesModel.findById(id);
+        if (!category) {
+            throw new Error('Danh mục không tồn tại');
         }
 
-        return await order.save();
-    } catch (error) {
-        console.error('Lỗi cập nhật thanh toán đơn hàng:', error.message);
-        throw new Error(error.message || 'Lỗi khi cập nhật thanh toán đơn hàng');
-    }
-}
+        category.name = name || category.name;
+        category.slug = slug || category.slug;
 
-async function cancelOrder(id, isAdmin = false) {
-    try {
-        const order = await orderModel.findById(id);
-        if (!order) throw new Error('Không tìm thấy đơn hàng');
-
-        if (order.status_order !== 'pending' && !isAdmin) {
-            throw new Error('Không thể hủy đơn hàng này');
+        if (parentId !== undefined) {
+            category.parentId = parentId;
         }
 
-        order.status_order = 'cancelled';
-        return await order.save();
+        return await category.save();
     } catch (error) {
-        console.error('Lỗi hủy đơn hàng:', error.message);
-        throw new Error(error.message || 'Lỗi khi hủy đơn hàng');
+        console.error('Lỗi cập nhật danh mục:', error.message);
+        throw new Error('Lỗi cập nhật danh mục');
     }
 }
 
-async function filterOrders(query) {
+async function deleteCate(id) {
     try {
-        const { user_id, status_order, fromDate, toDate } = query;
-        const filter = {};
+        const cate = await categoriesModel.findById(id);
+        if (!cate) throw new Error('Không tìm thấy danh mục');
+        const pros = await productsModel.find({ 'cate_id.categoryId': id });
+        if (pros.length > 0) throw new Error('Danh mục có sản phẩm không thể xóa');// níu danh mục có sản phẩm thì kh xoá
+        const childCates = await categoriesModel.find({ parentId: id });
+        if (childCates.length > 0) throw new Error('Danh mục có danh mục con, không thể xóa');
 
-        if (user_id) filter.user_id = user_id;
-        if (status_order) filter.status_order = status_order;
-        if (fromDate || toDate) {
-            filter.createdAt = {};
-            if (fromDate) filter.createdAt.$gte = new Date(fromDate);
-            if (toDate) filter.createdAt.$lte = new Date(toDate);
-        }
-
-        return await orderModel
-            .find(filter)
-            .sort({ createdAt: -1 })
-            .populate('user_id address_id voucher_id');
+        const result = await categoriesModel.findByIdAndDelete(id);
+        return result;
     } catch (error) {
-        console.error('Lỗi lọc đơn hàng:', error.message);
-        throw new Error('Lỗi khi lọc đơn hàng');
+        console.error('Lỗi xóa danh mục:', error.message);
+        throw new Error('Lỗi xóa danh mục');
     }
 }
 
-module.exports = {
-    getAllOrders,
-    getOrderById,
-    addOrder,
-    deleteOrder,
-    confirmOrder,
-    updateOrderStatus,
-    updatePayment,
-    cancelOrder,
-    filterOrders
-};
+module.exports = {getAllCate,getCateById,addCate,updateCate,deleteCate};
