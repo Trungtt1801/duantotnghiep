@@ -1,6 +1,6 @@
 const productsModel = require("../models/productsModel");
 const productVariantModel = require("../models/productVariantModel");
-const categoryModel = require("../models/categoryModel"); 
+const categoryModel = require("../models/categoryModel");
 const mongoose = require("mongoose");
 async function getProducts() {
   try {
@@ -93,10 +93,7 @@ const addProduct = async (data) => {
 async function searchProductsByName(nameKeyword) {
   try {
     // Tách từ, chèn .* giữa các từ để tìm linh hoạt
-    const keywordRegex = nameKeyword
-      .trim()
-      .split(/\s+/)
-      .join(".*"); // "trường phổ thông" => "trường.*phổ.*thông"
+    const keywordRegex = nameKeyword.trim().split(/\s+/).join(".*");
 
     const regex = new RegExp(keywordRegex, "i");
 
@@ -111,5 +108,9 @@ async function searchProductsByName(nameKeyword) {
   }
 }
 
-
-module.exports = { getProducts, getProductById, addProduct, searchProductsByName};
+module.exports = {
+  getProducts,
+  getProductById,
+  addProduct,
+  searchProductsByName,
+};
