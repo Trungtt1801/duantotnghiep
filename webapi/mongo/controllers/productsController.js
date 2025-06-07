@@ -40,7 +40,7 @@ async function getProductById(id) {
   }
 }
 
-const addProduct = async (data) => {
+async function addProduct(data) {
   try {
     const {
       name,
@@ -49,17 +49,18 @@ const addProduct = async (data) => {
       sale,
       material,
       variants,
-      category_id, // là chuỗi ID
+      category_id,
     } = data;
 
     console.log("Received category_id:", category_id);
+
     // Tìm danh mục
     const category = await categoryModel.findById(category_id);
     if (!category) {
       throw new Error("Không tìm thấy danh mục!");
     }
 
-    // Tạo sản phẩm
+    // Tạo sản phẩm mới
     const newProduct = await productsModel.create({
       name,
       images,
@@ -73,7 +74,7 @@ const addProduct = async (data) => {
       },
     });
 
-    // Tạo variants nếu có
+    // Thêm biến thể nếu có
     if (variants && variants.length > 0) {
       await productVariantModel.create({
         product_id: newProduct._id,
@@ -85,11 +86,12 @@ const addProduct = async (data) => {
       message: "Thêm sản phẩm thành công!",
       product: newProduct,
     };
-  } catch (err) {
-    console.error("Lỗi khi thêm sản phẩm:", err);
-    throw err;
+  } catch (error) {
+    console.error("Lỗi khi thêm sản phẩm:", error);
+    throw error;
   }
-};
+}
+
 
 async function searchProductsByName(nameKeyword) {
   try {
