@@ -39,6 +39,7 @@ router.get('/products/:product_id', async (req, res) => {
         res.status(500).json({ message: 'Lỗi lấy biến thể theo sản phẩm' });
     }
 });
+// update variant
 // PUT /variant/:variant_id
 router.put('/:variant_id', async (req, res) => {
     try {
@@ -72,7 +73,7 @@ router.post('/', async (req, res) => {
         res.status(500).json({ message: 'Lỗi khi thêm biến thể' });
     }
 });
-
+// update size 
 // PUT /variant/size/:variantId/:sizeId
 router.put('/size/:variantId/:sizeId', async (req, res) => {
     try {
