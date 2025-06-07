@@ -157,8 +157,8 @@ router.post("/create", upload.array("images", 10), async (req, res) => {
       material: data.material || "",
       images,
       variants,
-      category_id: data.category_id
-      // isHidden, 
+      category_id: data.category_id,
+      isHidden, 
     };
 
     const result = await productController.addProduct(sendData);

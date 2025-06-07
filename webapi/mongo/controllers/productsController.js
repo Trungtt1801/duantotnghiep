@@ -52,6 +52,7 @@ const addProduct = async (data) => {
       category_id, // là chuỗi ID
     } = data;
 
+    console.log("Received category_id:", category_id);
     // Tìm danh mục
     const category = await categoryModel.findById(category_id);
     if (!category) {
@@ -65,7 +66,7 @@ const addProduct = async (data) => {
       price,
       sale,
       material,
-      // isHidden: false,
+      isHidden: false,
       category_id: {
         categoryName: category.name,
         categoryId: category._id,
