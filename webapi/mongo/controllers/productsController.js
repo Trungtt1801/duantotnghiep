@@ -1,6 +1,6 @@
 const productsModel = require("../models/productsModel");
 const productVariantModel = require("../models/productVariantModel");
-const categoryModel = require("../models/categoryModel"); 
+const categoryModel = require("../models/categoryModel");
 const mongoose = require("mongoose");
 async function getProducts() {
   try {
@@ -40,7 +40,7 @@ async function getProductById(id) {
   }
 }
 
-const addProduct = async (data) => {
+async function addProduct(data) {
   try {
     const {
       name,
@@ -49,8 +49,10 @@ const addProduct = async (data) => {
       sale,
       material,
       variants,
-      category_id, // là chuỗi ID
+      category_id,
     } = data;
+
+    console.log("Received category_id:", category_id);
 
     // Tìm danh mục
     const category = await categoryModel.findById(category_id);
@@ -58,20 +60,21 @@ const addProduct = async (data) => {
       throw new Error("Không tìm thấy danh mục!");
     }
 
-    // Tạo sản phẩm
+    // Tạo sản phẩm mới
     const newProduct = await productsModel.create({
       name,
       images,
       price,
       sale,
       material,
+      isHidden: false,
       category_id: {
         categoryName: category.name,
         categoryId: category._id,
       },
     });
 
-    // Tạo variants nếu có
+    // Thêm biến thể nếu có
     if (variants && variants.length > 0) {
       await productVariantModel.create({
         product_id: newProduct._id,
@@ -83,9 +86,34 @@ const addProduct = async (data) => {
       message: "Thêm sản phẩm thành công!",
       product: newProduct,
     };
-  } catch (err) {
-    console.error("Lỗi khi thêm sản phẩm:", err);
-    throw err;
+  } catch (error) {
+    console.error("Lỗi khi thêm sản phẩm:", error);
+    throw error;
   }
+}
+
+
+async function searchProductsByName(nameKeyword) {
+  try {
+    // Tách từ, chèn .* giữa các từ để tìm linh hoạt
+    const keywordRegex = nameKeyword.trim().split(/\s+/).join(".*");
+
+    const regex = new RegExp(keywordRegex, "i");
+
+    const products = await productsModel.find({
+      name: { $regex: regex },
+    });
+
+    return products;
+  } catch (error) {
+    console.error("Lỗi khi tìm kiếm sản phẩm theo tên:", error);
+    throw error;
+  }
+}
+
+module.exports = {
+  getProducts,
+  getProductById,
+  addProduct,
+  searchProductsByName,
 };
-module.exports = { getProducts, getProductById, addProduct};

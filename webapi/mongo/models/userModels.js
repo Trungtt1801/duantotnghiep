@@ -11,7 +11,12 @@ const userSchema = new Schema({
     match: /^[0-9]{10,15}$/,
   },
   role: { type: Number, required: true, default: 1 },
+
+  // 2 trường cho chức năng reset password 
+  resetPasswordToken: { type: String, select: false },
+  resetPasswordExpires: { type: Date }
 }, { timestamps: true });
+
 
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();

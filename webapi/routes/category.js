@@ -31,8 +31,8 @@ router.get('/:id', async (req, res) => {
 });
 
 // [POST] Thêm mới danh mục
-// http://localhost:3000/category/ 
-router.post('/', async (req, res) => {
+// http://localhost:3000/category/create
+router.post('/create', async (req, res) => {
     try {
         const data = req.body;
         const result = await categoryController.addCate(data);

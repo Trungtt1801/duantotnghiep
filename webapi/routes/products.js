@@ -51,7 +51,17 @@ router.get("/", async (req, res) => {
       .json({ status: false, message: "Lỗi lấy dữ liệu sản phẩm" });
   }
 });
+// http://localhost:3000/products/search?name=Áo
+router.get("/search", async (req, res) => {
+  const nameKeyword = req.query.name;
 
+  try {
+    const results = await productController.searchProductsByName(nameKeyword);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server khi tìm kiếm sản phẩm." });
+  }
+});
 //http://localhost:3000/products/:id
 
 router.get("/:id", async (req, res) => {
@@ -98,9 +108,9 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// http://localhost:3000/products/addproduct
+// http://localhost:3000/products/create
 
-router.post("/addproduct", upload.array("images", 10), async (req, res) => {
+router.post("/create", upload.array("images", 10), async (req, res) => {
   try {
     const data = req.body;
 
@@ -123,10 +133,12 @@ router.post("/addproduct", upload.array("images", 10), async (req, res) => {
       });
     }
 
+    // Xử lý images từ multer
     const images = req.files?.length
       ? req.files.map((file) => file.filename)
       : [];
 
+    // Kiểm tra ID danh mục
     if (!mongoose.Types.ObjectId.isValid(data.category_id)) {
       return res.status(400).json({
         status: false,
@@ -134,6 +146,10 @@ router.post("/addproduct", upload.array("images", 10), async (req, res) => {
       });
     }
 
+    // Parse isHidden nếu có (nếu không, mặc định là false)
+    const isHidden = data.isHidden === "true" || data.isHidden === true;
+
+    // Chuẩn bị dữ liệu gửi qua controller
     const sendData = {
       name: data.name,
       price: Number(data.price),
@@ -142,6 +158,7 @@ router.post("/addproduct", upload.array("images", 10), async (req, res) => {
       images,
       variants,
       category_id: data.category_id,
+      isHidden, 
     };
 
     const result = await productController.addProduct(sendData);
@@ -159,5 +176,7 @@ router.post("/addproduct", upload.array("images", 10), async (req, res) => {
     });
   }
 });
+
+
 
 module.exports = router;
