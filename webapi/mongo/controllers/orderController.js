@@ -1,15 +1,20 @@
 const orderModel = require('../models/orderModel');
 require('../models/addressModel');
 
+// ✅ Lấy tất cả đơn hàng (dành cho admin)
 async function getAllOrders() {
     try {
-        return await orderModel.find().populate('user_id address_id voucher_id');
+        return await orderModel
+            .find()
+            .populate('user_id address_id voucher_id')
+            .sort({ createdAt: -1 }); // NOTE: Ưu tiên đơn mới nhất
     } catch (error) {
         console.error('Lỗi lấy tất cả đơn hàng:', error.message);
         throw new Error('Lỗi khi lấy danh sách đơn hàng');
     }
 }
 
+// ✅ Lấy đơn hàng theo ID
 async function getOrderById(id) {
     try {
         const order = await orderModel.findById(id).populate('user_id address_id voucher_id');
@@ -21,6 +26,7 @@ async function getOrderById(id) {
     }
 }
 
+// ✅ Thêm đơn hàng mới
 async function addOrder(data) {
     try {
         const {
@@ -44,7 +50,7 @@ async function addOrder(data) {
             total_price,
             payment_method,
             transaction_code,
-            transaction_status
+            transaction_status: transaction_status || 'unpaid' // NOTE: Mặc định chưa thanh toán
         });
 
         return await newOrder.save();
@@ -54,6 +60,7 @@ async function addOrder(data) {
     }
 }
 
+// ✅ Xóa đơn hàng theo ID
 async function deleteOrder(id) {
     try {
         const order = await orderModel.findById(id);
@@ -65,14 +72,23 @@ async function deleteOrder(id) {
     }
 }
 
+// ✅ Xác nhận đơn hàng (từ trạng thái pending)
 async function confirmOrder(id) {
     try {
         const order = await orderModel.findById(id);
         if (!order) throw new Error('Không tìm thấy đơn hàng');
+
         if (order.status_order !== 'pending') {
             throw new Error('Chỉ đơn hàng ở trạng thái pending mới được xác nhận');
         }
+
         order.status_order = 'confirmed';
+
+        // NOTE: Nếu là chuyển khoản (momo), đánh dấu đã thanh toán luôn
+        if (order.payment_method === 'momo') {
+            order.transaction_status = 'paid';
+        }
+
         return await order.save();
     } catch (error) {
         console.error('Lỗi xác nhận đơn hàng:', error.message);
@@ -80,15 +96,45 @@ async function confirmOrder(id) {
     }
 }
 
+// ✅ Cập nhật trạng thái đơn hàng
 async function updateOrderStatus(id, status) {
     try {
-        const allowed = ['confirmed', 'shipped', 'delivered', 'cancelled'];
+        const allowed = ['confirmed', 'shipped', 'delivered', 'failed', 'returned', 'cancelled'];
         if (!allowed.includes(status)) throw new Error('Trạng thái không hợp lệ');
 
         const order = await orderModel.findById(id);
         if (!order) throw new Error('Không tìm thấy đơn hàng');
 
-        order.status_order = status;
+        const { payment_method, transaction_status, status_order: currentStatus } = order;
+
+        switch (status) {
+            case 'delivered':
+                // NOTE: Chỉ cho chuyển sang 'delivered' nếu momo đã thanh toán
+                if (payment_method === 'momo' && transaction_status !== 'paid') {
+                    throw new Error('Đơn hàng chuyển khoản phải được thanh toán trước khi giao thành công');
+                }
+                order.status_order = 'delivered';
+                break;
+
+            case 'failed':
+                if (currentStatus !== 'shipped') {
+                    throw new Error('Chỉ đơn hàng đang giao mới có thể đánh dấu thất bại');
+                }
+                order.status_order = 'failed';
+                break;
+
+            case 'returned':
+                if (!['failed', 'delivered'].includes(currentStatus)) {
+                    throw new Error('Chỉ đơn hàng giao thất bại hoặc đã giao mới có thể trả về');
+                }
+                order.status_order = 'returned';
+                break;
+
+            default:
+                // confirmed, shipped, cancelled
+                order.status_order = status;
+        }
+
         return await order.save();
     } catch (error) {
         console.error('Lỗi cập nhật trạng thái đơn hàng:', error.message);
@@ -96,6 +142,7 @@ async function updateOrderStatus(id, status) {
     }
 }
 
+// ✅ Cập nhật thông tin thanh toán
 async function updatePayment(id, { transaction_status, transaction_code }) {
     try {
         const allowed = ['unpaid', 'paid', 'failed', 'refunded'];
@@ -116,11 +163,13 @@ async function updatePayment(id, { transaction_status, transaction_code }) {
     }
 }
 
+// ✅ Hủy đơn hàng (người dùng hoặc admin)
 async function cancelOrder(id, isAdmin = false) {
     try {
         const order = await orderModel.findById(id);
         if (!order) throw new Error('Không tìm thấy đơn hàng');
 
+        // NOTE: Người dùng chỉ hủy được khi đang pending
         if (order.status_order !== 'pending' && !isAdmin) {
             throw new Error('Không thể hủy đơn hàng này');
         }
@@ -133,6 +182,7 @@ async function cancelOrder(id, isAdmin = false) {
     }
 }
 
+// ✅ Lọc đơn hàng theo user, trạng thái, ngày
 async function filterOrders(query) {
     try {
         const { user_id, status_order, fromDate, toDate } = query;
@@ -165,5 +215,5 @@ module.exports = {
     updateOrderStatus,
     updatePayment,
     cancelOrder,
-    filterOrders
+    filterOrders,
 };

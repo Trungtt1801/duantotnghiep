@@ -6,13 +6,12 @@ const OrderSchema = new Schema({
   total_price: { type: Number, required: true },
   status_order: {
     type: String,
-    enum: ['pending', 'confirmed', 'shipped', ' delivered', 'cancelled'],
+    enum: ['pending', 'confirmed', 'shipped', 'delivered', 'failed', 'returned', 'cancelled'],
     default: 'pending',
   },
   address_id: { type: Schema.Types.ObjectId, ref: 'Address' },
   voucher_id: { type: Schema.Types.ObjectId, ref: 'Voucher' },
   user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  evaluate: String,
   payment_method: {
     type: String,
     enum: ['COD','momo'],
@@ -24,12 +23,15 @@ const OrderSchema = new Schema({
     enum: ['unpaid', 'paid', 'failed', 'refunded'],
     default: 'unpaid',
   },
+  delivery_date: Date,
+  cancel_reason: String,
 }, { timestamps: true });
 
 OrderSchema.methods.toJSON = function () {
   const obj = this.toObject();
   if (obj.createdAt) obj.createdAt = formatDateVN(obj.createdAt);
   if (obj.updatedAt) obj.updatedAt = formatDateVN(obj.updatedAt);
+  if (obj.delivery_date) obj.delivery_date = formatDateVN(obj.delivery_date);
   return obj;
 };
 
