@@ -29,7 +29,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const voucher = await voucherController.addVoucher(req.body);
-    res.status(201).json({ status: true, voucher });
+    res.status(201).json(voucher);
   } catch (error) {
     res.status(400).json({ status: false, message: error.message });
   }

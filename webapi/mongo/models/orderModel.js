@@ -6,7 +6,7 @@ const OrderSchema = new Schema({
   total_price: { type: Number, required: true },
   status_order: {
     type: String,
-    enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
+    enum: ['pending', 'confirmed', 'shipped', ' delivered', 'cancelled'],
     default: 'pending',
   },
   address_id: { type: Schema.Types.ObjectId, ref: 'Address' },
@@ -15,7 +15,7 @@ const OrderSchema = new Schema({
   evaluate: String,
   payment_method: {
     type: String,
-    enum: ['COD','Momo'],
+    enum: ['COD','momo'],
     required: true,
   },
   transaction_code: String,

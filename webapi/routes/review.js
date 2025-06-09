@@ -7,7 +7,7 @@ const reviewController = require('../mongo/controllers/reviewController');
 router.post('/', async (req, res) => {
   try {
     const result = await reviewController.addReview(req.body);
-    return res.status(201).json({ status: true, result });
+    return res.status(201).json(result);
   } catch (err) {
     return res.status(400).json({ status: false, message: err.message });
   }

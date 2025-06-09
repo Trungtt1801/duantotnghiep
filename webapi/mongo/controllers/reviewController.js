@@ -36,7 +36,7 @@ async function addReview(data) {
 
 async function getReviewByProductDetail(productdetail_id) {
     try {
-        return await Review.find({ productdetail_id }).populate('user_id', 'name');
+        return await Review.find({ productdetail_id });
     } catch (error) {
         console.error('Lỗi lấy đánh giá theo productdetail_id:', error.message);
         throw new Error('Lỗi khi lấy danh sách đánh giá');

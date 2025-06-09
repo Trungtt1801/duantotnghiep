@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const result = await orderController.addOrder(req.body);
-    return res.status(200).json({ status: true, result });
+    return res.status(200).json(result);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ status: false, message: 'Lỗi tạo đơn hàng' });
