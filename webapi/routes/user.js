@@ -67,6 +67,7 @@ router.post("/login", async (req, res) => {
     });
   }
 });
+// http://localhost:3000/user/forgot-password
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
