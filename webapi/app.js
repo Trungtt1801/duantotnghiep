@@ -18,6 +18,7 @@ var addressRouter = require('./routes/address');
 var reviewRouter = require('./routes/review');
 var orderDetailRouter = require('./routes/orderDetail');
 var cartRouter = require('./routes/cart');
+var zalopayRouter = require('./routes/zalopay')
 var app = express();
 
 // view engine setup
@@ -41,6 +42,7 @@ app.use('/orders', orderRouter);
 app.use('/voucher', voucherRouter);
 app.use('/review', reviewRouter);
 app.use('/orderDetail', orderDetailRouter);
+app.use('/zalopay', zalopayRouter)
 
 app.use(function(req, res, next) {
   next(createError(404));

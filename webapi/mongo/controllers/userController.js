@@ -81,13 +81,13 @@ async function login(data) {
     throw new Error(error.message || "Lỗi đăng nhập");
   }
 }
-  async function sendResetPasswordEmail(email, resetLink) {
-    try {
+async function sendResetPasswordEmail(email, resetLink) {
+  try {
     const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "Yêu cầu đặt lại mật khẩu",
-    html: `
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Yêu cầu đặt lại mật khẩu",
+      html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #ffffff; color: #333333; border: 1px solid #e0e0e0; border-radius: 8px;">
         <h2 style="color: #2c3e50;">Kính gửi Quý khách hàng</h2>
         <p>Chúng tôi vừa nhận được yêu cầu đặt lại mật khẩu cho tài khoản <strong>FIYO</strong> của bạn.</p>
@@ -105,68 +105,68 @@ async function login(data) {
         <hr style="margin-top: 30px;"/>
         <p style="font-size: 12px; color: #888888;"><i>Email này được gửi tự động, vui lòng không trả lời email này.</i></p>
       </div>
-    `
-  };
+    `,
+    };
 
-      await transporter.sendMail(mailOptions);
-    } catch (error) {
-      console.error("Lỗi gửi email đặt lại mật khẩu:", error);
-      throw new Error("Không thể gửi email đặt lại mật khẩu");
-    }
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Lỗi gửi email đặt lại mật khẩu:", error);
+    throw new Error("Không thể gửi email đặt lại mật khẩu");
   }
+}
 
-  async function forgotPassword(email) {
-    try {
-      console.log("Email nhận được trong forgotPassword:", email);
+async function forgotPassword(email) {
+  try {
+    console.log("Email nhận được trong forgotPassword:", email);
 
-      const user = await usersModel.findOne({ email });
-      console.log("User tìm thấy:", user);
+    const user = await usersModel.findOne({ email });
+    console.log("User tìm thấy:", user);
 
-      if (!user) {
-        throw new Error("Email chưa được đăng ký!");
-      }
-
-      const jwtSecret = process.env.PRIVATE_KEY || "defaultSecretKey";
-      const token = jwt.sign({ userId: user._id }, jwtSecret, {
-        expiresIn: "15m",
-      });
-
-      const resetLink = `http://localhost:3000/user/reset-password/${token}`;
-
-      await sendResetPasswordEmail(email, resetLink);
-
-      return "Email đặt lại mật khẩu đã được gửi.";
-    } catch (error) {
-      console.error("Lỗi trong forgotPassword:", error);
-      throw error;
+    if (!user) {
+      throw new Error("Email chưa được đăng ký!");
     }
-  }
 
-  async function resetPassword(token, newPassword) {
     const jwtSecret = process.env.PRIVATE_KEY || "defaultSecretKey";
-    try {
-      console.log("Verify token:", token);
-      console.log("Using jwt secret:", jwtSecret);
+    const token = jwt.sign({ userId: user._id }, jwtSecret, {
+      expiresIn: "15m",
+    });
 
-      const payload = jwt.verify(token, jwtSecret); 
-      const user = await usersModel.findById(payload.userId);
-      if (!user) throw new Error("Người dùng không tồn tại.");
+    const resetLink = `http://localhost:3000/user/reset-password/${token}`;
 
-      user.password = bcryptjs.hashSync(newPassword, 10);
-      await user.save();
+    await sendResetPasswordEmail(email, resetLink);
 
-      return "Đổi mật khẩu thành công.";
-    } catch (error) {
-      console.error("Lỗi resetPassword:", error);
-      if (error.name === "TokenExpiredError") {
-        throw new Error("Token đã hết hạn.");
-      } else if (error.name === "JsonWebTokenError") {
-        throw new Error("Token không hợp lệ.");
-      } else {
-        throw new Error("Có lỗi xảy ra trong quá trình đổi mật khẩu.");
-      }
+    return "Email đặt lại mật khẩu đã được gửi.";
+  } catch (error) {
+    console.error("Lỗi trong forgotPassword:", error);
+    throw error;
+  }
+}
+
+async function resetPassword(token, newPassword) {
+  const jwtSecret = process.env.PRIVATE_KEY || "defaultSecretKey";
+  try {
+    console.log("Verify token:", token);
+    console.log("Using jwt secret:", jwtSecret);
+
+    const payload = jwt.verify(token, jwtSecret);
+    const user = await usersModel.findById(payload.userId);
+    if (!user) throw new Error("Người dùng không tồn tại.");
+
+    user.password = bcryptjs.hashSync(newPassword, 10);
+    await user.save();
+
+    return "Đổi mật khẩu thành công.";
+  } catch (error) {
+    console.error("Lỗi resetPassword:", error);
+    if (error.name === "TokenExpiredError") {
+      throw new Error("Token đã hết hạn.");
+    } else if (error.name === "JsonWebTokenError") {
+      throw new Error("Token không hợp lệ.");
+    } else {
+      throw new Error("Có lỗi xảy ra trong quá trình đổi mật khẩu.");
     }
   }
+}
 
 module.exports = {
   register,
