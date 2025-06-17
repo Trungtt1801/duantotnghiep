@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const formatDateVN = require('../../untils/formDate'); 
+const formatDateVN = require('../untils/formDate'); 
 
 const VoucherSchema = new Schema({
   value: { type: Number, required: true },

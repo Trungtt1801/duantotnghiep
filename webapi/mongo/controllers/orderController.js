@@ -1,5 +1,5 @@
 const orderModel = require("../models/orderModel");
-const {createZaloPayOrder}  = require("../../untils/zalopay");
+const { createZaloPayOrder } = require("../untils/zalopay");
 require("../models/addressModel");
 
 async function getAllOrders() {

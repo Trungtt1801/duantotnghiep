@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const formatDateVN = require('../../untils/formDate');
+const formatDateVN = require('../untils/formDate');
 
 const OrderDetailSchema = new Schema({
   order_id: {
