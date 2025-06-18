@@ -1,5 +1,7 @@
 const orderModel = require("../models/orderModel");
 const { createZaloPayOrder } = require("../untils/zalopay");
+const orderDetailModel = require("../models/orderDetailModel");
+
 require("../models/addressModel");
 
 async function getAllOrders() {
@@ -24,24 +26,34 @@ async function getOrderById(id) {
   }
 }
 
+
+
 async function addOrder(data) {
   try {
-    const { user_id, address_id, voucher_id, total_price, payment_method } =
-      data;
+    const {
+      user_id,
+      address_id,
+      voucher_id,
+      total_price,
+      payment_method,
+      products // Mảng [{ productdetail_id, quantity }]
+    } = data;
 
-    if (!user_id || !total_price || !payment_method) {
-      throw new Error("Thiếu thông tin bắt buộc");
+    if (!user_id || !total_price || !payment_method || !products || products.length === 0) {
+      throw new Error("Thiếu thông tin bắt buộc hoặc thiếu sản phẩm");
     }
 
+    // ZaloPay
     let transaction_code = null;
     let transaction_status = "unpaid";
 
-    if (payment_method === "zalopay") {
+    if (payment_method.toLowerCase() === "zalopay") {
       const zaloRes = await createZaloPayOrder(total_price, user_id);
       transaction_code = zaloRes.app_trans_id;
-      transaction_status = "unpaid"; // sẽ cập nhật lại sau khi webhook xác nhận
+      transaction_status = "unpaid";
     }
 
+    // Tạo đơn hàng
     const newOrder = new orderModel({
       user_id,
       address_id,
@@ -54,16 +66,28 @@ async function addOrder(data) {
 
     const savedOrder = await newOrder.save();
 
+    // ✅ Tạo order detail
+    const orderDetails = products.map((item) => {
+      return new orderDetailModel({
+        order_id: savedOrder._id,
+        productdetail_id: item.productdetail_id,
+        quantity: item.quantity,
+      });
+    });
+
+    await orderDetailModel.insertMany(orderDetails); 
+
     return {
       status: true,
-      message: "Tạo đơn hàng thành công",
+      message: "Tạo đơn hàng và chi tiết thành công",
       order: savedOrder,
     };
   } catch (error) {
-    console.error("Lỗi thêm đơn hàng:", error.message);
-    throw new Error(error.message || "Lỗi khi thêm đơn hàng");
+    console.error("Lỗi khi thêm đơn hàng:", error.message);
+    throw new Error(error.message || "Lỗi khi tạo đơn hàng");
   }
 }
+
 
 async function deleteOrder(id) {
   try {
