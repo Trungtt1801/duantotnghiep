@@ -1,5 +1,5 @@
 const orderModel = require("../models/orderModel");
-const { createZaloPayOrder } = require("../untils/zalopay");
+const  createZaloPayOrder  = require("../untils/zalopay");
 const orderDetailModel = require("../models/orderDetailModel");
 
 require("../models/addressModel");
