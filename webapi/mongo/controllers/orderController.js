@@ -30,15 +30,7 @@ async function getOrderById(id) {
 async function addOrder(data) {
     try {
         const {
-            user_id,
-            address_id,
-            voucher_id,
-            total_price,
-            payment_method,
-            transaction_code,
-            transaction_status
-        } = data;
-
+            user_id,address_id,voucher_id,total_price,payment_method,transaction_code,transaction_status} = data;
         if (!user_id || !total_price || !payment_method) {
             throw new Error('Thiếu thông tin bắt buộc');
         }
