@@ -1,22 +1,27 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const formatDateVN = require('../untils/formDate'); 
+
 const userSchema = new Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true, select: false },
+  password: { type: String, required: false, select: false },
   phone: {
     type: String,
     required: false,
     match: /^[0-9]{10,15}$/,
   },
   role: { type: Number, required: true, default: 1 },
+  authType: {
+    type: String,
+    enum: ['local', 'google'],
+    default: 'local',
+  },
 
   // 2 trường cho chức năng reset password 
   resetPasswordToken: { type: String, select: false },
   resetPasswordExpires: { type: Date }
 }, { timestamps: true });
-
 
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
