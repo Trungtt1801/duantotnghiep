@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-
 const productController = require("../mongo/controllers/productsController");
 const productVariantModel = require("../mongo/models/productVariantModel");
 const productsModel = require("../mongo/models/productsModel");
@@ -109,7 +108,6 @@ router.get("/:id", async (req, res) => {
 });
 
 // http://localhost:3000/products/create
-
 router.post("/create", upload.array("images", 10), async (req, res) => {
   try {
     const data = req.body;

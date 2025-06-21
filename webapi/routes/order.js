@@ -109,5 +109,21 @@ router.delete('/:id', async (req, res) => {
     return res.status(500).json({ status: false, message: 'Lỗi xoá đơn hàng' });
   }
 });
+router.post('/zalopay-callback', async (req, res) => {
+    try {
+        const result = await orderController.zaloCallback(req.body);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+router.post('/zalopay', async (req, res) => {
+    try {
+        const result = await orderController.createOrderWithZaloPay(req.body);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
 module.exports = router;
