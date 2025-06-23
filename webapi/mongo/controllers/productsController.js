@@ -50,17 +50,22 @@ async function addProduct(data) {
       material,
       variants,
       category_id,
+      shop_id, // ✅ thêm trường này
     } = data;
 
-    console.log("Received category_id:", category_id);
+    if (!mongoose.Types.ObjectId.isValid(category_id)) {
+      throw new Error("ID danh mục không hợp lệ!");
+    }
 
-    // Tìm danh mục
+    if (!mongoose.Types.ObjectId.isValid(shop_id)) {
+      throw new Error("ID của shop không hợp lệ!");
+    }
+
     const category = await categoryModel.findById(category_id);
     if (!category) {
       throw new Error("Không tìm thấy danh mục!");
     }
 
-    // Tạo sản phẩm mới
     const newProduct = await productsModel.create({
       name,
       images,
@@ -68,13 +73,13 @@ async function addProduct(data) {
       sale,
       material,
       isHidden: false,
+      shop_id: data.shop_id || 1, // ✅ giá trị mặc định
       category_id: {
         categoryName: category.name,
         categoryId: category._id,
       },
     });
 
-    // Thêm biến thể nếu có
     if (variants && variants.length > 0) {
       await productVariantModel.create({
         product_id: newProduct._id,
@@ -91,7 +96,6 @@ async function addProduct(data) {
     throw error;
   }
 }
-
 
 async function searchProductsByName(nameKeyword) {
   try {
@@ -111,9 +115,79 @@ async function searchProductsByName(nameKeyword) {
   }
 }
 
+async function updateProduct(id, data) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new Error("ID không hợp lệ");
+    }
+
+    const {
+      name,
+      price,
+      sale,
+      material,
+      images,
+      isHidden,
+      category_id,
+      variants,
+    } = data;
+
+    const product = await productsModel.findById(id);
+    if (!product) {
+      throw new Error("Không tìm thấy sản phẩm để cập nhật");
+    }
+
+    // Cập nhật thông tin danh mục nếu thay đổi
+    let categoryInfo = product.category_id;
+    if (category_id && category_id !== String(product.category_id.categoryId)) {
+      const category = await categoryModel.findById(category_id);
+      if (!category) {
+        throw new Error("Không tìm thấy danh mục mới!");
+      }
+      categoryInfo = {
+        categoryName: category.name,
+        categoryId: category._id,
+      };
+    }
+
+    // Cập nhật thông tin sản phẩm
+    const updatedProduct = await productsModel.findByIdAndUpdate(
+      id,
+      {
+        name,
+        price,
+        sale,
+        material,
+        images,
+        isHidden,
+        category_id: categoryInfo,
+      },
+      { new: true }
+    );
+
+    // Cập nhật variants nếu có
+    if (variants && Array.isArray(variants)) {
+      await productVariantModel.findOneAndUpdate(
+        { product_id: id },
+        { variants },
+        { upsert: true } // nếu chưa có thì tạo mới
+      );
+    }
+
+    return {
+      message: "Cập nhật sản phẩm thành công!",
+      product: updatedProduct,
+    };
+  } catch (error) {
+    console.error("Lỗi khi cập nhật sản phẩm:", error);
+    throw error;
+  }
+}
+
 module.exports = {
   getProducts,
   getProductById,
   addProduct,
   searchProductsByName,
+  updateProduct,
 };

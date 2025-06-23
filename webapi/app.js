@@ -1,4 +1,5 @@
 require("dotenv").config();
+const cors = require('cors')
 var createError = require("http-errors");
 var express = require("express");
 var path = require("path");
@@ -19,9 +20,8 @@ var addressRouter = require('./routes/address');
 var reviewRouter = require('./routes/review');
 var orderDetailRouter = require('./routes/orderDetail');
 var cartRouter = require('./routes/cart');
-var zalopayRouter = require('./routes/zalopay')
 var app = express();
-
+app.use(cors())
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "hbs");
@@ -44,7 +44,6 @@ app.use('/orders', orderRouter);
 app.use('/voucher', voucherRouter);
 app.use('/review', reviewRouter);
 app.use('/orderDetail', orderDetailRouter);
-app.use('/zalopay', zalopayRouter)
 
 app.use(function(req, res, next) {
   next(createError(404));
