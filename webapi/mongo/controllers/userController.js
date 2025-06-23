@@ -127,7 +127,7 @@ async function forgotPassword(email) {
       expiresIn: "15m",
     });
 
-    const resetLink = `http://localhost:3000/user/reset-password/${token}`;
+    const resetLink = `http://localhost:3001/reset-password/${token}`;
 
     await sendResetPasswordEmail(email, resetLink);
 
