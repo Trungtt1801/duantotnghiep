@@ -50,17 +50,22 @@ async function addProduct(data) {
       material,
       variants,
       category_id,
+      shop_id, // ✅ thêm trường này
     } = data;
 
-    console.log("Received category_id:", category_id);
+    if (!mongoose.Types.ObjectId.isValid(category_id)) {
+      throw new Error("ID danh mục không hợp lệ!");
+    }
 
-    // Tìm danh mục
+    if (!mongoose.Types.ObjectId.isValid(shop_id)) {
+      throw new Error("ID của shop không hợp lệ!");
+    }
+
     const category = await categoryModel.findById(category_id);
     if (!category) {
       throw new Error("Không tìm thấy danh mục!");
     }
 
-    // Tạo sản phẩm mới
     const newProduct = await productsModel.create({
       name,
       images,
@@ -68,13 +73,13 @@ async function addProduct(data) {
       sale,
       material,
       isHidden: false,
+      shop_id: data.shop_id || 1, // ✅ giá trị mặc định
       category_id: {
         categoryName: category.name,
         categoryId: category._id,
       },
     });
 
-    // Thêm biến thể nếu có
     if (variants && variants.length > 0) {
       await productVariantModel.create({
         product_id: newProduct._id,
@@ -91,7 +96,6 @@ async function addProduct(data) {
     throw error;
   }
 }
-
 
 async function searchProductsByName(nameKeyword) {
   try {
@@ -185,5 +189,5 @@ module.exports = {
   getProductById,
   addProduct,
   searchProductsByName,
-  updateProduct
+  updateProduct,
 };
