@@ -158,6 +158,7 @@ router.post("/create", upload.array("images", 10), async (req, res) => {
       category_id: data.category_id,
       isHidden,
       shop_id: 1, // ✅ Thêm dòng này
+      description: data.description
     };
 
     const result = await productController.addProduct(sendData);
