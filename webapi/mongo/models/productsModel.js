@@ -10,7 +10,8 @@ const productSchema = new Schema({
   material: { type: String, required: true },
   shop_id: { type: Number, default: 1 },
   create_at: { type: Date, default: Date.now },
-
+  description: { type: String, required: true },
+  sale_count: { type: Number, default: 0 },
   category_id: {
     categoryName: { type: String, required: true },
     categoryId: { type: ObjectId, required: true, ref: "Category" },

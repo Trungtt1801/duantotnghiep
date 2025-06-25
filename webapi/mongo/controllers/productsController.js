@@ -50,7 +50,9 @@ async function addProduct(data) {
       material,
       variants,
       category_id,
-      shop_id, // ✅ thêm trường này
+      shop_id, 
+      description,
+      sale_count
     } = data;
 
     if (!mongoose.Types.ObjectId.isValid(category_id)) {
@@ -74,6 +76,8 @@ async function addProduct(data) {
       material,
       isHidden: false,
       shop_id: data.shop_id || 1, // ✅ giá trị mặc định
+      description,
+      sale_count: sale_count || 0,
       category_id: {
         categoryName: category.name,
         categoryId: category._id,
