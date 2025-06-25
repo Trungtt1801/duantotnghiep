@@ -158,7 +158,8 @@ router.post("/create", upload.array("images", 10), async (req, res) => {
       category_id: data.category_id,
       isHidden,
       shop_id: 1, // ✅ Thêm dòng này
-      description: data.description
+      description: data.description,
+      sale_count: data.sale_count || 0, // Thêm sale_count nếu có
     };
 
     const result = await productController.addProduct(sendData);
@@ -209,6 +210,7 @@ router.put("/update/:id", upload.array("images", 10), async (req, res) => {
       isHidden,
       category_id: data.category_id,
       variants,
+      sale_count: data.sale_count,
     };
 
     const result = await productController.updateProduct(productId, sendData);

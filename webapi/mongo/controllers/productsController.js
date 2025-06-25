@@ -77,7 +77,7 @@ async function addProduct(data) {
       isHidden: false,
       shop_id: data.shop_id || 1, // ✅ giá trị mặc định
       description,
-      sale_count: sale_count || 0,
+      sale_count: sale_count,
       category_id: {
         categoryName: category.name,
         categoryId: category._id,
@@ -134,6 +134,9 @@ async function updateProduct(id, data) {
       isHidden,
       category_id,
       variants,
+      shop_id,
+      description,
+      sale_count
     } = data;
 
     const product = await productsModel.findById(id);
@@ -165,9 +168,12 @@ async function updateProduct(id, data) {
         images,
         isHidden,
         category_id: categoryInfo,
+        shop_id,
+        description,
+        sale_count,
       },
       { new: true }
-    );
+    );  
 
     // Cập nhật variants nếu có
     if (variants && Array.isArray(variants)) {
