@@ -156,7 +156,10 @@ router.post("/create", upload.array("images", 10), async (req, res) => {
       images,
       variants,
       category_id: data.category_id,
-      isHidden, 
+      isHidden,
+      shop_id: 1, // ✅ Thêm dòng này
+      description: data.description,
+      sale_count: data.sale_count || 0, // Thêm sale_count nếu có
     };
 
     const result = await productController.addProduct(sendData);
@@ -174,6 +177,58 @@ router.post("/create", upload.array("images", 10), async (req, res) => {
     });
   }
 });
+// http://localhost:3000/products/update/:id
+router.put("/update/:id", upload.array("images", 10), async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const data = req.body;
+
+    // Parse variants
+    let variants = [];
+    try {
+      variants = data.variants ? JSON.parse(data.variants) : [];
+    } catch (err) {
+      return res.status(400).json({
+        status: false,
+        message: "Dữ liệu variants không hợp lệ!",
+      });
+    }
+
+    // Xử lý images từ multer
+    const images = req.files?.length
+      ? req.files.map((file) => file.filename)
+      : data.images || []; // giữ lại ảnh cũ nếu không upload ảnh mới
+
+    const isHidden = data.isHidden === "true" || data.isHidden === true;
+
+    const sendData = {
+      name: data.name,
+      price: Number(data.price),
+      sale: Number(data.sale || 0),
+      material: data.material || "",
+      images,
+      isHidden,
+      category_id: data.category_id,
+      variants,
+      sale_count: data.sale_count,
+    };
+
+    const result = await productController.updateProduct(productId, sendData);
+
+    return res.status(200).json({
+      status: true,
+      message: result.message,
+      product: result.product,
+    });
+  } catch (error) {
+    console.error("Lỗi khi cập nhật sản phẩm:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Lỗi cập nhật sản phẩm",
+    });
+  }
+});
+
 
 
 

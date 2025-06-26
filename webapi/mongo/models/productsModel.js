@@ -8,9 +8,10 @@ const productSchema = new Schema({
   price: { type: Number, required: true },
   sale: { type: Number, required: true },
   material: { type: String, required: true },
-  shop_id: {type: ObjectId, required: false, ref: "Shop" },
+  shop_id: { type: Number, default: 1 },
   create_at: { type: Date, default: Date.now },
-
+  description: { type: String, required: true },
+  sale_count: { type: Number, required: false },
   category_id: {
     categoryName: { type: String, required: true },
     categoryId: { type: ObjectId, required: true, ref: "Category" },
@@ -19,4 +20,5 @@ const productSchema = new Schema({
   isHidden: { type: Boolean, default: false },
 });
 
-module.exports = mongoose.models.products || mongoose.model("products", productSchema);
+module.exports =
+  mongoose.models.products || mongoose.model("products", productSchema);
