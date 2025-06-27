@@ -23,13 +23,14 @@ async function getCateById(id) {
 
 async function addCate(data) {
     try {
-        const { name, slug, parentId } = data;
+        const { name, slug, parentId,type} = data;
         if (!name) throw new Error('Tên danh mục không được để trống');
         if (!slug) throw new Error('Slug danh mục không được để trống');
         const newCate = new categoriesModel({
             name,
             slug,
-            parentId: parentId || null
+            parentId: parentId || null,
+            type
         });
 
         return await newCate.save();
@@ -49,6 +50,7 @@ async function updateCate(id, data) {
 
         category.name = name || category.name;
         category.slug = slug || category.slug;
+        category.type = type || category.type;
 
         if (parentId !== undefined) {
             category.parentId = parentId;
