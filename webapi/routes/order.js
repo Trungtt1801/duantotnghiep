@@ -26,9 +26,9 @@ router.post('/', async (req, res) => {
   }
 });
 
-// [PUT] Xác nhận đơn hàng
+// [patch] Xác nhận đơn hàng
 // URL: http://localhost:3000/orders/:id/confirm
-router.put('/:id/confirm', async (req, res) => {
+router.patch('/:id/confirm', async (req, res) => {
   try {
     const result = await orderController.confirmOrder(req.params.id);
     return res.status(200).json({ status: true, result });
@@ -37,9 +37,9 @@ router.put('/:id/confirm', async (req, res) => {
   }
 });
 
-// [PUT] Cập nhật trạng thái đơn hàng
+// [patch] Cập nhật trạng thái đơn hàng
 // URL: http://localhost:3000/orders/:id/status
-router.put('/:id/status', async (req, res) => {
+router.patch('/:id/status', async (req, res) => {
   try {
     const { status } = req.body;
     const result = await orderController.updateOrderStatus(req.params.id, status);
@@ -49,9 +49,9 @@ router.put('/:id/status', async (req, res) => {
   }
 });
 
-// [PUT] Cập nhật thanh toán
+// [patch] Cập nhật thanh toán
 // URL: http://localhost:3000/orders/:id/payment
-router.put('/:id/payment', async (req, res) => {
+router.patch('/:id/payment', async (req, res) => {
   try {
     const result = await orderController.updatePayment(req.params.id, req.body);
     return res.status(200).json({ status: true, result });
@@ -60,9 +60,9 @@ router.put('/:id/payment', async (req, res) => {
   }
 });
 
-// [PUT] Hủy đơn hàng
+// [patch] Hủy đơn hàng
 // URL: http://localhost:3000/orders/:id/cancel?admin=true
-router.put('/:id/cancel', async (req, res) => {
+router.patch('/:id/cancel', async (req, res) => {
   try {
     const isAdmin = req.query.admin === 'true';
     const result = await orderController.cancelOrder(req.params.id, isAdmin);
