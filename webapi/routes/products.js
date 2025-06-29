@@ -96,7 +96,7 @@ router.get("/:id", async (req, res) => {
 
     return res.status(200).json({
       status: true,
-      product: updatedProduct,
+      ...updatedProduct,
       variants: updatedVariants,
     });
   } catch (error) {
@@ -157,9 +157,9 @@ router.post("/create", upload.array("images", 10), async (req, res) => {
       variants,
       category_id: data.category_id,
       isHidden,
-      shop_id: 1, 
+      shop_id: 1,
       description: data.description,
-      sale_count: data.sale_count || 0, 
+      sale_count: data.sale_count || 0,
     };
 
     const result = await productController.addProduct(sendData);
@@ -234,7 +234,9 @@ router.get("/category/:categoryId", async (req, res) => {
     const categoryId = req.params.categoryId;
     const baseUrl = "http://localhost:3000/images/";
 
-    const products = await productController.getProductsByCategoryTree(categoryId);
+    const products = await productController.getProductsByCategoryTree(
+      categoryId
+    );
 
     const updatedProducts = await Promise.all(
       products.map(async (product) => {
@@ -260,7 +262,5 @@ router.get("/category/:categoryId", async (req, res) => {
       .json({ status: false, message: "Lỗi lấy sản phẩm theo danh mục" });
   }
 });
-
-
 
 module.exports = router;
