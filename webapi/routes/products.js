@@ -228,7 +228,38 @@ router.put("/update/:id", upload.array("images", 10), async (req, res) => {
     });
   }
 });
+// http://localhost:3000/products/category
+router.get("/category/:categoryId", async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+    const baseUrl = "http://localhost:3000/images/";
 
+    const products = await productController.getProductsByCategoryTree(categoryId);
+
+    const updatedProducts = await Promise.all(
+      products.map(async (product) => {
+        const variantsDoc = await productVariantModel.findOne({
+          product_id: product._id,
+        });
+
+        return {
+          ...product._doc,
+          images: product.images?.map((imgName) =>
+            imgName.startsWith("http") ? imgName : baseUrl + imgName
+          ),
+          variants: variantsDoc ? variantsDoc.variants : [],
+        };
+      })
+    );
+
+    return res.status(200).json([{ status: true }, ...updatedProducts]);
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm theo danh mục:", error);
+    return res
+      .status(500)
+      .json({ status: false, message: "Lỗi lấy sản phẩm theo danh mục" });
+  }
+});
 
 
 
