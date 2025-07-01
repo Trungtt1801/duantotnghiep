@@ -193,6 +193,29 @@ async function updateProduct(id, data) {
     throw error;
   }
 }
+async function getProductsByCategoryTree(categoryId) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      throw new Error("ID danh mục không hợp lệ");
+    }
+    const subCategories = await categoryModel.find({ parentId: categoryId });
+
+    // Nếu có danh mục con thì lọc theo chúng, nếu không thì chỉ lọc theo chính nó
+    const categoryIds = subCategories.length
+      ? subCategories.map((cat) => cat._id)
+      : [categoryId];
+
+  
+    const products = await productsModel.find({
+      "category_id.categoryId": { $in: categoryIds },
+    });
+
+    return products;
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm theo danh mục:", error);
+    throw error;
+  }
+}
 
 module.exports = {
   getProducts,
@@ -200,4 +223,5 @@ module.exports = {
   addProduct,
   searchProductsByName,
   updateProduct,
+  getProductsByCategoryTree
 };

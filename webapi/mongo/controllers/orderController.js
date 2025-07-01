@@ -4,6 +4,7 @@ const orderDetailModel = require("../models/orderDetailModel");
 
 require("../models/addressModel");
 
+//Lấy tất cả đơn hàng (dành cho admin)
 async function getAllOrders() {
   try {
     return await orderModel.find().populate("user_id address_id voucher_id");
@@ -13,6 +14,7 @@ async function getAllOrders() {
   }
 }
 
+//Lấy đơn hàng theo ID
 async function getOrderById(id) {
   try {
     const order = await orderModel
@@ -88,7 +90,6 @@ async function addOrder(data) {
   }
 }
 
-
 async function deleteOrder(id) {
   try {
     const order = await orderModel.findById(id);
@@ -100,6 +101,7 @@ async function deleteOrder(id) {
   }
 }
 
+//Xác nhận đơn hàng
 async function confirmOrder(id) {
   try {
     const order = await orderModel.findById(id);
@@ -115,6 +117,7 @@ async function confirmOrder(id) {
   }
 }
 
+//Cập nhật trạng thái đơn hàng
 async function updateOrderStatus(id, status) {
   try {
     const allowed = ["confirmed", "shipped", "delivered", "cancelled"];
@@ -131,6 +134,7 @@ async function updateOrderStatus(id, status) {
   }
 }
 
+//Cập nhật thông tin thanh toán
 async function updatePayment(id, { transaction_status, transaction_code }) {
   try {
     const allowed = ["unpaid", "paid", "failed", "refunded"];
@@ -152,6 +156,7 @@ async function updatePayment(id, { transaction_status, transaction_code }) {
   }
 }
 
+//Hủy đơn hàng (người dùng hoặc admin)
 async function cancelOrder(id, isAdmin = false) {
   try {
     const order = await orderModel.findById(id);
@@ -169,6 +174,7 @@ async function cancelOrder(id, isAdmin = false) {
   }
 }
 
+//Lọc đơn hàng theo user, trạng thái, ngày
 async function filterOrders(query) {
   try {
     const { user_id, status_order, fromDate, toDate } = query;
