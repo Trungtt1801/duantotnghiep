@@ -164,7 +164,7 @@ async function resetPassword(token, newPassword) {
   }
 }
 // Tìm hoặc tạo user Google
-async function findOrCreateGoogleUser({ name, email, googleId }) {
+async function findOrCreateGoogleUser({ name, email }) {
   let user = await usersModel.findOne({ email });
 
   if (!user) {
@@ -172,6 +172,21 @@ async function findOrCreateGoogleUser({ name, email, googleId }) {
       name,
       email,
       authType: "google",
+      password: null,
+    });
+    await user.save();
+  }
+
+  return user;
+}
+async function findOrCreateFacebookUser({ name, email }) {
+  let user = await usersModel.findOne({ email });
+
+  if (!user) {
+    user = new usersModel({
+      name,
+      email,
+      authType: "facebook",
       password: null,
     });
     await user.save();
@@ -188,4 +203,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   findOrCreateGoogleUser,
+  findOrCreateFacebookUser,
 };
