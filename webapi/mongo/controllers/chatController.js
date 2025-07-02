@@ -1,5 +1,6 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Product = require("../models/productsModel");
+const Category = require("../models/categoryModel")
 require("dotenv").config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -92,5 +93,32 @@ ${productInfo}
     });
   }
 };
+const welcomeMessage = async (req, res) => {
+  try {
+    const categories = await Category.find().select("name");
 
-module.exports = { chatWithBot };
+    const categoryNames = categories.map((cat) => cat.name);
+    const categoryList = categoryNames.join(", ");
+
+    const prompt = `Bạn là trợ lý tư vấn quần áo thân thiện cho khách hàng mới truy cập website.
+Hãy chào hỏi ngắn gọn và liệt kê các danh mục sản phẩm hiện có: ${categoryList}.
+Gợi ý khách hãy nhắn tên danh mục hoặc sản phẩm mà họ quan tâm để được gợi ý.`
+
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+    const result = await model.generateContent({
+      contents: [{ parts: [{ text: prompt }] }],
+    });
+
+    const reply = result.response.text();
+
+    return res.status(200).json({ reply });
+  } catch (err) {
+    console.error("❌ Welcome AI Error:", err);
+    return res.status(500).json({
+      error: "Lỗi tạo lời chào",
+      detail: err.message || "Không rõ lỗi",
+    });
+  }
+};
+
+module.exports = { chatWithBot, welcomeMessage };
