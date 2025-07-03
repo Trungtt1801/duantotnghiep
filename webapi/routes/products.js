@@ -33,7 +33,11 @@ router.get("/", async (req, res) => {
         });
 
         return {
-          ...product._doc,
+          _id: product._id,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          category_id: product.category_id,
           images: product.images?.map((imgName) =>
             imgName.startsWith("http") ? imgName : baseUrl + imgName
           ),
@@ -42,7 +46,10 @@ router.get("/", async (req, res) => {
       })
     );
 
-    return res.status(200).json([{ status: true }, ...updatedProducts]);
+    return res.status(200).json({
+      status: true,
+      products: updatedProducts,
+    });
   } catch (error) {
     console.log(error);
     return res
@@ -50,6 +57,7 @@ router.get("/", async (req, res) => {
       .json({ status: false, message: "Lỗi lấy dữ liệu sản phẩm" });
   }
 });
+
 // http://localhost:3000/products/search?name=Áo
 router.get("/search", async (req, res) => {
   const nameKeyword = req.query.name;
