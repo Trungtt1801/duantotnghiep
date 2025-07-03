@@ -216,6 +216,34 @@ async function getProductsByCategoryTree(categoryId) {
     throw error;
   }
 }
+async function getRelatedProducts(productId) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      throw new Error("ID sản phẩm không hợp lệ");
+    }
+
+    const product = await productsModel.findById(productId);
+    if (!product) {
+      throw new Error("Không tìm thấy sản phẩm");
+    }
+
+    const categoryId = product.category_id?.categoryId;
+    if (!categoryId) {
+      throw new Error("Sản phẩm không có thông tin danh mục");
+    }
+
+    const relatedProducts = await productsModel.find({
+      "category_id.categoryId": categoryId,
+      _id: { $ne: productId },
+    })
+    .limit(12);
+
+    return relatedProducts;
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm liên quan:", error);
+    throw error;
+  }
+}
 
 module.exports = {
   getProducts,
@@ -223,5 +251,6 @@ module.exports = {
   addProduct,
   searchProductsByName,
   updateProduct,
-  getProductsByCategoryTree
+  getProductsByCategoryTree,
+  getRelatedProducts
 };
