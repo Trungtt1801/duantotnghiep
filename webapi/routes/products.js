@@ -262,6 +262,7 @@ router.get("/category/:categoryId", async (req, res) => {
       .json({ status: false, message: "Lỗi lấy sản phẩm theo danh mục" });
   }
 });
+//localhost:3000/products/related/:id
 router.get("/related/:id", async (req, res) =>{
   try {
     const related = await productController.getRelatedProducts(req.params.id);
