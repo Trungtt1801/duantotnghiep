@@ -45,11 +45,7 @@ router.get("/", async (req, res) => {
         };
       })
     );
-
-    return res.status(200).json({
-      status: true,
-      products: updatedProducts,
-    });
+    return res.status(200).json([{ status: true }, ...updatedProducts]);
   } catch (error) {
     console.log(error);
     return res
