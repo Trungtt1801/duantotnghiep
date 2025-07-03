@@ -193,6 +193,57 @@ async function updateProduct(id, data) {
     throw error;
   }
 }
+async function getProductsByCategoryTree(categoryId) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      throw new Error("ID danh mục không hợp lệ");
+    }
+    const subCategories = await categoryModel.find({ parentId: categoryId });
+
+    // Nếu có danh mục con thì lọc theo chúng, nếu không thì chỉ lọc theo chính nó
+    const categoryIds = subCategories.length
+      ? subCategories.map((cat) => cat._id)
+      : [categoryId];
+
+  
+    const products = await productsModel.find({
+      "category_id.categoryId": { $in: categoryIds },
+    });
+
+    return products;
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm theo danh mục:", error);
+    throw error;
+  }
+}
+async function getRelatedProducts(productId) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      throw new Error("ID sản phẩm không hợp lệ");
+    }
+
+    const product = await productsModel.findById(productId);
+    if (!product) {
+      throw new Error("Không tìm thấy sản phẩm");
+    }
+
+    const categoryId = product.category_id?.categoryId;
+    if (!categoryId) {
+      throw new Error("Sản phẩm không có thông tin danh mục");
+    }
+
+    const relatedProducts = await productsModel.find({
+      "category_id.categoryId": categoryId,
+      _id: { $ne: productId },
+    })
+    .limit(12);
+
+    return relatedProducts;
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm liên quan:", error);
+    throw error;
+  }
+}
 
 module.exports = {
   getProducts,
@@ -200,4 +251,6 @@ module.exports = {
   addProduct,
   searchProductsByName,
   updateProduct,
+  getProductsByCategoryTree,
+  getRelatedProducts
 };

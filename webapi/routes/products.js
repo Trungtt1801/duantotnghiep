@@ -96,7 +96,7 @@ router.get("/:id", async (req, res) => {
 
     return res.status(200).json({
       status: true,
-      product: updatedProduct,
+      ...updatedProduct,
       variants: updatedVariants,
     });
   } catch (error) {
@@ -157,9 +157,9 @@ router.post("/create", upload.array("images", 10), async (req, res) => {
       variants,
       category_id: data.category_id,
       isHidden,
-      shop_id: 1, // ✅ Thêm dòng này
+      shop_id: 1,
       description: data.description,
-      sale_count: data.sale_count || 0, // Thêm sale_count nếu có
+      sale_count: data.sale_count || 0,
     };
 
     const result = await productController.addProduct(sendData);
@@ -228,8 +228,47 @@ router.put("/update/:id", upload.array("images", 10), async (req, res) => {
     });
   }
 });
+// http://localhost:3000/products/category
+router.get("/category/:categoryId", async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+    const baseUrl = "http://localhost:3000/images/";
 
+    const products = await productController.getProductsByCategoryTree(
+      categoryId
+    );
 
+    const updatedProducts = await Promise.all(
+      products.map(async (product) => {
+        const variantsDoc = await productVariantModel.findOne({
+          product_id: product._id,
+        });
 
+        return {
+          ...product._doc,
+          images: product.images?.map((imgName) =>
+            imgName.startsWith("http") ? imgName : baseUrl + imgName
+          ),
+          variants: variantsDoc ? variantsDoc.variants : [],
+        };
+      })
+    );
 
+    return res.status(200).json([{ status: true }, ...updatedProducts]);
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm theo danh mục:", error);
+    return res
+      .status(500)
+      .json({ status: false, message: "Lỗi lấy sản phẩm theo danh mục" });
+  }
+});
+//localhost:3000/products/related/:id
+router.get("/related/:id", async (req, res) =>{
+  try {
+    const related = await productController.getRelatedProducts(req.params.id);
+    res.json(related);
+  } catch (error) {
+     res.status(500).json({ message: err.message });
+  }
+})
 module.exports = router;
