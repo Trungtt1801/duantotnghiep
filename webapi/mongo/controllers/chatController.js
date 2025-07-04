@@ -11,10 +11,10 @@ const chatWithBot = async (req, res) => {
   const messageLower = message.toLowerCase();
 
   try {
-    // ✅ Lấy toàn bộ keyword từ DB
+    //  Lấy toàn bộ keyword từ DB
     const allKeywords = await Keyword.find({});
     
-    // ✅ Tìm từ khóa có trong câu hỏi
+    // Tìm từ khóa có trong câu hỏi
     const matched = allKeywords.filter((kw) =>
       messageLower.includes(kw.word)
     );
