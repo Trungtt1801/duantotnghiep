@@ -10,7 +10,8 @@ const OrderSchema = new Schema(
       enum: ["pending", "confirmed", "shipped", " delivered", "cancelled"],
       default: "pending",
     },
-    address_id: { type: Schema.Types.ObjectId, ref: "Address" },
+    // address_id: { type: Schema.Types.ObjectId, ref: "Address" }, // REAL
+    address_id: { type: String, required: true }, // FAKE
     voucher_id: { type: Schema.Types.ObjectId, ref: "Voucher" },
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
     evaluate: String,
