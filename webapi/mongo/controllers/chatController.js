@@ -1,49 +1,33 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Product = require("../models/productsModel");
 const Category = require("../models/categoryModel");
+const Keyword = require("../models/keywordModel"); 
 require("dotenv").config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// Danh sách từ khóa
-const productKeywords = [
-  "áo phông", "áo thun", "áo sơ mi", "bộ quần áo", "quần áo thể thao",
-  "chống nắng", "đồ ngủ", "quần áo mặc tại nhà", "quần soóc", "quần short",
-  "quần dài", "quần jean", "quần áo nỉ", "áo khoác", "giữ nhiệt", "áo len",
-  "đồ lót", "tất", "vớ"
-];
-
-const generalShopQuestions = [
-  "shop bán gì", "có những sản phẩm nào", "bán gì", "bạn bán gì",
-  "danh mục sản phẩm", "có đồ gì", "bán mặt hàng nào", "có mặt hàng nào",
-  "shop có gì"
-];
-
-const shippingQuestions = [
-  "phương thức giao hàng", "giao hàng thế nào", "có ship không",
-  "vận chuyển như nào", "ship hàng", "phí vận chuyển", "giao hàng bao lâu",
-  "giao hàng trong bao lâu", "miễn phí vận chuyển", "có freeship không",
-  "ship nội địa", "ship trong thành phố"
-];
-
-const returnPolicyQuestions = [
-  "hoàn hàng", "đổi trả", "trả hàng", "đổi size", "đổi màu", "đổi sản phẩm",
-  "chính sách hoàn hàng", "chính sách đổi trả", "trả lại hàng", "đổi đồ"
-];
-const categoryKeywords = [
-  "nam", "nữ", "phụ kiện", "trẻ em", "unisex", "đồ nam", "đồ nữ", "áo nam", "áo nữ"
-];
 
 const chatWithBot = async (req, res) => {
   const { message } = req.body;
   const messageLower = message.toLowerCase();
 
   try {
-    // Những câu hỏi thường gặp từ khách hàng
-    const isGeneralShopQuestion = generalShopQuestions.some((q) =>
-      messageLower.includes(q)
+    // ✅ Lấy toàn bộ keyword từ DB
+    const allKeywords = await Keyword.find({});
+    
+    // ✅ Tìm từ khóa có trong câu hỏi
+    const matched = allKeywords.filter((kw) =>
+      messageLower.includes(kw.word)
     );
-    if (isGeneralShopQuestion) {
+
+    // Chia nhóm theo intent
+    const matchedIntent = matched.map(k => k.intent);
+    const isProduct = matchedIntent.includes("product");
+    const isShipping = matchedIntent.includes("shipping");
+    const isReturn = matchedIntent.includes("return");
+    const isGeneral = matchedIntent.includes("general");
+
+    // === 1. Câu hỏi về danh mục chung
+    if (isGeneral) {
       const categories = await Category.find().select("name");
       const categoryList = categories.map((cat) => cat.name).join(", ");
 
@@ -56,35 +40,31 @@ Hãy trả lời ngắn gọn, dễ hiểu, khuyến khích khách chọn danh m
       const result = await model.generateContent({
         contents: [{ parts: [{ text: prompt }] }],
       });
+
       const reply = result.response.text();
       return res.status(200).json({ reply });
     }
 
-    // Giao hàng và vận chuyển
-    const isShippingQuestion = shippingQuestions.some((q) =>
-      messageLower.includes(q)
-    );
-    if (isShippingQuestion) {
+    // === 2. Giao hàng
+    if (isShipping) {
       const prompt = `Khách hỏi: "${message}".
 Bạn là trợ lý thân thiện của shop quần áo.
 Chính sách giao hàng như sau:
 - Miễn phí vận chuyển **nội thành** nếu mua từ **3 sản phẩm trở lên**
 - Giao hàng **nội địa** (ngoài nội thành) có **phí ship 30.000 VNĐ**
-Hãy trả lời rõ ràng, ngắn gọn, thân thiện.`;
+Hãy trả lời rõ ràng, ngắn gọn, thân thiện, chuyên nghiệp.`;
 
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const result = await model.generateContent({
         contents: [{ parts: [{ text: prompt }] }],
       });
+
       const reply = result.response.text();
       return res.status(200).json({ reply });
     }
 
-    // về mặt đổi trả hàng
-    const isReturnPolicyQuestion = returnPolicyQuestions.some((q) =>
-      messageLower.includes(q)
-    );
-    if (isReturnPolicyQuestion) {
+    // === 3. Đổi trả
+    if (isReturn) {
       const prompt = `Khách hỏi: "${message}".
 Bạn là trợ lý tư vấn quần áo của shop.
 Chính sách đổi trả như sau:
@@ -92,25 +72,24 @@ Chính sách đổi trả như sau:
 - Áp dụng cho các sản phẩm còn nguyên tem mác, chưa qua sử dụng.
 - **Không áp dụng** cho đồ lót, đồ giảm giá hoặc hàng đã qua sử dụng.
 - Khách cần liên hệ fanpage hoặc hotline để được hỗ trợ nhanh chóng.
-Hãy trả lời thân thiện, ngắn gọn và rõ ràng.`;
+Hãy trả lời thân thiện, ngắn gọn và rõ ràng, chuyên nghiệp.`;
 
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const result = await model.generateContent({
         contents: [{ parts: [{ text: prompt }] }],
       });
+
       const reply = result.response.text();
       return res.status(200).json({ reply });
     }
 
-    // === INTENT 4: Tìm sản phẩm ===
-    const foundKeywords = productKeywords.filter((kw) =>
-      messageLower.includes(kw)
-    );
-
-    if (foundKeywords.length > 0) {
-      const orConditions = foundKeywords.map((kw) => ({
-        name: { $regex: kw, $options: "i" },
-      }));
+    // === 4. Tìm sản phẩm
+    if (isProduct) {
+      const orConditions = matched
+        .filter(k => k.intent === "product")
+        .map((kw) => ({
+          name: { $regex: kw.word, $options: "i" },
+        }));
 
       const products = await Product.find({ $or: orConditions }).limit(5);
       let productInfo = "";
@@ -119,9 +98,7 @@ Hãy trả lời thân thiện, ngắn gọn và rõ ràng.`;
         productInfo = products
           .map(
             (p) =>
-              `- ${p.name}: Giá ${p.price} VNĐ. Mô tả: ${
-                p.description || "Không có mô tả"
-              }`
+              `- ${p.name}: Giá ${p.price} VNĐ. Mô tả: ${p.description || "Không có mô tả"}`
           )
           .join("\n");
       } else {
@@ -129,7 +106,7 @@ Hãy trả lời thân thiện, ngắn gọn và rõ ràng.`;
       }
 
       const promptText = `Khách hỏi: "${message}".
-Bạn là trợ lý tư vấn quần áo thân thiện, ngắn gọn.
+Bạn là trợ lý tư vấn quần áo thân thiện, ngắn gọn, chuyên nghiệp.
 Dưới đây là thông tin sản phẩm liên quan bạn có thể tham khảo:
 ${productInfo}`;
 
@@ -142,7 +119,15 @@ ${productInfo}`;
       return res.status(200).json({ reply });
     }
 
-    // === INTENT 5: Không rõ yêu cầu ===
+    // === 5. Không rõ => tự động lưu từ mới
+    const exists = await Keyword.findOne({ word: messageLower });
+    if (!exists) {
+      await Keyword.create({
+        word: messageLower,
+        intent: "unknown", // có thể để trống, gắn intent sau
+      });
+    }
+
     return res.status(200).json({
       reply: "Bạn vui lòng cho biết rõ loại sản phẩm hoặc thông tin bạn cần nhé!",
     });
@@ -155,7 +140,7 @@ ${productInfo}`;
   }
 };
 
-// Tin nhắn chào hỏi ban đầu
+// === Lời chào ban đầu
 const welcomeMessage = async (req, res) => {
   try {
     const categories = await Category.find().select("name");
