@@ -1,179 +1,186 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Product = require("../models/productsModel");
 const Category = require("../models/categoryModel");
+const Keyword = require("../models/keywordModel");
+const ProductVariant = require("../models/productVariantModel");
 require("dotenv").config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// Danh sách từ khóa
-const productKeywords = [
-  "áo phông", "áo thun", "áo sơ mi", "bộ quần áo", "quần áo thể thao",
-  "chống nắng", "đồ ngủ", "quần áo mặc tại nhà", "quần soóc", "quần short",
-  "quần dài", "quần jean", "quần áo nỉ", "áo khoác", "giữ nhiệt", "áo len",
-  "đồ lót", "tất", "vớ"
-];
+const knownIntents = ["product", "shipping", "return", "general"];
 
-const generalShopQuestions = [
-  "shop bán gì", "có những sản phẩm nào", "bán gì", "bạn bán gì",
-  "danh mục sản phẩm", "có đồ gì", "bán mặt hàng nào", "có mặt hàng nào",
-  "shop có gì"
-];
+const detectIntentByAI = async (message) => {
+  const prompt = `
+Người dùng hỏi: "${message}"
+Phân loại câu này vào một trong các nhóm sau:
+- "product": hỏi về sản phẩm, đồ, quần áo, tìm đồ mua
+- "shipping": hỏi về giao hàng, phí ship, vận chuyển
+- "return": hỏi về đổi trả, hoàn hàng
+- "general": hỏi shop bán gì, có gì
+- "other": nếu không thuộc nhóm nào
 
-const shippingQuestions = [
-  "phương thức giao hàng", "giao hàng thế nào", "có ship không",
-  "vận chuyển như nào", "ship hàng", "phí vận chuyển", "giao hàng bao lâu",
-  "giao hàng trong bao lâu", "miễn phí vận chuyển", "có freeship không",
-  "ship nội địa", "ship trong thành phố"
-];
+Chỉ trả lời đúng 1 từ: product / shipping / return / general / other.
+  `;
 
-const returnPolicyQuestions = [
-  "hoàn hàng", "đổi trả", "trả hàng", "đổi size", "đổi màu", "đổi sản phẩm",
-  "chính sách hoàn hàng", "chính sách đổi trả", "trả lại hàng", "đổi đồ"
-];
-const categoryKeywords = [
-  "nam", "nữ", "phụ kiện", "trẻ em", "unisex", "đồ nam", "đồ nữ", "áo nam", "áo nữ"
-];
+  const result = await model.generateContent({
+    contents: [{ parts: [{ text: prompt }] }],
+  });
+
+  return result.response.text().trim().toLowerCase();
+};
 
 const chatWithBot = async (req, res) => {
   const { message } = req.body;
   const messageLower = message.toLowerCase();
 
   try {
-    // Những câu hỏi thường gặp từ khách hàng
-    const isGeneralShopQuestion = generalShopQuestions.some((q) =>
-      messageLower.includes(q)
-    );
-    if (isGeneralShopQuestion) {
+    const allKeywords = await Keyword.find({});
+    const matched = allKeywords.filter((kw) => messageLower.includes(kw.word));
+    const matchedIntent = matched.map((k) => k.intent);
+
+    const isProduct = matchedIntent.includes("product");
+    const isShipping = matchedIntent.includes("shipping");
+    const isReturn = matchedIntent.includes("return");
+    const isGeneral = matchedIntent.includes("general");
+
+    // === 1. Hỏi về danh mục
+    if (isGeneral) {
       const categories = await Category.find().select("name");
       const categoryList = categories.map((cat) => cat.name).join(", ");
+      const prompt = `
+Khách hỏi: "${message}".
+Bạn là trợ lý tư vấn sản phẩm thân thiện. Danh mục hiện có gồm: ${categoryList}.
+Viết câu trả lời ngắn gọn, tự nhiên, không sử dụng dấu sao hay Markdown.
+      `;
 
-      const prompt = `Khách hỏi: "${message}".
-Bạn là trợ lý tư vấn quần áo thân thiện.
-Các danh mục sản phẩm mà shop hiện có gồm: ${categoryList}.
-Hãy trả lời ngắn gọn, dễ hiểu, khuyến khích khách chọn danh mục hoặc hỏi thêm.`;
-
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const result = await model.generateContent({
         contents: [{ parts: [{ text: prompt }] }],
       });
-      const reply = result.response.text();
-      return res.status(200).json({ reply });
+
+      return res.status(200).json({ reply: result.response.text().trim() });
     }
 
-    // Giao hàng và vận chuyển
-    const isShippingQuestion = shippingQuestions.some((q) =>
-      messageLower.includes(q)
-    );
-    if (isShippingQuestion) {
-      const prompt = `Khách hỏi: "${message}".
-Bạn là trợ lý thân thiện của shop quần áo.
-Chính sách giao hàng như sau:
-- Miễn phí vận chuyển **nội thành** nếu mua từ **3 sản phẩm trở lên**
-- Giao hàng **nội địa** (ngoài nội thành) có **phí ship 30.000 VNĐ**
-Hãy trả lời rõ ràng, ngắn gọn, thân thiện.`;
+    // === 2. Hỏi về giao hàng
+    if (isShipping) {
+      const prompt = `
+Khách hỏi: "${message}".
+Chính sách giao hàng: miễn phí nội thành nếu mua từ 3 sản phẩm trở lên. Ngoại thành tính phí 30.000 VNĐ.
+Viết câu trả lời rõ ràng, thân thiện, không dùng định dạng Markdown.
+      `;
 
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const result = await model.generateContent({
         contents: [{ parts: [{ text: prompt }] }],
       });
-      const reply = result.response.text();
-      return res.status(200).json({ reply });
+
+      return res.status(200).json({ reply: result.response.text().trim() });
     }
 
-    // về mặt đổi trả hàng
-    const isReturnPolicyQuestion = returnPolicyQuestions.some((q) =>
-      messageLower.includes(q)
-    );
-    if (isReturnPolicyQuestion) {
-      const prompt = `Khách hỏi: "${message}".
-Bạn là trợ lý tư vấn quần áo của shop.
-Chính sách đổi trả như sau:
-- Shop **hỗ trợ đổi trả trong vòng 7 ngày** kể từ khi nhận hàng.
-- Áp dụng cho các sản phẩm còn nguyên tem mác, chưa qua sử dụng.
-- **Không áp dụng** cho đồ lót, đồ giảm giá hoặc hàng đã qua sử dụng.
-- Khách cần liên hệ fanpage hoặc hotline để được hỗ trợ nhanh chóng.
-Hãy trả lời thân thiện, ngắn gọn và rõ ràng.`;
+    // === 3. Hỏi về đổi trả
+    if (isReturn) {
+      const prompt = `
+Khách hỏi: "${message}".
+Chính sách đổi trả: hỗ trợ trong 7 ngày nếu sản phẩm còn tem mác, chưa sử dụng. Không áp dụng với đồ lót hoặc hàng giảm giá.
+Viết câu trả lời thân thiện, dễ hiểu, không dùng dấu ** hoặc đặc biệt.
+      `;
 
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const result = await model.generateContent({
         contents: [{ parts: [{ text: prompt }] }],
       });
-      const reply = result.response.text();
-      return res.status(200).json({ reply });
+
+      return res.status(200).json({ reply: result.response.text().trim() });
     }
 
-    // === INTENT 4: Tìm sản phẩm ===
-    const foundKeywords = productKeywords.filter((kw) =>
-      messageLower.includes(kw)
-    );
-
-    if (foundKeywords.length > 0) {
-      const orConditions = foundKeywords.map((kw) => ({
-        name: { $regex: kw, $options: "i" },
-      }));
+    // === 4. Hỏi về sản phẩm
+    if (isProduct) {
+      const orConditions = matched
+        .filter((k) => k.intent === "product")
+        .map((kw) => ({ name: { $regex: kw.word, $options: "i" } }));
 
       const products = await Product.find({ $or: orConditions }).limit(5);
       let productInfo = "";
 
-      if (products.length > 0) {
-        productInfo = products
-          .map(
-            (p) =>
-              `- ${p.name}: Giá ${p.price} VNĐ. Mô tả: ${
-                p.description || "Không có mô tả"
-              }`
-          )
-          .join("\n");
-      } else {
-        productInfo = "Hiện tại không tìm thấy sản phẩm phù hợp.";
+      for (const product of products) {
+        const productVariants = await ProductVariant.findOne({
+          product_id: product._id,
+        });
+        let variantInfo = "";
+
+        if (productVariants) {
+          for (const v of productVariants.variants) {
+            const sizes = v.sizes
+              .map((s) => `${s.size} (${s.quantity} cái)`)
+              .join(", ");
+            variantInfo += `- Màu: ${v.color}, Size: ${sizes}\n`;
+          }
+        }
+
+        productInfo += `
+${product.name}
+Giá: ${product.price.toLocaleString()} VNĐ
+${product.description || ""}
+${variantInfo}
+`;
       }
 
-      const promptText = `Khách hỏi: "${message}".
-Bạn là trợ lý tư vấn quần áo thân thiện, ngắn gọn.
-Dưới đây là thông tin sản phẩm liên quan bạn có thể tham khảo:
-${productInfo}`;
+      const prompt = `
+Khách hỏi: "${message}".
+Dưới đây là các sản phẩm gợi ý:
 
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+${productInfo || "Hiện tại không tìm thấy sản phẩm phù hợp."}
+
+Viết lại câu trả lời thân thiện, rõ ràng, KHÔNG dùng định dạng Markdown (không dùng dấu ** hay *). Trình bày như đang nhắn tin cho khách.
+      `;
+
       const result = await model.generateContent({
-        contents: [{ parts: [{ text: promptText }] }],
+        contents: [{ parts: [{ text: prompt }] }],
       });
 
-      const reply = result.response.text();
-      return res.status(200).json({ reply });
+      return res.status(200).json({ reply: result.response.text().trim() });
     }
 
-    // === INTENT 5: Không rõ yêu cầu ===
+    // === 5. Không xác định => học từ mới
+    const existing = await Keyword.findOne({ word: messageLower });
+    if (!existing) {
+      const aiIntent = await detectIntentByAI(messageLower);
+      const intent = knownIntents.includes(aiIntent) ? aiIntent : "unknown";
+
+      await Keyword.create({ word: messageLower, intent });
+      console.log(
+        `🧠 Bot học từ mới: "${messageLower}" với intent "${intent}"`
+      );
+    }
+
     return res.status(200).json({
-      reply: "Bạn vui lòng cho biết rõ loại sản phẩm hoặc thông tin bạn cần nhé!",
+      reply:
+        "Bạn vui lòng cho biết rõ loại sản phẩm hoặc thông tin bạn cần nhé!",
     });
   } catch (err) {
-    console.error("❌ Gemini API Error:", err);
+    console.error("❌ ChatBot Error:", err);
     return res.status(500).json({
-      error: "Lỗi khi gọi AI",
+      error: "Lỗi xử lý yêu cầu",
       detail: err.message || "Không rõ lỗi",
     });
   }
 };
 
-// Tin nhắn chào hỏi ban đầu
+// === Chào ban đầu
 const welcomeMessage = async (req, res) => {
   try {
     const categories = await Category.find().select("name");
     const categoryList = categories.map((cat) => cat.name).join(", ");
+    const prompt = `
+Bạn là trợ lý bán hàng của shop quần áo. Hãy chào hỏi thân thiện khách mới và giới thiệu các danh mục hiện có gồm: ${categoryList}.
+Viết câu trả lời tự nhiên, KHÔNG dùng định dạng Markdown (** hoặc *).
+    `;
 
-    const prompt = `Bạn là trợ lý tư vấn quần áo thân thiện cho khách hàng mới truy cập website.
-Hãy chào hỏi ngắn gọn và liệt kê các danh mục sản phẩm hiện có: ${categoryList}.
-Gợi ý khách hãy nhắn tên danh mục hoặc sản phẩm mà họ quan tâm để được gợi ý.`;
-
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent({
       contents: [{ parts: [{ text: prompt }] }],
     });
 
-    const reply = result.response.text();
-    return res.status(200).json({ reply });
+    return res.status(200).json({ reply: result.response.text().trim() });
   } catch (err) {
-    console.error("❌ Welcome AI Error:", err);
+    console.error("❌ Welcome Error:", err);
     return res.status(500).json({
       error: "Lỗi tạo lời chào",
       detail: err.message || "Không rõ lỗi",
