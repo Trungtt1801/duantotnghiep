@@ -8,8 +8,8 @@ const nodemailer = require("nodemailer");
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER || "fiyo.ecommerce@gmail.com",
-    pass: process.env.EMAIL_PASS || "euhbwzoryoarlcdp",
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
@@ -110,7 +110,6 @@ async function sendResetPasswordEmail(email, resetLink) {
   }
 }
 
-
 async function forgotPassword(email) {
   try {
     console.log("Email nhận được trong forgotPassword:", email);
@@ -122,6 +121,23 @@ async function forgotPassword(email) {
       throw new Error("Email chưa được đăng ký!");
     }
 
+    const today = new Date();
+    const isSameDay =
+      user.resetPasswordDate &&
+      new Date(user.resetPasswordDate).toDateString() === today.toDateString();
+
+    if (isSameDay && user.resetPasswordCount >= 5) {
+      throw new Error(
+        "Bạn đã yêu cầu quá số lần cho phép trong ngày (5 lần). Vui lòng thử lại vào ngày mai."
+      );
+    }
+
+    // Nếu khác ngày thì reset lại bộ đếm
+    if (!isSameDay) {
+      user.resetPasswordCount = 0;
+      user.resetPasswordDate = today;
+    }
+    // Tạo token reset
     const jwtSecret = process.env.PRIVATE_KEY || "defaultSecretKey";
     const token = jwt.sign({ userId: user._id }, jwtSecret, {
       expiresIn: "15m",
@@ -129,7 +145,13 @@ async function forgotPassword(email) {
 
     const resetLink = `http://localhost:3001/reset-password/${token}`;
 
+    // Gửi email
     await sendResetPasswordEmail(email, resetLink);
+
+    // Tăng số lần gửi
+    user.resetPasswordCount += 1;
+    user.resetPasswordDate = today;
+    await user.save();
 
     return "Email đặt lại mật khẩu đã được gửi.";
   } catch (error) {
