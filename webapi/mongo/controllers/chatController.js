@@ -10,7 +10,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const knownIntents = ["product", "shipping", "return", "general"];
 
-const detectIntentByAI = async (message) => {
+const detectIntentByAI = async (message) => { 
   const prompt = `
 Người dùng hỏi: "${message}"
 Phân loại câu này vào một trong các nhóm sau:
