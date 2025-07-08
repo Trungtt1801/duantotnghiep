@@ -1,5 +1,6 @@
 const orderModel = require("../models/orderModel");
-const  createZaloPayOrder  = require("../untils/zalopay");
+const createZaloPayOrder = require("../untils/zalopay");
+const { createVnpayPayment } = require("../untils/vnpay");
 const orderDetailModel = require("../models/orderDetailModel");
 
 require("../models/addressModel");
@@ -28,66 +29,72 @@ async function getOrderById(id) {
   }
 }
 
-
-
 async function addOrder(data) {
-  try {
-    const {
-      user_id,
-      address_id,
-      voucher_id,
-      total_price,
-      payment_method,
-      products // Mảng [{ productdetail_id, quantity }]
-    } = data;
+  const {
+    user_id,
+    address_id,
+    voucher_id,
+    total_price,
+    payment_method,
+    products, // [{ productdetail_id, quantity }]
+  } = data;
 
-    if (!user_id || !total_price || !payment_method || !products || products.length === 0) {
-      throw new Error("Thiếu thông tin bắt buộc hoặc thiếu sản phẩm");
-    }
-
-    // ZaloPay
-    let transaction_code = null;
-    let transaction_status = "unpaid";
-
-    if (payment_method.toLowerCase() === "zalopay") {
-      const zaloRes = await createZaloPayOrder(total_price, user_id);
-      transaction_code = zaloRes.app_trans_id;
-      transaction_status = "unpaid";
-    }
-
-    // Tạo đơn hàng
-    const newOrder = new orderModel({
-      user_id,
-      address_id,
-      voucher_id,
-      total_price,
-      payment_method,
-      transaction_code,
-      transaction_status,
-    });
-
-    const savedOrder = await newOrder.save();
-
-    // ✅ Tạo order detail
-    const orderDetails = products.map((item) => {
-      return new orderDetailModel({
-        order_id: savedOrder._id,
-        productdetail_id: item.productdetail_id,
-        quantity: item.quantity,
-      });
-    });
-
-    await orderDetailModel.insertMany(orderDetails); 
-
-    return {
-      status: true,
-      message: "Tạo đơn hàng và chi tiết thành công",
-      order: savedOrder,
-    };
-  } catch (error) {
-    console.error("Lỗi khi thêm đơn hàng:", error.message);
-    throw new Error(error.message || "Lỗi khi tạo đơn hàng");
+  if (
+    !user_id ||
+    !total_price ||
+    !payment_method ||
+    !products ||
+    products.length === 0
+  ) {
+    throw new Error("Thiếu thông tin bắt buộc hoặc thiếu sản phẩm");
   }
+
+  let transaction_code = null;
+  let transaction_status = "unpaid";
+  let payment_url = null;
+
+  // ZaloPay
+  if (payment_method.toLowerCase() === "zalopay") {
+    const zaloRes = await createZaloPayOrder(total_price, user_id);
+    transaction_code = zaloRes.app_trans_id;
+    payment_url = zaloRes.order_url;
+  }
+
+  // VNPAY
+  if (payment_method.toLowerCase() === "vnpay") {
+  const ip = data.ip || "127.0.0.1"; 
+  const vnpayRes = await createVnpayPayment(total_price, user_id, ip);
+  transaction_code = vnpayRes.transaction_code;
+  payment_url = vnpayRes.payment_url;
+}
+
+
+  const newOrder = new orderModel({
+    user_id,
+    address_id,
+    voucher_id,
+    total_price,
+    payment_method,
+    transaction_code,
+    transaction_status,
+  });
+
+  const savedOrder = await newOrder.save();
+
+  const orderDetails = products.map((item) => ({
+    order_id: savedOrder._id,
+    productdetail_id: item.productdetail_id,
+    quantity: item.quantity,
+  }));
+
+  await orderDetailModel.insertMany(orderDetails);
+
+  return {
+    status: true,
+    message: "Tạo đơn hàng và chi tiết thành công",
+    order: savedOrder,
+    payment_url,
+  };
 }
 
 async function deleteOrder(id) {
@@ -249,6 +256,34 @@ async function zaloCallback(data) {
     return { return_code: -1, return_message: "Lỗi callback" };
   }
 }
+async function vnpayCallback(query) {
+  const vnp_Params = { ...query };
+  const secureHash = vnp_Params["vnp_SecureHash"];
+  delete vnp_Params["vnp_SecureHash"];
+  delete vnp_Params["vnp_SecureHashType"];
+
+  const qs = require("qs");
+  const crypto = require("crypto");
+  const signData = qs.stringify(vnp_Params, { encode: false });
+  const signed = crypto
+    .createHmac("sha512", process.env.VNP_HASH_SECRET)
+    .update(Buffer.from(signData, "utf-8"))
+    .digest("hex");
+
+  if (secureHash !== signed) throw new Error("Sai checksum");
+
+  const order = await orderModel.findOne({
+    transaction_code: vnp_Params["vnp_TxnRef"],
+  });
+  if (!order) throw new Error("Không tìm thấy đơn hàng");
+
+  order.transaction_status =
+    vnp_Params["vnp_ResponseCode"] === "00" ? "paid" : "failed";
+  if (vnp_Params["vnp_ResponseCode"] === "00") order.status_order = "confirmed";
+
+  await order.save();
+  return { status: true };
+}
 
 module.exports = {
   getAllOrders,
@@ -262,4 +297,5 @@ module.exports = {
   filterOrders,
   createOrderWithZaloPay,
   zaloCallback,
+  vnpayCallback,
 };
