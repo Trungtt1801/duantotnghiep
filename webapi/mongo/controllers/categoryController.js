@@ -50,7 +50,6 @@ async function updateCate(id, data) {
 
         category.name = name || category.name;
         category.slug = slug || category.slug;
-        category.type = type || category.type;
 
         if (parentId !== undefined) {
             category.parentId = parentId;
