@@ -116,6 +116,17 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+router.get("/:parentSlug/:childSlug", async (req, res) => {
+  const { parentSlug, childSlug } = req.params;
+
+  try {
+    const category = await categoryController.getCategoryByParentAndChildSlug(parentSlug, childSlug);
+    res.json(category);
+  } catch (err) {
+    res.status(404).json({ message: err.message });
+  }
+});
+
 
 
 module.exports = router;

@@ -98,14 +98,42 @@ async function getParentCategories() {
     throw new Error("Lỗi khi lấy danh mục cha");
   }
 }
+async function getCategoryByParentAndChildSlug(parentSlug, childSlug) {
+  try {
+    // Tìm danh mục cha
+    const parent = await categoriesModel.findOne({ slug: parentSlug, parentId: null });
+    if (!parent) throw new Error("Không tìm thấy danh mục cha");
+
+    // Tìm danh mục con có slug tương ứng và parentId là danh mục cha
+    const child = await categoriesModel.findOne({ slug: childSlug, parentId: parent._id });
+    if (!child) throw new Error("Không tìm thấy danh mục con");
+
+    // Trả về thông tin danh mục con
+    return {
+      id: child._id,
+      name: child.name,
+      slug: child.slug,
+      parent: {
+        id: parent._id,
+        name: parent.name,
+        slug: parent.slug,
+      },
+    };
+  } catch (error) {
+    console.error("Lỗi khi lấy danh mục con theo slug cha và con:", error.message);
+    throw new Error("Lỗi khi lấy danh mục con theo slug cha và con");
+  }
+}
 
 
 module.exports = {
+  getCategoryByParentAndChildSlug,
   getAllCate,
   getCateById,
   addCate,
   updateCate,
   deleteCate,
   getSubCategories,
-  getParentCategories
+  getParentCategories,
+ 
 };

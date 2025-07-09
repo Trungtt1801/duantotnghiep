@@ -75,6 +75,7 @@ router.post("/forgot-password", async (req, res) => {
 });
 
 // Đặt lại mật khẩu
+
 router.post("/reset-password", async (req, res) => {
   try {
     const { token, newPassword } = req.body;
