@@ -62,12 +62,11 @@ async function addOrder(data) {
 
   // VNPAY
   if (payment_method.toLowerCase() === "vnpay") {
-  const ip = data.ip || "127.0.0.1"; 
-  const vnpayRes = await createVnpayPayment(total_price, user_id, ip);
-  transaction_code = vnpayRes.transaction_code;
-  payment_url = vnpayRes.payment_url;
-}
-
+    const ip = data.ip || "127.0.0.1";
+    const vnpayRes = await createVnpayPayment(total_price, user_id, ip);
+    transaction_code = vnpayRes.transaction_code;
+    payment_url = vnpayRes.payment_url;
+  }
 
   const newOrder = new orderModel({
     user_id,
@@ -245,6 +244,7 @@ async function zaloCallback(data) {
     if (status == 1) {
       order.transaction_status = "paid";
       order.status_order = "confirmed";
+      await updateUserPoint(order.user_id, order.total_price); // ✅ cộng điểm ở đây
     } else {
       order.transaction_status = "failed";
     }
@@ -279,10 +279,32 @@ async function vnpayCallback(query) {
 
   order.transaction_status =
     vnp_Params["vnp_ResponseCode"] === "00" ? "paid" : "failed";
-  if (vnp_Params["vnp_ResponseCode"] === "00") order.status_order = "confirmed";
+  if (vnp_Params["vnp_ResponseCode"] === "00") {
+    order.status_order = "confirmed";
+    await updateUserPoint(order.user_id, order.total_price); // ✅ cộng điểm sau thanh toán
+  }
 
   await order.save();
   return { status: true };
+}
+function getRankByPoint(point) {
+  if (point >= 10000) return "platinum";
+  if (point >= 5000) return "gold";
+  if (point >= 2000) return "silver";
+  return "bronze";
+}
+
+// 🎯 Cập nhật điểm và rank cho user
+async function updateUserPoint(userId, amount) {
+  const user = await User.findById(userId);
+  if (!user) return;
+
+  const newPoint = (user.point || 0) + amount;
+  const newRank = getRankByPoint(newPoint);
+
+  user.point = newPoint;
+  user.rank = newRank;
+  await user.save();
 }
 
 module.exports = {
@@ -298,4 +320,5 @@ module.exports = {
   createOrderWithZaloPay,
   zaloCallback,
   vnpayCallback,
+  updateUserPoint,
 };

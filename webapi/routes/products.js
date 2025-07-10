@@ -65,6 +65,26 @@ router.get("/search", async (req, res) => {
     res.status(500).json({ message: "Lỗi server khi tìm kiếm sản phẩm." });
   }
 });
+// http://localhost:3000/filter
+// vidu http://localhost:3000/products/filter?size=M
+router.get("/filter", async (req, res) => {
+  try {
+    const result = await productController.filterProducts(req.query);
+
+    return res.status(200).json({
+      status: true,
+      message: "Lọc sản phẩm thành công",
+      data: result,
+    });
+  } catch (error) {
+    console.error(" ỗi khi lọc sản phẩm:", error.message);
+    return res.status(500).json({
+      status: false,
+      message: "Lỗi server khi lọc sản phẩm",
+      error: error.message,
+    });
+  }
+});
 //http://localhost:3000/products/:id
 
 router.get("/:id", async (req, res) => {
@@ -267,12 +287,13 @@ router.get("/category/:categoryId", async (req, res) => {
   }
 });
 //localhost:3000/products/related/:id
-router.get("/related/:id", async (req, res) =>{
+router.get("/related/:id", async (req, res) => {
   try {
     const related = await productController.getRelatedProducts(req.params.id);
     res.json(related);
   } catch (error) {
-     res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message });
   }
-})
+});
+
 module.exports = router;
