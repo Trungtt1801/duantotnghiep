@@ -273,6 +273,84 @@ async function getRelatedProducts(productId) {
   }
 }
 
+async function filterProducts(query) {
+  try {
+    const {
+      sort, // price_asc | price_desc | newest
+      minPrice,
+      maxPrice,
+      size,
+      color,
+    } = query;
+
+    const filter = { isHidden: false };
+
+    // Lọc theo khoảng giá
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = parseFloat(minPrice);
+      if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
+    }
+
+    // Lấy danh sách sản phẩm ban đầu
+    let products = await productsModel.find(filter).lean();
+
+    // Lọc theo size/color nếu có
+    if (size || color) {
+      const productIds = products.map((p) => p._id);
+      const variants = await productVariantModel
+        .find({
+          product_id: { $in: productIds },
+        })
+        .lean();
+
+      const matchedIds = new Set();
+
+      variants.forEach((variant) => {
+        variant.variants.forEach((v) => {
+          const matchColor = !color || v.color === color;
+          const matchSize = !size || v.sizes.some((s) => s.size === size);
+          if (matchColor && matchSize) {
+            matchedIds.add(variant.product_id.toString());
+          }
+        });
+      });
+
+      products = products.filter((p) => matchedIds.has(p._id.toString()));
+    }
+
+    // Sắp xếp
+    switch (sort) {
+      case "newest":
+        products.sort((a, b) => new Date(b.create_at) - new Date(a.create_at));
+        break;
+      case "price_asc":
+        products.sort((a, b) => a.price - b.price);
+        break;
+      case "price_desc":
+        products.sort((a, b) => b.price - a.price);
+        break;
+    }
+    const baseUrl = "http://localhost:3000/images/";
+
+    products = products.map((product) => {
+      const updated = { ...product };
+
+      if (Array.isArray(updated.images)) {
+        updated.images = updated.images.map((img) =>
+          img.startsWith("http") ? img : baseUrl + img
+        );
+      }
+
+      return updated;
+    });
+
+    return products;
+  } catch (error) {
+    console.error("Lỗi filterProducts:", error);
+    throw error;
+  }
+}
 module.exports = {
   getProducts,
   getProductById,
@@ -281,4 +359,5 @@ module.exports = {
   updateProduct,
   getProductsByCategoryTree,
   getRelatedProducts,
+  filterProducts,
 };
