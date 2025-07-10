@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const formatDateVN = require("../untils/formDate");
+
 const userSchema = new Schema(
   {
     name: { type: String, required: true },
@@ -22,9 +23,17 @@ const userSchema = new Schema(
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpires: { type: Date },
 
-    // ✅ Thêm 2 trường mới:
+    // ✅ Trường mới
     resetPasswordCount: { type: Number, default: 0 },
     resetPasswordDate: { type: Date },
+
+    // ✅ Thêm 2 trường phục vụ tích điểm
+    point: { type: Number, default: 0 },
+    rank: {
+      type: String,
+      enum: ['bronze', 'silver', 'gold', 'platinum'],
+      default: 'bronze',
+    },
   },
   { timestamps: true }
 );
