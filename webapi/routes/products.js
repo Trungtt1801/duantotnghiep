@@ -266,7 +266,7 @@ router.put("/update/:id", upload.array("images", 10), async (req, res) => {
     });
   }
 });
-// http://localhost:3000/products/category
+// http://localhost:3000/products/category/:categoryId
 router.get("/category/:categoryId", async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
