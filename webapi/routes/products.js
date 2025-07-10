@@ -42,6 +42,7 @@ router.get("/", async (req, res) => {
             imgName.startsWith("http") ? imgName : baseUrl + imgName
           ),
           variants: variantsDoc ? variantsDoc.variants : [],
+          isHidden: product.isHidden,
         };
       })
     );
