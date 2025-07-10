@@ -276,32 +276,48 @@ async function getRelatedProducts(productId) {
 async function filterProducts(query) {
   try {
     const {
-      sort, // price_asc | price_desc | newest
+      sort,       // price_asc | price_desc | newest
       minPrice,
       maxPrice,
+      price,      // Giá cụ thể muốn tìm gần đúng
       size,
       color,
+      categoryId  
     } = query;
 
     const filter = { isHidden: false };
 
-    // Lọc theo khoảng giá
+    // lọc theo categoryId (danh mục cha)
+    if (categoryId && mongoose.Types.ObjectId.isValid(categoryId)) {
+      filter.category = new mongoose.Types.ObjectId(categoryId);
+    }
+
+    // Trường hợp người dùng nhập giá cụ thể => tìm giá gần đúng trong khoảng ±100k
+    if (price && !minPrice && !maxPrice) {
+      const targetPrice = parseFloat(price);
+      const range = 100000; // biên độ giá linh hoạt
+
+      filter.price = {
+        $gte: targetPrice - range,
+        $lte: targetPrice + range,
+      };
+    }
+
+    // Trường hợp nhập minPrice / maxPrice
     if (minPrice || maxPrice) {
-      filter.price = {};
+      filter.price = filter.price || {};
       if (minPrice) filter.price.$gte = parseFloat(minPrice);
       if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
     }
 
-    // Lấy danh sách sản phẩm ban đầu
+    // Lấy danh sách sản phẩm thỏa điều kiện ban đầu
     let products = await productsModel.find(filter).lean();
 
-    // Lọc theo size/color nếu có
+    // Lọc theo size và color thông qua bảng variant
     if (size || color) {
       const productIds = products.map((p) => p._id);
       const variants = await productVariantModel
-        .find({
-          product_id: { $in: productIds },
-        })
+        .find({ product_id: { $in: productIds } })
         .lean();
 
       const matchedIds = new Set();
@@ -319,29 +335,35 @@ async function filterProducts(query) {
       products = products.filter((p) => matchedIds.has(p._id.toString()));
     }
 
-    // Sắp xếp
-    switch (sort) {
-      case "newest":
-        products.sort((a, b) => new Date(b.create_at) - new Date(a.create_at));
-        break;
-      case "price_asc":
-        products.sort((a, b) => a.price - b.price);
-        break;
-      case "price_desc":
-        products.sort((a, b) => b.price - a.price);
-        break;
+    // Nếu có 'price' cụ thể => sắp xếp theo độ gần với giá
+    if (price) {
+      const target = parseFloat(price);
+      products.sort((a, b) =>
+        Math.abs(a.price - target) - Math.abs(b.price - target)
+      );
+    } else {
+      switch (sort) {
+        case "newest":
+          products.sort((a, b) => new Date(b.create_at) - new Date(a.create_at));
+          break;
+        case "price_asc":
+          products.sort((a, b) => a.price - b.price);
+          break;
+        case "price_desc":
+          products.sort((a, b) => b.price - a.price);
+          break;
+      }
     }
-    const baseUrl = "http://localhost:3000/images/";
 
+    // Cập nhật đường dẫn ảnh
+    const baseUrl = "http://localhost:3000/images/";
     products = products.map((product) => {
       const updated = { ...product };
-
       if (Array.isArray(updated.images)) {
         updated.images = updated.images.map((img) =>
           img.startsWith("http") ? img : baseUrl + img
         );
       }
-
       return updated;
     });
 
@@ -351,6 +373,8 @@ async function filterProducts(query) {
     throw error;
   }
 }
+
+
 module.exports = {
   getProducts,
   getProductById,

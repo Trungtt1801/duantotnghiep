@@ -2,6 +2,7 @@ const orderModel = require("../models/orderModel");
 const createZaloPayOrder = require("../untils/zalopay");
 const { createVnpayPayment } = require("../untils/vnpay");
 const orderDetailModel = require("../models/orderDetailModel");
+const userModels = require("../models/userModels");
 
 require("../models/addressModel");
 
@@ -294,9 +295,8 @@ function getRankByPoint(point) {
   return "bronze";
 }
 
-// 🎯 Cập nhật điểm và rank cho user
 async function updateUserPoint(userId, amount) {
-  const user = await User.findById(userId);
+  const user = await userModels.findById(userId);
   if (!user) return;
 
   const newPoint = (user.point || 0) + amount;
