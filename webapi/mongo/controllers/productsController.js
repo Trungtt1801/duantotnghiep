@@ -273,7 +273,7 @@ async function getRelatedProducts(productId) {
   }
 }
 
-async function filterProducts(query) {
+async function filterFromList(productList, query) {
   try {
     const {
       sort,       // price_asc | price_desc | newest
@@ -282,64 +282,45 @@ async function filterProducts(query) {
       price,      // Giá cụ thể muốn tìm gần đúng
       size,
       color,
-      categoryId  
     } = query;
 
-    const filter = { isHidden: false };
+    let products = [...productList]; // clone để không ảnh hưởng list gốc
 
-    // lọc theo categoryId (danh mục cha)
-    if (categoryId && mongoose.Types.ObjectId.isValid(categoryId)) {
-      filter.category = new mongoose.Types.ObjectId(categoryId);
-    }
-
-    // Trường hợp người dùng nhập giá cụ thể => tìm giá gần đúng trong khoảng ±100k
+    // Lọc theo khoảng ±100k nếu có 'price'
     if (price && !minPrice && !maxPrice) {
-      const targetPrice = parseFloat(price);
-      const range = 100000; // biên độ giá linh hoạt
-
-      filter.price = {
-        $gte: targetPrice - range,
-        $lte: targetPrice + range,
-      };
+      const target = parseFloat(price);
+      const range = 100000;
+      products = products.filter(
+        (p) => p.price >= target - range && p.price <= target + range
+      );
     }
 
-    // Trường hợp nhập minPrice / maxPrice
+    // Lọc theo khoảng giá min/max
     if (minPrice || maxPrice) {
-      filter.price = filter.price || {};
-      if (minPrice) filter.price.$gte = parseFloat(minPrice);
-      if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
+      products = products.filter((p) => {
+        if (minPrice && p.price < parseFloat(minPrice)) return false;
+        if (maxPrice && p.price > parseFloat(maxPrice)) return false;
+        return true;
+      });
     }
 
-    // Lấy danh sách sản phẩm thỏa điều kiện ban đầu
-    let products = await productsModel.find(filter).lean();
-
-    // Lọc theo size và color thông qua bảng variant
+    // Lọc theo size / color trong biến thể (variants)
     if (size || color) {
-      const productIds = products.map((p) => p._id);
-      const variants = await productVariantModel
-        .find({ product_id: { $in: productIds } })
-        .lean();
-
-      const matchedIds = new Set();
-
-      variants.forEach((variant) => {
-        variant.variants.forEach((v) => {
-          const matchColor = !color || v.color === color;
-          const matchSize = !size || v.sizes.some((s) => s.size === size);
-          if (matchColor && matchSize) {
-            matchedIds.add(variant.product_id.toString());
-          }
+      products = products.filter((product) => {
+        if (!product.variants) return false;
+        return product.variants.some((variant) => {
+          const matchColor = !color || variant.color === color;
+          const matchSize = !size || variant.sizes?.some((s) => s.size === size);
+          return matchColor && matchSize;
         });
       });
-
-      products = products.filter((p) => matchedIds.has(p._id.toString()));
     }
 
-    // Nếu có 'price' cụ thể => sắp xếp theo độ gần với giá
+    // Sắp xếp
     if (price) {
       const target = parseFloat(price);
-      products.sort((a, b) =>
-        Math.abs(a.price - target) - Math.abs(b.price - target)
+      products.sort(
+        (a, b) => Math.abs(a.price - target) - Math.abs(b.price - target)
       );
     } else {
       switch (sort) {
@@ -355,7 +336,7 @@ async function filterProducts(query) {
       }
     }
 
-    // Cập nhật đường dẫn ảnh
+    // Gắn base URL cho ảnh
     const baseUrl = "http://localhost:3000/images/";
     products = products.map((product) => {
       const updated = { ...product };
@@ -369,10 +350,11 @@ async function filterProducts(query) {
 
     return products;
   } catch (error) {
-    console.error("Lỗi filterProducts:", error);
+    console.error("Lỗi filterFromList:", error);
     throw error;
   }
 }
+
 
 
 module.exports = {
@@ -383,5 +365,5 @@ module.exports = {
   updateProduct,
   getProductsByCategoryTree,
   getRelatedProducts,
-  filterProducts,
+  filterFromList,
 };
