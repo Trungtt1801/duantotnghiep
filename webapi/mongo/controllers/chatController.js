@@ -1,0 +1,191 @@
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Product = require("../models/productsModel");
+const Category = require("../models/categoryModel");
+const Keyword = require("../models/keywordModel");
+const ProductVariant = require("../models/productVariantModel");
+require("dotenv").config();
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+const knownIntents = ["product", "shipping", "return", "general"];
+
+const detectIntentByAI = async (message) => { 
+  const prompt = `
+Người dùng hỏi: "${message}"
+Phân loại câu này vào một trong các nhóm sau:
+- "product": hỏi về sản phẩm, đồ, quần áo, tìm đồ mua
+- "shipping": hỏi về giao hàng, phí ship, vận chuyển
+- "return": hỏi về đổi trả, hoàn hàng
+- "general": hỏi shop bán gì, có gì
+- "other": nếu không thuộc nhóm nào
+
+Chỉ trả lời đúng 1 từ: product / shipping / return / general / other.
+  `;
+
+  const result = await model.generateContent({
+    contents: [{ parts: [{ text: prompt }] }],
+  });
+
+  return result.response.text().trim().toLowerCase();
+};
+
+const chatWithBot = async (req, res) => {
+  const { message } = req.body;
+  const messageLower = message.toLowerCase();
+
+  try {
+    const allKeywords = await Keyword.find({});
+    const matched = allKeywords.filter((kw) => messageLower.includes(kw.word));
+    const matchedIntent = matched.map((k) => k.intent);
+
+    const isProduct = matchedIntent.includes("product");
+    const isShipping = matchedIntent.includes("shipping");
+    const isReturn = matchedIntent.includes("return");
+    const isGeneral = matchedIntent.includes("general");
+
+    // === 1. Hỏi về danh mục
+    if (isGeneral) {
+      const categories = await Category.find().select("name");
+      const categoryList = categories.map((cat) => cat.name).join(", ");
+      const prompt = `
+Khách hỏi: "${message}".
+Bạn là trợ lý tư vấn sản phẩm thân thiện. Danh mục hiện có gồm: ${categoryList}.
+Viết câu trả lời ngắn gọn, tự nhiên, không sử dụng dấu sao hay Markdown.
+      `;
+
+      const result = await model.generateContent({
+        contents: [{ parts: [{ text: prompt }] }],
+      });
+
+      return res.status(200).json({ reply: result.response.text().trim() });
+    }
+
+    // === 2. Hỏi về giao hàng
+    if (isShipping) {
+      const prompt = `
+Khách hỏi: "${message}".
+Chính sách giao hàng: miễn phí nội thành nếu mua từ 3 sản phẩm trở lên. Ngoại thành tính phí 30.000 VNĐ.
+Viết câu trả lời rõ ràng, thân thiện, không dùng định dạng Markdown.
+      `;
+
+      const result = await model.generateContent({
+        contents: [{ parts: [{ text: prompt }] }],
+      });
+
+      return res.status(200).json({ reply: result.response.text().trim() });
+    }
+
+    // === 3. Hỏi về đổi trả
+    if (isReturn) {
+      const prompt = `
+Khách hỏi: "${message}".
+Chính sách đổi trả: hỗ trợ trong 7 ngày nếu sản phẩm còn tem mác, chưa sử dụng. Không áp dụng với đồ lót hoặc hàng giảm giá.
+Viết câu trả lời thân thiện, dễ hiểu, không dùng dấu ** hoặc đặc biệt.
+      `;
+
+      const result = await model.generateContent({
+        contents: [{ parts: [{ text: prompt }] }],
+      });
+
+      return res.status(200).json({ reply: result.response.text().trim() });
+    }
+
+    // === 4. Hỏi về sản phẩm
+    if (isProduct) {
+      const orConditions = matched
+        .filter((k) => k.intent === "product")
+        .map((kw) => ({ name: { $regex: kw.word, $options: "i" } }));
+
+      const products = await Product.find({ $or: orConditions }).limit(5);
+      let productInfo = "";
+
+      for (const product of products) {
+        const productVariants = await ProductVariant.findOne({
+          product_id: product._id,
+        });
+        let variantInfo = "";
+
+        if (productVariants) {
+          for (const v of productVariants.variants) {
+            const sizes = v.sizes
+              .map((s) => `${s.size} (${s.quantity} cái)`)
+              .join(", ");
+            variantInfo += `- Màu: ${v.color}, Size: ${sizes}\n`;
+          }
+        }
+
+        productInfo += `
+${product.name}
+Giá: ${product.price.toLocaleString()} VNĐ
+${product.description || ""}
+${variantInfo}
+`;
+      }
+
+      const prompt = `
+Khách hỏi: "${message}".
+Dưới đây là các sản phẩm gợi ý:
+
+${productInfo || "Hiện tại không tìm thấy sản phẩm phù hợp."}
+
+Viết lại câu trả lời thân thiện, rõ ràng, KHÔNG dùng định dạng Markdown (không dùng dấu ** hay *). Trình bày như đang nhắn tin cho khách.
+      `;
+
+      const result = await model.generateContent({
+        contents: [{ parts: [{ text: prompt }] }],
+      });
+
+      return res.status(200).json({ reply: result.response.text().trim() });
+    }
+
+    // === 5. Không xác định => học từ mới
+    const existing = await Keyword.findOne({ word: messageLower });
+    if (!existing) {
+      const aiIntent = await detectIntentByAI(messageLower);
+      const intent = knownIntents.includes(aiIntent) ? aiIntent : "unknown";
+
+      await Keyword.create({ word: messageLower, intent });
+      console.log(
+        `🧠 Bot học từ mới: "${messageLower}" với intent "${intent}"`
+      );
+    }
+
+    return res.status(200).json({
+      reply:
+        "Bạn vui lòng cho biết rõ loại sản phẩm hoặc thông tin bạn cần nhé!",
+    });
+  } catch (err) {
+    console.error("❌ ChatBot Error:", err);
+    return res.status(500).json({
+      error: "Lỗi xử lý yêu cầu",
+      detail: err.message || "Không rõ lỗi",
+    });
+  }
+};
+
+// === Chào ban đầu
+const welcomeMessage = async (req, res) => {
+  try {
+    const categories = await Category.find().select("name");
+    const categoryList = categories.map((cat) => cat.name).join(", ");
+    const prompt = `
+Bạn là trợ lý bán hàng của shop quần áo. Hãy chào hỏi thân thiện khách mới và giới thiệu các danh mục hiện có gồm: ${categoryList}.
+Viết câu trả lời tự nhiên, KHÔNG dùng định dạng Markdown (** hoặc *).
+    `;
+
+    const result = await model.generateContent({
+      contents: [{ parts: [{ text: prompt }] }],
+    });
+
+    return res.status(200).json({ reply: result.response.text().trim() });
+  } catch (err) {
+    console.error("❌ Welcome Error:", err);
+    return res.status(500).json({
+      error: "Lỗi tạo lời chào",
+      detail: err.message || "Không rõ lỗi",
+    });
+  }
+};
+
+module.exports = { chatWithBot, welcomeMessage };

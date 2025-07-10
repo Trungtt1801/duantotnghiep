@@ -50,9 +50,9 @@ async function addProduct(data) {
       material,
       variants,
       category_id,
-      shop_id, 
+      shop_id,
       description,
-      sale_count
+      sale_count,
     } = data;
 
     if (!mongoose.Types.ObjectId.isValid(category_id)) {
@@ -77,7 +77,7 @@ async function addProduct(data) {
       isHidden: false,
       shop_id: data.shop_id || 1, // ✅ giá trị mặc định
       description,
-      sale_count: sale_count || 0,
+      sale_count: sale_count,
       category_id: {
         categoryName: category.name,
         categoryId: category._id,
@@ -103,16 +103,29 @@ async function addProduct(data) {
 
 async function searchProductsByName(nameKeyword) {
   try {
-    // Tách từ, chèn .* giữa các từ để tìm linh hoạt
+    // Tách từ khóa tìm kiếm và tạo regex
     const keywordRegex = nameKeyword.trim().split(/\s+/).join(".*");
-
     const regex = new RegExp(keywordRegex, "i");
 
     const products = await productsModel.find({
       name: { $regex: regex },
     });
 
-    return products;
+    const baseUrl = "http://localhost:3000/images/";
+
+    const updatedProducts = products.map((product) => {
+      const productObj = product.toObject();
+
+      if (Array.isArray(productObj.images)) {
+        productObj.images = productObj.images.map((img) =>
+          img.startsWith("http") ? img : baseUrl + img
+        );
+      }
+
+      return productObj;
+    });
+
+    return updatedProducts;
   } catch (error) {
     console.error("Lỗi khi tìm kiếm sản phẩm theo tên:", error);
     throw error;
@@ -134,6 +147,9 @@ async function updateProduct(id, data) {
       isHidden,
       category_id,
       variants,
+      shop_id,
+      description,
+      sale_count,
     } = data;
 
     const product = await productsModel.findById(id);
@@ -165,6 +181,9 @@ async function updateProduct(id, data) {
         images,
         isHidden,
         category_id: categoryInfo,
+        shop_id,
+        description,
+        sale_count,
       },
       { new: true }
     );
@@ -199,7 +218,6 @@ async function getProductsByCategoryTree(categoryId) {
       ? subCategories.map((cat) => cat._id)
       : [categoryId];
 
-  
     const products = await productsModel.find({
       "category_id.categoryId": { $in: categoryIds },
     });
@@ -210,6 +228,51 @@ async function getProductsByCategoryTree(categoryId) {
     throw error;
   }
 }
+async function getRelatedProducts(productId) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      throw new Error("ID sản phẩm không hợp lệ");
+    }
+
+    const product = await productsModel.findById(productId);
+    if (!product) {
+      throw new Error("Không tìm thấy sản phẩm");
+    }
+
+    const categoryId = product.category_id?.categoryId;
+    if (!categoryId) {
+      throw new Error("Sản phẩm không có thông tin danh mục");
+    }
+
+    const relatedProducts = await productsModel
+      .find({
+        "category_id.categoryId": categoryId,
+        _id: { $ne: productId },
+      })
+      .limit(12);
+
+    // ✅ Gắn URL ảnh
+    const baseUrl = "http://localhost:3000/images/";
+
+    const updatedProducts = relatedProducts.map((product) => {
+      const productObj = product.toObject();
+
+      if (Array.isArray(productObj.images)) {
+        productObj.images = productObj.images.map((img) =>
+          img.startsWith("http") ? img : baseUrl + img
+        );
+      }
+
+      return productObj;
+    });
+
+    return updatedProducts;
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm liên quan:", error);
+    throw error;
+  }
+}
+
 async function getRelatedProducts(productId) {
   try {
     if (!mongoose.Types.ObjectId.isValid(productId)) {
@@ -245,5 +308,5 @@ module.exports = {
   searchProductsByName,
   updateProduct,
   getProductsByCategoryTree,
-  getRelatedProducts
+  getRelatedProducts,
 };
