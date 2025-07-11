@@ -67,7 +67,6 @@ router.get("/search", async (req, res) => {
 });
 // http://localhost:3000/filter
 // vidu http://localhost:3000/products/filter?size=M
-
 router.post("/filter", async (req, res) => {
   try {
     const { products, filters } = req.body;
@@ -95,6 +94,7 @@ router.post("/filter", async (req, res) => {
     });
   }
 });
+
 //http://localhost:3000/products/:id
 
 router.get("/:id", async (req, res) => {
@@ -262,7 +262,7 @@ router.put("/update/:id", upload.array("images", 10), async (req, res) => {
     });
   }
 });
-// http://localhost:3000/products/category
+// http://localhost:3000/products/category/:categoryId
 router.get("/category/:categoryId", async (req, res) => {
   try {
     const categoryId = req.params.categoryId;

@@ -2,6 +2,7 @@ const orderModel = require("../models/orderModel");
 const createZaloPayOrder = require("../untils/zalopay");
 const { createVnpayPayment } = require("../untils/vnpay");
 const orderDetailModel = require("../models/orderDetailModel");
+const userModels = require("../models/userModels");
 
 require("../models/addressModel");
 
@@ -241,10 +242,18 @@ async function zaloCallback(data) {
     const order = await orderModel.findOne({ transaction_code: app_trans_id });
     if (!order) throw new Error("Không tìm thấy đơn hàng");
 
+    console.log("🧾 Zalo Callback – order.user_id:", order.user_id);
+
     if (status == 1) {
       order.transaction_status = "paid";
       order.status_order = "confirmed";
-      await updateUserPoint(order.user_id, order.total_price); // ✅ cộng điểm ở đây
+
+      // ✅ fix: đảm bảo user_id là string
+      const userId = typeof order.user_id === "object" && order.user_id !== null
+        ? order.user_id._id
+        : order.user_id;
+
+      await updateUserPoint(userId.toString(), order.total_price);
     } else {
       order.transaction_status = "failed";
     }
@@ -256,6 +265,7 @@ async function zaloCallback(data) {
     return { return_code: -1, return_message: "Lỗi callback" };
   }
 }
+
 async function vnpayCallback(query) {
   const vnp_Params = { ...query };
   const secureHash = vnp_Params["vnp_SecureHash"];
@@ -272,21 +282,33 @@ async function vnpayCallback(query) {
 
   if (secureHash !== signed) throw new Error("Sai checksum");
 
-  const order = await orderModel.findOne({
-    transaction_code: vnp_Params["vnp_TxnRef"],
-  });
-  if (!order) throw new Error("Không tìm thấy đơn hàng");
+  const txnRef = vnp_Params["vnp_TxnRef"];
+  const order = await orderModel.findOne({ transaction_code: txnRef });
+
+  if (!order) {
+    console.log("❌ Không tìm thấy đơn hàng với mã giao dịch:", txnRef);
+    throw new Error("Không tìm thấy đơn hàng");
+  }
+
+  console.log("🧾 Đơn hàng tìm được:", order);
 
   order.transaction_status =
     vnp_Params["vnp_ResponseCode"] === "00" ? "paid" : "failed";
+
   if (vnp_Params["vnp_ResponseCode"] === "00") {
     order.status_order = "confirmed";
-    await updateUserPoint(order.user_id, order.total_price); // ✅ cộng điểm sau thanh toán
+
+    console.log("🟡 Gọi cộng điểm cho user:", order.user_id);
+    console.log("🟡 Tổng tiền cần cộng điểm:", order.total_price);
+
+    await updateUserPoint(order.user_id?.toString(), order.total_price);
   }
 
   await order.save();
   return { status: true };
 }
+
+
 function getRankByPoint(point) {
   if (point >= 10000) return "platinum";
   if (point >= 5000) return "gold";
@@ -294,10 +316,14 @@ function getRankByPoint(point) {
   return "bronze";
 }
 
-// 🎯 Cập nhật điểm và rank cho user
 async function updateUserPoint(userId, amount) {
-  const user = await User.findById(userId);
-  if (!user) return;
+  console.log("🟢 Updating point for:", userId, "with amount:", amount);
+
+  const user = await userModels.findById(userId.toString()); 
+  if (!user) {
+    console.log("🔴 Không tìm thấy user để cộng điểm");
+    return;
+  }
 
   const newPoint = (user.point || 0) + amount;
   const newRank = getRankByPoint(newPoint);
@@ -305,7 +331,10 @@ async function updateUserPoint(userId, amount) {
   user.point = newPoint;
   user.rank = newRank;
   await user.save();
+
+  console.log("✅ Updated point:", user.point, "Rank:", user.rank);
 }
+
 
 module.exports = {
   getAllOrders,
