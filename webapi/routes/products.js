@@ -86,7 +86,7 @@ router.post("/filter", async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Lỗi khi lọc sản phẩm:", error.message);
+    console.error("Lỗi lọc sản phẩm:", error);
     return res.status(500).json({
       status: false,
       message: "Lỗi server khi lọc sản phẩm",
@@ -94,6 +94,7 @@ router.post("/filter", async (req, res) => {
     });
   }
 });
+
 
 //http://localhost:3000/products/:id
 
