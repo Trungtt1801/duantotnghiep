@@ -84,33 +84,16 @@ router.get('/filter', async (req, res) => {
     return res.status(500).json({ status: false, message: 'Lỗi lọc đơn hàng' });
   }
 });
-
-// [GET] Lấy đơn hàng theo ID
-// URL: http://localhost:3000/orders/:id
-router.get('/:id', async (req, res) => {
+router.get("/test-point", async (req, res) => {
   try {
-    const result = await orderController.getOrderById(req.params.id);
-    if (!result) {
-      return res.status(404).json({ status: false, message: 'Không tìm thấy đơn hàng' });
-    }
-    return res.status(200).json({ status: true, result });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ status: false, message: 'Lỗi lấy đơn hàng' });
+    // Thay userId và số điểm tùy bạn
+    await orderController.updateUserPoint("686f6d68be04b218525ff55f", 200000);
+    res.json({ status: true, message: "Cộng điểm thành công" });
+  } catch (err) {
+    res.status(500).json({ status: false, error: err.message });
   }
 });
 
-// [DELETE] Xóa đơn hàng
-// URL: http://localhost:3000/orders/:id
-router.delete('/:id', async (req, res) => {
-  try {
-    const result = await orderController.deleteOrder(req.params.id);
-    return res.status(200).json({ status: true, message: 'Xoá đơn hàng thành công', result });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ status: false, message: 'Lỗi xoá đơn hàng' });
-  }
-});
 router.post('/zalopay-callback', async (req, res) => {
     try {
         const result = await orderController.zaloCallback(req.body);
@@ -196,6 +179,33 @@ router.get('/vnpay_ipn', async (req, res) => {
     });
   }
 });
+// [GET] Lấy đơn hàng theo ID
+// URL: http://localhost:3000/orders/:id
+router.get('/:id', async (req, res) => {
+  try {
+    const result = await orderController.getOrderById(req.params.id);
+    if (!result) {
+      return res.status(404).json({ status: false, message: 'Không tìm thấy đơn hàng' });
+    }
+    return res.status(200).json({ status: true, result });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ status: false, message: 'Lỗi lấy đơn hàng' });
+  }
+});
+
+// [DELETE] Xóa đơn hàng
+// URL: http://localhost:3000/orders/:id
+router.delete('/:id', async (req, res) => {
+  try {
+    const result = await orderController.deleteOrder(req.params.id);
+    return res.status(200).json({ status: true, message: 'Xoá đơn hàng thành công', result });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ status: false, message: 'Lỗi xoá đơn hàng' });
+  }
+});
+
 
 
 module.exports = router;
