@@ -67,9 +67,19 @@ router.get("/search", async (req, res) => {
 });
 // http://localhost:3000/filter
 // vidu http://localhost:3000/products/filter?size=M
-router.get("/filter", async (req, res) => {
+
+router.post("/filter", async (req, res) => {
   try {
-    const result = await productController.filterProducts(req.query);
+    const { products, filters } = req.body;
+
+    if (!Array.isArray(products)) {
+      return res.status(400).json({
+        status: false,
+        message: "Danh sách sản phẩm phải là một mảng",
+      });
+    }
+
+    const result = await productController.filterFromList(products, filters);
 
     return res.status(200).json({
       status: true,
@@ -77,7 +87,7 @@ router.get("/filter", async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error(" ỗi khi lọc sản phẩm:", error.message);
+    console.error("Lỗi khi lọc sản phẩm:", error.message);
     return res.status(500).json({
       status: false,
       message: "Lỗi server khi lọc sản phẩm",
