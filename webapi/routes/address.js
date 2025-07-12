@@ -3,7 +3,7 @@ const router = express.Router();
 const addressController = require('../mongo/controllers/addressController');
 
 // [GET] Lấy tất cả địa chỉ
-// URL: http://localhost:3000/addresses
+// URL: http://localhost:3000/address
 router.get('/', async (req, res) => {
   try {
     const result = await addressController.getAllAddresses();
@@ -13,8 +13,18 @@ router.get('/', async (req, res) => {
   }
 });
 
+// http://localhost:3000/address/user/:userId
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const result = await addressController.getAddressesByUserId(req.params.userId);
+    return res.status(200).json({ status: true, result });
+  } catch (err) {
+    return res.status(400).json({ status: false, message: err.message });
+  }
+});
+
 // [GET] Lấy địa chỉ theo ID
-// URL: http://localhost:3000/addresses/:id
+// URL: http://localhost:3000/address/:id
 router.get('/:id', async (req, res) => {
   try {
     const result = await addressController.getAddressById(req.params.id);
@@ -25,7 +35,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // [POST] Tạo địa chỉ
-// URL: http://localhost:3000/addresses
+// URL: http://localhost:3000/address
 router.post('/', async (req, res) => {
   try {
     const result = await addressController.addAddress(req.body);
@@ -36,7 +46,7 @@ router.post('/', async (req, res) => {
 });
 
 // [PUT] Cập nhật địa chỉ
-// URL: http://localhost:3000/addresses/:id
+// URL: http://localhost:3000/address/:id
 router.put('/:id', async (req, res) => {
   try {
     const result = await addressController.updateAddress(req.params.id, req.body);
@@ -47,7 +57,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // [DELETE] Xoá địa chỉ
-// URL: http://localhost:3000/addresses/:id
+// URL: http://localhost:3000/address/:id
 router.delete('/:id', async (req, res) => {
   try {
     const result = await addressController.deleteAddress(req.params.id);
