@@ -19,6 +19,12 @@ const userSchema = new Schema(
       default: "local",
     },
 
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'other'],
+      default: 'other',
+    },
+
     // Trường phục vụ reset mật khẩu
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpires: { type: Date },
@@ -37,6 +43,7 @@ const userSchema = new Schema(
   },
   { timestamps: true }
 );
+
 
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
