@@ -1,5 +1,6 @@
 require("dotenv").config();
 const usersModel = require("../models/userModels");
+const addressModel = require("../models/addressModel");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
@@ -26,7 +27,7 @@ async function getAllUsers() {
 // Đăng ký người dùng
 async function register(data) {
   try {
-    const { name, email, password, role, phone } = data;
+    const { name, email, password, role, phone, gender, defaultAddress } = data;
 
     if (await usersModel.findOne({ email })) {
       throw new Error("Email đã tồn tại!");
@@ -40,12 +41,31 @@ async function register(data) {
     const hashedPassword = bcryptjs.hashSync(password, salt);
     const userRole = typeof role !== "undefined" ? role : 1;
 
+    // ✅ Tạo mã code tự động dạng US001, US002
+    const totalUsers = await usersModel.countDocuments();
+    const code = `US${(totalUsers + 1).toString().padStart(3, "0")}`;
+
+    // ✅ Danh sách địa chỉ mặc định (nếu có)
+    const addressList = defaultAddress
+      ? [
+          {
+            name,
+            phone,
+            address: defaultAddress,
+            isDefault: true,
+          },
+        ]
+      : [];
+
     const newUser = new usersModel({
       name,
       email,
       password: hashedPassword,
       role: userRole,
       phone,
+      gender: gender || "Khác",
+      code,
+      addressList,
     });
 
     const result = await newUser.save();
@@ -87,18 +107,17 @@ async function sendResetPasswordEmail(email, resetLink) {
           <h2 style="color: #2c3e50;">Kính gửi Quý khách hàng</h2>
           <p>Chúng tôi vừa nhận được yêu cầu đặt lại mật khẩu cho tài khoản <strong>FIYO</strong> của bạn.</p>
           <p>
-            Vui lòng nhấn vào liên kết bên dưới để tạo mật khẩu mới. Để bảo vệ tối đa quyền lợi và thông tin cá nhân của bạn, liên kết này chỉ có hiệu lực trong vòng <strong>15 phút</strong> kể từ thời điểm nhận được email.
+            Vui lòng nhấn vào liên kết bên dưới để tạo mật khẩu mới. Liên kết này có hiệu lực trong vòng <strong>15 phút</strong>.
           </p>
           <p style="text-align: center; margin: 30px 0;">
             <a href="${resetLink}" style="display: inline-block; padding: 12px 24px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 4px;">
               Tạo mật khẩu mới
             </a>
           </p>
-          <p>Nếu bạn không phải là người thực hiện yêu cầu này, vui lòng bỏ qua email hoặc liên hệ ngay với đội ngũ hỗ trợ khách hàng FIYO để được hỗ trợ kịp thời.</p>
-          <p>Chúng tôi cam kết đồng hành cùng bạn trong việc bảo mật và an toàn thông tin.</p>
+          <p>Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email hoặc liên hệ với bộ phận hỗ trợ FIYO.</p>
           <p style="margin-top: 30px;">Trân trọng,<br/><strong>Đội ngũ hỗ trợ khách hàng FIYO</strong></p>
           <hr style="margin-top: 30px;"/>
-          <p style="font-size: 12px; color: #888888;"><i>Email này được gửi tự động, vui lòng không trả lời email này.</i></p>
+          <p style="font-size: 12px; color: #888888;"><i>Email này được gửi tự động, vui lòng không trả lời.</i></p>
         </div>
       `,
     };
@@ -132,12 +151,11 @@ async function forgotPassword(email) {
       );
     }
 
-    // Nếu khác ngày thì reset lại bộ đếm
     if (!isSameDay) {
       user.resetPasswordCount = 0;
       user.resetPasswordDate = today;
     }
-    // Tạo token reset
+
     const jwtSecret = process.env.PRIVATE_KEY || "defaultSecretKey";
     const token = jwt.sign({ userId: user._id }, jwtSecret, {
       expiresIn: "15m",
@@ -145,10 +163,8 @@ async function forgotPassword(email) {
 
     const resetLink = `http://localhost:3001/reset-password/${token}`;
 
-    // Gửi email
     await sendResetPasswordEmail(email, resetLink);
 
-    // Tăng số lần gửi
     user.resetPasswordCount += 1;
     user.resetPasswordDate = today;
     await user.save();
@@ -163,9 +179,6 @@ async function forgotPassword(email) {
 async function resetPassword(token, newPassword) {
   const jwtSecret = process.env.PRIVATE_KEY || "defaultSecretKey";
   try {
-    console.log("Verify token:", token);
-    console.log("Using jwt secret:", jwtSecret);
-
     const payload = jwt.verify(token, jwtSecret);
     const user = await usersModel.findById(payload.userId);
     if (!user) throw new Error("Người dùng không tồn tại.");
@@ -185,7 +198,7 @@ async function resetPassword(token, newPassword) {
     }
   }
 }
-// Tìm hoặc tạo user Google
+
 async function findOrCreateGoogleUser({ name, email }) {
   let user = await usersModel.findOne({ email });
 
@@ -201,6 +214,7 @@ async function findOrCreateGoogleUser({ name, email }) {
 
   return user;
 }
+
 async function findOrCreateFacebookUser({ name, email }) {
   let user = await usersModel.findOne({ email });
 
@@ -216,6 +230,15 @@ async function findOrCreateFacebookUser({ name, email }) {
 
   return user;
 }
+async function getUserById(id) {
+  const user = await usersModel.findById(id).select("-password").lean();
+  if (!user) return null;
+
+  const addresses = await addressModel.find({ user_id: id }).lean();
+  user.addresses = addresses;
+
+  return user;
+}
 
 module.exports = {
   register,
@@ -226,4 +249,5 @@ module.exports = {
   resetPassword,
   findOrCreateGoogleUser,
   findOrCreateFacebookUser,
+  getUserById
 };

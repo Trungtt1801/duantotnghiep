@@ -188,6 +188,23 @@ if (!fbData.email) {
     });
   }
 });
-
+router.get('/:id', async (req, res) => {
+  try {
+    const user = await userController.getUserById(req.params.id);
+    if (!user) return res.status(404).json({ status: false, message: "Không tìm thấy người dùng" });
+    res.status(200).json({ status: true, result: user });
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+});
+// [GET] Địa chỉ theo user_id
+router.get("/user/:userId", async (req, res) => {
+  try {
+    const result = await addressController.getAddressesByUserId(req.params.userId);
+    return res.status(200).json({ status: true, result });
+  } catch (err) {
+    return res.status(404).json({ status: false, message: err.message });
+  }
+});
 
 module.exports = router;

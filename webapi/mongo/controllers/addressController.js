@@ -1,71 +1,52 @@
-const addressModel = require('../models/addressModel');
-
-// [GET] Lấy tất cả địa chỉ
-async function getAllAddresses() {
-  try {
-    return await addressModel.find().populate('user_id', 'name');
-  } catch (error) {
-    console.error('Lỗi lấy danh sách địa chỉ:', error.message);
-    throw new Error('Lỗi lấy danh sách địa chỉ');
+const addressModel = require("../models/addressModel");
+const mongoose = require("mongoose");
+// Lấy danh sách địa chỉ theo user_id
+async function getAddressesByUserId(userId) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("ID không hợp lệ");
   }
+
+  return await addressModel.find({ user_id: userId }).sort({ updatedAt: -1 });
+}
+// Thêm địa chỉ mới
+async function createAddress(data) {
+  if (data.isDefault) {
+    // Nếu là mặc định, reset tất cả địa chỉ khác của user về false
+    await addressModel.updateMany(
+      { user_id: data.user_id },
+      { $set: { status: false } }
+    );
+  }
+  return await addressModel.create(data);
 }
 
-// [GET] Lấy địa chỉ theo ID
-async function getAddressById(id) {
-  try {
-    const address = await addressModel.findById(id).populate('user_id', 'name');
-    if (!address) throw new Error('Không tìm thấy địa chỉ');
-    return address;
-  } catch (error) {
-    console.error('Lỗi lấy chi tiết địa chỉ:', error.message);
-    throw new Error(error.message || 'Lỗi lấy chi tiết địa chỉ');
-  }
-}
-
-// [POST] Thêm địa chỉ
-async function addAddress(data) {
-  try {
-    const { name, phone, address, status, user_id } = data;
-    if (!name || !phone || !address || !user_id) {
-      throw new Error('Thiếu thông tin bắt buộc');
-    }
-    const newAddress = new addressModel({ name, phone, address, status, user_id });
-    return await newAddress.save();
-  } catch (error) {
-    console.error('Lỗi thêm địa chỉ:', error.message);
-    throw new Error(error.message || 'Lỗi thêm địa chỉ');
-  }
-}
-
-// [PUT] Cập nhật địa chỉ
+// Cập nhật địa chỉ
 async function updateAddress(id, data) {
-  try {
-    const address = await addressModel.findById(id);
-    if (!address) throw new Error('Không tìm thấy địa chỉ');
-    Object.assign(address, data);
-    return await address.save();
-  } catch (error) {
-    console.error('Lỗi cập nhật địa chỉ:', error.message);
-    throw new Error(error.message || 'Lỗi cập nhật địa chỉ');
+  if (data.status) {
+    // Nếu cập nhật thành địa chỉ mặc định, reset các địa chỉ khác
+    await addressModel.updateMany(
+      { user_id: data.user_id },
+      { $set: { status: false } }
+    );
   }
+
+  return await addressModel.findByIdAndUpdate(id, data, { new: true });
 }
 
-// [DELETE] Xoá địa chỉ
+// Xoá địa chỉ
 async function deleteAddress(id) {
-  try {
-    const address = await addressModel.findById(id);
-    if (!address) throw new Error('Địa chỉ không tồn tại');
-    return await addressModel.findByIdAndDelete(id);
-  } catch (error) {
-    console.error('Lỗi xoá địa chỉ:', error.message);
-    throw new Error('Lỗi xoá địa chỉ');
-  }
+  return await addressModel.findByIdAndDelete(id);
+}
+
+// Lấy chi tiết địa chỉ theo id
+async function getAddressById(id) {
+  return await addressModel.findById(id);
 }
 
 module.exports = {
-  getAllAddresses,
-  getAddressById,
-  addAddress,
+  getAddressesByUserId,
+  createAddress,
   updateAddress,
   deleteAddress,
+  getAddressById,
 };

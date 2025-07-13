@@ -1,5 +1,6 @@
 const categoriesModel = require("../models/categoryModel");
 const productsModel = require("../models/productsModel");
+const mongoose = require("mongoose");
 
 async function getAllCate() {
   try {
@@ -97,6 +98,28 @@ async function getParentCategories() {
     throw new Error("Lỗi khi lấy danh mục cha");
   }
 }
+async function filterCategories(req, res) {
+  try {
+    const { search = "", parentId = "" } = req.query;
+    const filter = {};
+
+    if (search) {
+      filter.name = { $regex: search, $options: "i" };
+    }
+
+    if (parentId && mongoose.Types.ObjectId.isValid(parentId)) {
+      filter.parentId = parentId;
+    }
+
+const result = await categoriesModel.find(filter);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Lỗi tìm kiếm danh mục:", error.message);
+    return res.status(500).json({ message: "Lỗi tìm kiếm danh mục" });
+  }
+}
+
+
 
 
 module.exports = {
@@ -106,5 +129,6 @@ module.exports = {
   updateCate,
   deleteCate,
   getSubCategories,
-  getParentCategories
+  getParentCategories,
+  filterCategories
 };

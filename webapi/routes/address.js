@@ -2,13 +2,21 @@ const express = require('express');
 const router = express.Router();
 const addressController = require('../mongo/controllers/addressController');
 
-// [GET] Lấy tất cả địa chỉ
+// [GET] Lấy địa chỉ (tất cả hoặc theo user_id)
 // URL: http://localhost:3000/addresses
 router.get('/', async (req, res) => {
   try {
+    const { user_id } = req.query;
+
+    if (user_id) {
+      const addresses = await addressController.getAddressesByUserId(user_id);
+      return res.status(200).json({ status: true, result: addresses });
+    }
+
     const result = await addressController.getAllAddresses();
     return res.status(200).json({ status: true, result });
   } catch (err) {
+    console.error("Lỗi khi lấy danh sách địa chỉ:", err);
     return res.status(500).json({ status: false, message: err.message });
   }
 });
@@ -28,7 +36,7 @@ router.get('/:id', async (req, res) => {
 // URL: http://localhost:3000/addresses
 router.post('/', async (req, res) => {
   try {
-    const result = await addressController.addAddress(req.body);
+    const result = await addressController.createAddress(req.body);
     return res.status(201).json({ status: true, result });
   } catch (err) {
     return res.status(400).json({ status: false, message: err.message });
