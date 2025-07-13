@@ -38,6 +38,7 @@ router.get("/", async (req, res) => {
           description: product.description,
           price: product.price,
           category_id: product.category_id,
+          isHidden: product.isHidden,
           images: product.images?.map((imgName) =>
             imgName.startsWith("http") ? imgName : baseUrl + imgName
           ),
