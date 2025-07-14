@@ -124,6 +124,19 @@ async function updateStatusVoucher(id, is_active) {
         throw new Error(error.message || 'Lỗi cập nhật trạng thái voucher');
     }
 }
+async function searchVouchers(keywordRegex) {
+  try {
+    return await voucherModel.find({
+      $or: [
+        { voucher_code: keywordRegex },
+        { value: { $regex: keywordRegex } }
+      ]
+    }).sort({ createdAt: -1 });
+  } catch (error) {
+    throw new Error('Lỗi tìm kiếm voucher');
+  }
+}
+
 module.exports = {
     getAllVouchers,
     getVoucherById,
@@ -131,5 +144,6 @@ module.exports = {
     updateVoucher,
     deleteVoucher,
     useVoucher,
-    updateStatusVoucher
+    updateStatusVoucher,
+    searchVouchers
 };

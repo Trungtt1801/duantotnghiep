@@ -37,16 +37,13 @@ async function updateAddress(id, data) {
 async function deleteAddress(id) {
   return await addressModel.findByIdAndDelete(id);
 }
-
-// Lấy chi tiết địa chỉ theo id
-async function getAddressById(id) {
-  return await addressModel.findById(id);
+async function getAllAddresses() {
+  return await addressModel.find().sort({ updatedAt: -1 });
 }
-
 module.exports = {
   getAddressesByUserId,
   createAddress,
   updateAddress,
   deleteAddress,
-  getAddressById,
+  getAllAddresses
 };

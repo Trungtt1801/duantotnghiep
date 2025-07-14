@@ -10,27 +10,19 @@ router.get('/', async (req, res) => {
 
     if (user_id) {
       const addresses = await addressController.getAddressesByUserId(user_id);
-      return res.status(200).json({ status: true, result: addresses });
+      const formatted = addresses.map((a) => a.toJSON()); // ✅ format ngày
+      return res.status(200).json({ status: true, result: formatted });
     }
 
     const result = await addressController.getAllAddresses();
-    return res.status(200).json({ status: true, result });
+    const formatted = result.map((a) => a.toJSON()); // ✅ format ngày
+    return res.status(200).json({ status: true, result: formatted });
   } catch (err) {
     console.error("Lỗi khi lấy danh sách địa chỉ:", err);
     return res.status(500).json({ status: false, message: err.message });
   }
 });
 
-// [GET] Lấy địa chỉ theo ID
-// URL: http://localhost:3000/addresses/:id
-router.get('/:id', async (req, res) => {
-  try {
-    const result = await addressController.getAddressById(req.params.id);
-    return res.status(200).json({ status: true, result });
-  } catch (err) {
-    return res.status(404).json({ status: false, message: err.message });
-  }
-});
 
 // [POST] Tạo địa chỉ
 // URL: http://localhost:3000/addresses
