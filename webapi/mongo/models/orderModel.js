@@ -10,13 +10,14 @@ const OrderSchema = new Schema(
       enum: ["pending", "confirmed", "shipped", " delivered", "cancelled"],
       default: "pending",
     },
-    address_id: { type: Schema.Types.ObjectId, ref: "Address" },
+    // address_id: { type: Schema.Types.ObjectId, ref: "Address" }, // REAL
+    address_id: { type: String, required: true }, // FAKE
     voucher_id: { type: Schema.Types.ObjectId, ref: "Voucher" },
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
     evaluate: String,
     payment_method: {
       type: String,
-      enum: ["COD", "momo", "zalopay"],
+      enum: ["COD", "vnpay", "zalopay"],
       required: true,
     },
     transaction_code: String,
@@ -33,6 +34,7 @@ OrderSchema.methods.toJSON = function () {
   const obj = this.toObject();
   if (obj.createdAt) obj.createdAt = formatDateVN(obj.createdAt);
   if (obj.updatedAt) obj.updatedAt = formatDateVN(obj.updatedAt);
+  if (obj.delivery_date) obj.delivery_date = formatDateVN(obj.delivery_date);
   return obj;
 };
 

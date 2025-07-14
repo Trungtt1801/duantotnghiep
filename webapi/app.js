@@ -1,4 +1,7 @@
-require("dotenv").config();
+const dotenv = require("dotenv");
+// Load biến môi trường từ file .env
+dotenv.config();
+const cors = require("cors");
 var createError = require("http-errors");
 var express = require("express");
 var path = require("path");
@@ -6,21 +9,20 @@ var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const mongoose = require("mongoose");
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/user');
-var productRouter = require('./routes/products');
-var categoryRouter = require('./routes/category');
-var cartRouter = require('./routes/cart');
-var productvariantRouter = require('./routes/productVariant');
-var orderRouter = require('./routes/order');
-var voucherRouter = require('./routes/voucher');
-var addressRouter = require('./routes/address');
-var reviewRouter = require('./routes/review');
-var orderDetailRouter = require('./routes/orderDetail');
-var cartRouter = require('./routes/cart');
-var zalopayRouter = require('./routes/zalopay')
+var indexRouter = require("./routes/index");
+var usersRouter = require("./routes/user");
+var productRouter = require("./routes/products");
+var categoryRouter = require("./routes/category");
+var cartRouter = require("./routes/cart");
+var productvariantRouter = require("./routes/productVariant");
+var orderRouter = require("./routes/order");
+var voucherRouter = require("./routes/voucher");
+var addressRouter = require("./routes/address");
+var reviewRouter = require("./routes/review");
+var orderDetailRouter = require("./routes/orderDetail");
+var chatRouter = require("./routes/chat");
 var app = express();
-
+app.use(cors());
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "hbs");
@@ -30,21 +32,22 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/images", express.static(path.join(__dirname, "public/images")));
 
-app.use('/', indexRouter);
-app.use('/user', usersRouter); 
-app.use('/products', productRouter); 
-app.use('/category', categoryRouter);
-app.use('/variant', productvariantRouter);
-app.use('/cart', cartRouter);
-app.use('/address', addressRouter);
-app.use('/orders', orderRouter);
-app.use('/voucher', voucherRouter);
-app.use('/review', reviewRouter);
-app.use('/orderDetail', orderDetailRouter);
-app.use('/zalopay', zalopayRouter)
+app.use("/", indexRouter);
+app.use("/user", usersRouter);
+app.use("/products", productRouter);
+app.use("/category", categoryRouter);
+app.use("/variant", productvariantRouter);
+app.use("/cart", cartRouter);
+app.use("/address", addressRouter);
+app.use("/orders", orderRouter);
+app.use("/voucher", voucherRouter);
+app.use("/review", reviewRouter);
+app.use("/orderDetail", orderDetailRouter);
+app.use("/chat", chatRouter);
 
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   next(createError(404));
 });
 // kết nối database mogoose

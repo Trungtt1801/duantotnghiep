@@ -1,9 +1,9 @@
 require('dotenv').config();
 const express = require("express");
 const router = express.Router();
+const https = require("https");
 const userController = require("../mongo/controllers/userController");
 const jwt = require("jsonwebtoken");
-const passport = require("passport");
 const { OAuth2Client } = require("google-auth-library");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -75,6 +75,7 @@ router.post("/forgot-password", async (req, res) => {
 });
 
 // Đặt lại mật khẩu
+
 router.post("/reset-password", async (req, res) => {
   try {
     const { token, newPassword } = req.body;
@@ -86,7 +87,7 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
-// Đăng nhập bằng Google (token từ client-side)
+// Đăng nhập bằng Google
 router.post("/login-google", async (req, res) => {
   console.log("===> VÀO LOGIN GOOGLE");
   try {
@@ -97,9 +98,9 @@ router.post("/login-google", async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-    const { email, name, sub: googleId } = payload;
+    const { email, name} = payload;
 
-    let user = await userController.findOrCreateGoogleUser({ name, email, googleId });
+    let user = await userController.findOrCreateGoogleUser({ name, email });
 
     const jwtSecret = process.env.PRIVATE_KEY || "defaultSecretKey";
     const jwtToken = jwt.sign(
@@ -119,6 +120,71 @@ router.post("/login-google", async (req, res) => {
     return res.status(500).json({
       status: false,
       message: "Lỗi đăng nhập bằng Google",
+      error: error.message,
+    });
+  }
+});
+
+// Đăng nhập bằng Facebook (không dùng axios / fetch)
+router.post("/login-facebook", async (req, res) => {
+  console.log("===> VÀO LOGIN FACEBOOK");
+  try {
+    const { accessToken } = req.body;
+    if (!accessToken) {
+      return res.status(400).json({ status: false, message: "Thiếu accessToken" });
+    }
+
+    const fbUrl = `https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`;
+
+    const getFbData = (url) =>
+      new Promise((resolve, reject) => {
+        https.get(url, (response) => {
+          let data = "";
+          response.on("data", (chunk) => (data += chunk));
+          response.on("end", () => {
+            try {
+              const parsed = JSON.parse(data);
+              resolve(parsed);
+            } catch (err) {
+              reject(err);
+            }
+          });
+        }).on("error", (err) => reject(err));
+      });
+
+    const fbData = await getFbData(fbUrl);
+console.log("===> Dữ liệu từ Facebook:", fbData);
+
+if (!fbData.email) {
+  return res.status(400).json({
+    status: false,
+    message: "Token Facebook không hợp lệ hoặc chưa cấp quyền email",
+    fbData,
+  });
+}
+
+
+    const { id: name, email } = fbData;
+    const user = await userController.findOrCreateFacebookUser({ name, email });
+
+    const jwtSecret = process.env.PRIVATE_KEY || "defaultSecretKey";
+    const jwtToken = jwt.sign(
+      { email: user.email, role: user.role },
+      jwtSecret,
+      { expiresIn: "2h", subject: user._id.toString() }
+    );
+
+    return res.status(200).json({
+      status: true,
+      message: "Đăng nhập Facebook thành công",
+      token: jwtToken,
+      user,
+    });
+  } catch (error) {
+    console.error("Lỗi đăng nhập Facebook:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Lỗi đăng nhập bằng Facebook",
       error: error.message,
     });
   }
