@@ -24,6 +24,7 @@ async function createZaloPayOrder(amount, userId) {
     amount,
     description: `Thanh toán đơn hàng #${transID}`,
     bank_code: "zalopayapp",
+    return_url: "https://order",
   };
 
   const data = [

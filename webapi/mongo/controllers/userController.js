@@ -26,7 +26,7 @@ async function getAllUsers() {
 // Đăng ký người dùng
 async function register(data) {
   try {
-    const { name, email, password, role, phone } = data;
+    const { name, email, password, role, phone, gender } = data;
 
     if (await usersModel.findOne({ email })) {
       throw new Error("Email đã tồn tại!");
@@ -46,6 +46,7 @@ async function register(data) {
       password: hashedPassword,
       role: userRole,
       phone,
+      gender
     });
 
     const result = await newUser.save();
@@ -216,6 +217,8 @@ async function findOrCreateFacebookUser({ name, email }) {
 
   return user;
 }
+
+
 
 module.exports = {
   register,
