@@ -272,20 +272,24 @@ async function getRelatedProducts(productId) {
     throw error;
   }
 }
+
+function removeVietnameseTones(str) {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
+}
+
 async function filterFromList(productList, filters) {
   try {
-    const {
-      sort,       // "price_asc" | "price_desc" | "newest"
-      size,
-      color,
-      minPrice,
-      maxPrice,
-    } = filters;
+    const { sort, size, color, minPrice, maxPrice } = filters;
 
-    // Loại bỏ phần tử null hoặc thiếu dữ liệu
+    // Bước 1: Lọc sản phẩm hợp lệ
     let products = [...productList].filter(p => p && typeof p.price === "number");
 
-    // Lọc theo khoảng giá
+    // Bước 2: Lọc theo khoảng giá
     if (minPrice || maxPrice) {
       products = products.filter((p) => {
         if (minPrice && p.price < parseFloat(minPrice)) return false;
@@ -294,20 +298,39 @@ async function filterFromList(productList, filters) {
       });
     }
 
-    // Lọc theo size và color trong variants
-    if (size || color) {
-      products = products.filter((product) => {
-        if (!product.variants) return false;
+    // Bước 3: Lọc theo color và size trong variants
+    if (color || size) {
+      products = products
+        .map((product) => {
+          if (!Array.isArray(product.variants)) return null;
 
-        return product.variants.some((variant) => {
-          const matchColor = !color || variant.color === color;
-          const matchSize = !size || variant.sizes?.some((s) => s.size === size);
-          return matchColor && matchSize;
-        });
-      });
+          // Lọc variants phù hợp
+          const filteredVariants = product.variants.filter((variant) => {
+            const matchColor = !color || removeVietnameseTones(variant.color || "").includes(removeVietnameseTones(color));
+            const matchSize = !size || (variant.sizes?.some((s) => s.size === size));
+            return matchColor && matchSize;
+          });
+
+          if (filteredVariants.length === 0) return null;
+
+          return {
+            ...product,
+            variants: filteredVariants.map((variant) => {
+              const newSizes = size
+                ? variant.sizes?.filter((s) => s.size === size)
+                : variant.sizes;
+
+              return {
+                ...variant,
+                sizes: newSizes,
+              };
+            }),
+          };
+        })
+        .filter(Boolean); // Loại bỏ null
     }
 
-    // Sắp xếp
+    // Bước 4: Sắp xếp
     switch (sort) {
       case "price_asc":
         products.sort((a, b) => a.price - b.price);
@@ -320,7 +343,7 @@ async function filterFromList(productList, filters) {
         break;
     }
 
-    // Gắn ảnh nếu cần
+    // Bước 5: Thêm base URL vào hình ảnh nếu chưa có
     const baseUrl = "http://localhost:3000/images/";
     products = products.map((product) => {
       const updated = { ...product };
@@ -332,10 +355,12 @@ async function filterFromList(productList, filters) {
       return updated;
     });
 
+    // ✅ Trả về mảng sản phẩm trực tiếp
     return products;
+
   } catch (error) {
     console.error("Lỗi trong filterFromList:", error);
-    throw error;
+    throw error; // giữ nguyên để bên ngoài xử lý
   }
 }
 
