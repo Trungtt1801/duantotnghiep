@@ -36,7 +36,7 @@ router.get('/:id', async (req, res) => {
 
 // [POST] Tạo địa chỉ
 // URL: http://localhost:3000/address
-router.post('/', async (req, res) => {
+router.post('/add', async (req, res) => {
   try {
     const result = await addressController.addAddress(req.body);
     return res.status(201).json({ status: true, result });

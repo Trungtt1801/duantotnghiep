@@ -22,10 +22,11 @@ async function getAddressById(id) {
   }
 }
 
+
 // [POST] Thêm địa chỉ
 async function addAddress(data) {
   try {
-    const { name, phone, address, status, user_id } = data;
+    const { name, phone, address, status, user_id,type } = data;
     if (!name || !phone || !address || !user_id) {
       throw new Error("Thiếu thông tin bắt buộc");
     }
@@ -35,6 +36,7 @@ async function addAddress(data) {
       address,
       status,
       user_id,
+      type
     });
     return await newAddress.save();
   } catch (error) {
@@ -67,6 +69,7 @@ async function deleteAddress(id) {
     throw new Error("Lỗi xoá địa chỉ");
   }
 }
+
 // [GET] Lấy tất cả địa chỉ theo user_id
 async function getAddressesByUserId(userId) {
   try {
