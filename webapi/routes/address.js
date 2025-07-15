@@ -4,7 +4,7 @@ const addressController = require('../mongo/controllers/addressController');
 
 // [GET] Lấy tất cả địa chỉ
 // URL: http://localhost:3000/address
-router.get('/', async (req, res) => {
+router.get('/add', async (req, res) => {
   try {
     const result = await addressController.getAllAddresses();
     return res.status(200).json({ status: true, result });
