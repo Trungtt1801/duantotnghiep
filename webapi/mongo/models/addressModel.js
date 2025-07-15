@@ -10,9 +10,11 @@ const AddressSchema = new Schema(
       required: true,
       match: /^[0-9]{10,15}$/,
     },
-    address: { type: String, required: true }, // Chuỗi địa chỉ đầy đủ
-    status: { type: Boolean, default: false }, // Địa chỉ mặc định
-    user_id: { type: Schema.Types.ObjectId, ref: "User", required: true }, 
+    address: { type: String }, 
+    status: { type: Boolean, default: false }, 
+    user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    type: { type: String }, 
+    detail: { type: String },
   },
   {
     timestamps: true,
