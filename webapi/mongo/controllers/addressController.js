@@ -23,10 +23,15 @@ async function getAddressById(id) {
 
 // [POST] Thêm địa chỉ
 async function createAddress(data) {
-  const { user_id, status } = data;
+  const { user_id, is_default } = data;
 
-  if (status === true) {
-    await addressModel.updateMany({ user_id }, { $set: { status: false } });
+  if (is_default === true) {
+    await addressModel.updateMany({ user_id }, { $set: { is_default: false } });
+  } else {
+    const count = await addressModel.countDocuments({ user_id, is_default: true });
+    if (count === 0) {
+      throw new Error("Bạn phải có ít nhất 1 địa chỉ mặc định.");
+    }
   }
 
   const newAddress = new addressModel(data);
@@ -36,13 +41,22 @@ async function createAddress(data) {
 
 // [PUT] Cập nhật địa chỉ
 async function updateAddress(id, data) {
-  const { user_id, status } = data;
+  const { user_id, is_default } = data;
 
-  if (status === true) {
+  if (is_default === true) {
     await addressModel.updateMany(
       { user_id, _id: { $ne: id } },
-      { $set: { status: false } }
+      { $set: { is_default: false } }
     );
+  } else {
+    const count = await addressModel.countDocuments({
+      user_id,
+      is_default: true,
+      _id: { $ne: id },
+    });
+    if (count === 0) {
+      throw new Error("Bạn phải có ít nhất 1 địa chỉ mặc định.");
+    }
   }
 
   const updated = await addressModel.findByIdAndUpdate(id, data, { new: true });
