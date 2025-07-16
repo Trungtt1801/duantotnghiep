@@ -226,8 +226,11 @@ async function createOrderWithZaloPay(data) {
     });
 
     return {
+      status: true,
+      message: "Tạo đơn hàng thành công",
+      app_trans_id: zaloResponse.app_trans_id,
+      payment_url: zaloResponse.order_url,
       order: newOrder,
-      payment_url: zaloResponse.order_url, // link để frontend redirect sang thanh toán
     };
   } catch (error) {
     console.error("Lỗi tạo đơn hàng ZaloPay:", error.message);
@@ -237,28 +240,36 @@ async function createOrderWithZaloPay(data) {
 
 async function zaloCallback(data) {
   try {
+    console.log("📥 Callback nhận được:", data);
+
     const { app_trans_id, status } = data;
 
     const order = await orderModel.findOne({ transaction_code: app_trans_id });
-    if (!order) throw new Error("Không tìm thấy đơn hàng");
+    if (!order)
+      throw new Error(
+        "Không tìm thấy đơn hàng với app_trans_id: " + app_trans_id
+      );
 
-    console.log("🧾 Zalo Callback – order.user_id:", order.user_id);
+    console.log("🔍 Tìm thấy đơn hàng:", order);
 
     if (status == 1) {
       order.transaction_status = "paid";
       order.status_order = "confirmed";
 
-      // ✅ fix: đảm bảo user_id là string
-      const userId = typeof order.user_id === "object" && order.user_id !== null
-        ? order.user_id._id
-        : order.user_id;
+      const userId =
+        typeof order.user_id === "object" && order.user_id !== null
+          ? order.user_id._id
+          : order.user_id;
 
+      console.log("🆔 Gọi updateUserPoint với userId:", userId);
       await updateUserPoint(userId.toString(), order.total_price);
     } else {
       order.transaction_status = "failed";
     }
 
     await order.save();
+    console.log("Đã lưu đơn hàng sau khi cập nhật trạng thái");
+
     return { return_code: 1, return_message: "OK" };
   } catch (error) {
     console.error("Zalo Callback Error:", error.message);
@@ -308,18 +319,17 @@ async function vnpayCallback(query) {
   return { status: true };
 }
 
-
 function getRankByPoint(point) {
-  if (point >= 10000) return "platinum";
-  if (point >= 5000) return "gold";
-  if (point >= 2000) return "silver";
+  if (point >= 1000000) return "platinum";
+  if (point >= 500000) return "gold";
+  if (point >= 200000) return "silver";
   return "bronze";
 }
 
 async function updateUserPoint(userId, amount) {
   console.log("🟢 Updating point for:", userId, "with amount:", amount);
 
-  const user = await userModels.findById(userId.toString()); 
+  const user = await userModels.findById(userId.toString());
   if (!user) {
     console.log("🔴 Không tìm thấy user để cộng điểm");
     return;
@@ -334,8 +344,18 @@ async function updateUserPoint(userId, amount) {
 
   console.log("✅ Updated point:", user.point, "Rank:", user.rank);
 }
-
-
+async function getOrdersByUserId(userId) {
+  try {
+    const orders = await orderModel
+      .find({ user_id: userId })
+      .sort({ createdAt: -1 })
+      .populate("address_id voucher_id");
+    return orders;
+  } catch (error) {
+    console.error("Lỗi lấy đơn hàng theo user:", error.message);
+    throw new Error("Không thể lấy danh sách đơn hàng của người dùng");
+  }
+}
 module.exports = {
   getAllOrders,
   getOrderById,
@@ -350,4 +370,5 @@ module.exports = {
   zaloCallback,
   vnpayCallback,
   updateUserPoint,
+  getOrdersByUserId
 };

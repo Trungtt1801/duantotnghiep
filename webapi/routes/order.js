@@ -179,6 +179,15 @@ router.get('/vnpay_ipn', async (req, res) => {
     });
   }
 });
+// localhost:3000/orders/user/:userId
+router.get("/user/:userId", async (req, res) => {
+  try {
+    const orders = await orderController.getOrdersByUserId(req.params.userId);
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 // [GET] Lấy đơn hàng theo ID
 // URL: http://localhost:3000/orders/:id
 router.get('/:id', async (req, res) => {

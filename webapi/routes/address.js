@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 router.get('/user/:userId', async (req, res) => {
   try {
     const result = await addressController.getAddressesByUserId(req.params.userId);
-    return res.status(200).json({ status: true, result });
+   return res.status(200).json(result);
   } catch (err) {
     return res.status(400).json({ status: false, message: err.message });
   }
@@ -36,7 +36,7 @@ router.get('/:id', async (req, res) => {
 
 // [POST] Tạo địa chỉ
 // URL: http://localhost:3000/address
-router.post('/', async (req, res) => {
+router.post('/add', async (req, res) => {
   try {
     const result = await addressController.addAddress(req.body);
     return res.status(201).json({ status: true, result });
