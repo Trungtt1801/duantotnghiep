@@ -53,7 +53,9 @@ async function addProduct(data) {
       shop_id,
       description,
       sale_count,
+      isHidden, // ✅ Thêm dòng này
     } = data;
+
 
     if (!mongoose.Types.ObjectId.isValid(category_id)) {
       throw new Error("ID danh mục không hợp lệ!");
@@ -74,15 +76,16 @@ async function addProduct(data) {
       price,
       sale,
       material,
-      isHidden: false,
-      shop_id: data.shop_id || 1, // ✅ giá trị mặc định
+      isHidden: isHidden ?? false, // ✅ Ưu tiên dùng isHidden từ client, fallback false
+      shop_id: shop_id || 1,
       description,
-      sale_count: sale_count,
+      sale_count,
       category_id: {
         categoryName: category.name,
         categoryId: category._id,
       },
     });
+
 
     if (variants && variants.length > 0) {
       await productVariantModel.create({
