@@ -35,24 +35,24 @@ router.get('/:id', async (req, res) => {
 });
 
 // [POST] Tạo địa chỉ
-// URL: http://localhost:3000/address
-router.post('/add', async (req, res) => {
+// URL: http://localhost:3000/address/create
+router.post("/create", async (req, res) => {
   try {
-    const result = await addressController.addAddress(req.body);
-    return res.status(201).json({ status: true, result });
+    const result = await addressController.createAddress(req.body);
+    return res.status(200).json({ status: true, result });
   } catch (err) {
-    return res.status(400).json({ status: false, message: err.message });
+    return res.status(500).json({ status: false, message: err.message });
   }
 });
 
 // [PUT] Cập nhật địa chỉ
 // URL: http://localhost:3000/address/:id
-router.put('/:id', async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
     const result = await addressController.updateAddress(req.params.id, req.body);
     return res.status(200).json({ status: true, result });
   } catch (err) {
-    return res.status(400).json({ status: false, message: err.message });
+    return res.status(500).json({ status: false, message: err.message });
   }
 });
 

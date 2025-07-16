@@ -1,5 +1,4 @@
 const addressModel = require("../models/addressModel");
-
 // [GET] Lấy tất cả địa chỉ
 async function getAllAddresses() {
   try {
@@ -22,40 +21,48 @@ async function getAddressById(id) {
   }
 }
 
-
 // [POST] Thêm địa chỉ
-async function addAddress(data) {
-  try {
-    const { name, phone, address, status, user_id,type } = data;
-    if (!name || !phone || !address || !user_id) {
-      throw new Error("Thiếu thông tin bắt buộc");
+async function createAddress(data) {
+  const { user_id, is_default } = data;
+
+  if (is_default === true) {
+    await addressModel.updateMany({ user_id }, { $set: { is_default: false } });
+  } else {
+    const count = await addressModel.countDocuments({ user_id, is_default: true });
+    if (count === 0) {
+      throw new Error("Bạn phải có ít nhất 1 địa chỉ mặc định.");
     }
-    const newAddress = new addressModel({
-      name,
-      phone,
-      address,
-      status,
-      user_id,
-      type
-    });
-    return await newAddress.save();
-  } catch (error) {
-    console.error("Lỗi thêm địa chỉ:", error.message);
-    throw new Error(error.message || "Lỗi thêm địa chỉ");
   }
+
+  const newAddress = new addressModel(data);
+  await newAddress.save();
+  return newAddress;
 }
 
 // [PUT] Cập nhật địa chỉ
 async function updateAddress(id, data) {
-  try {
-    const address = await addressModel.findById(id);
-    if (!address) throw new Error("Không tìm thấy địa chỉ");
-    Object.assign(address, data);
-    return await address.save();
-  } catch (error) {
-    console.error("Lỗi cập nhật địa chỉ:", error.message);
-    throw new Error(error.message || "Lỗi cập nhật địa chỉ");
+  const { user_id, is_default } = data;
+
+  if (is_default === true) {
+    await addressModel.updateMany(
+      { user_id, _id: { $ne: id } },
+      { $set: { is_default: false } }
+    );
+  } else {
+    const count = await addressModel.countDocuments({
+      user_id,
+      is_default: true,
+      _id: { $ne: id },
+    });
+    if (count === 0) {
+      throw new Error("Bạn phải có ít nhất 1 địa chỉ mặc định.");
+    }
   }
+
+  const updated = await addressModel.findByIdAndUpdate(id, data, { new: true });
+  if (!updated) throw new Error("Không tìm thấy địa chỉ cần cập nhật");
+
+  return updated;
 }
 
 // [DELETE] Xoá địa chỉ
@@ -89,7 +96,7 @@ async function getAddressesByUserId(userId) {
 module.exports = {
   getAllAddresses,
   getAddressById,
-  addAddress,
+  createAddress,
   updateAddress,
   deleteAddress,
   getAddressesByUserId,
