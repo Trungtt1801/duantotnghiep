@@ -7,7 +7,7 @@ const orderDetailController = require('../mongo/controllers/orderDetailControlle
 router.get('/:orderId', async (req, res) => {
   try {
     const result = await orderDetailController.getDetailsByOrderId(req.params.orderId);
-    return res.status(200).json({ status: true, result });
+    return res.status(200).json( result );
   } catch (error) {
     console.error(error);
     return res.status(500).json({ status: false, message: 'Lỗi lấy chi tiết đơn hàng' });

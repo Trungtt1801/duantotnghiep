@@ -11,7 +11,7 @@ const AddressSchema = new Schema(
       match: /^[0-9]{10,15}$/,
     },
     address: { type: String }, 
-    status: { type: Boolean, default: false }, 
+    is_default: { type: Boolean, default: false }, 
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
     type: { type: String }, 
     detail: { type: String },

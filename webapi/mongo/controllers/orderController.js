@@ -37,7 +37,8 @@ async function addOrder(data) {
     voucher_id,
     total_price,
     payment_method,
-    products, // [{ productdetail_id, quantity }]
+    products, // [{ product_id, quantity }]
+    ip,
   } = data;
 
   if (
@@ -63,8 +64,8 @@ async function addOrder(data) {
 
   // VNPAY
   if (payment_method.toLowerCase() === "vnpay") {
-    const ip = data.ip || "127.0.0.1";
-    const vnpayRes = await createVnpayPayment(total_price, user_id, ip);
+    const ipAddr = ip || "127.0.0.1";
+    const vnpayRes = await createVnpayPayment(total_price, user_id, ipAddr);
     transaction_code = vnpayRes.transaction_code;
     payment_url = vnpayRes.payment_url;
   }
@@ -83,7 +84,8 @@ async function addOrder(data) {
 
   const orderDetails = products.map((item) => ({
     order_id: savedOrder._id,
-    productdetail_id: item.productdetail_id,
+    product_id: item.product_id,
+    image: item.image,
     quantity: item.quantity,
   }));
 
@@ -261,7 +263,7 @@ async function zaloCallback(data) {
           ? order.user_id._id
           : order.user_id;
 
-      console.log("🆔 Gọi updateUserPoint với userId:", userId);
+      console.log(" Gọi updateUserPoint với userId:", userId);
       await updateUserPoint(userId.toString(), order.total_price);
     } else {
       order.transaction_status = "failed";
@@ -370,5 +372,5 @@ module.exports = {
   zaloCallback,
   vnpayCallback,
   updateUserPoint,
-  getOrdersByUserId
+  getOrdersByUserId,
 };

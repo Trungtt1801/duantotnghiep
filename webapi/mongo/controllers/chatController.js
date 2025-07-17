@@ -3,6 +3,7 @@ const Product = require("../models/productsModel");
 const Category = require("../models/categoryModel");
 const Keyword = require("../models/keywordModel");
 const ProductVariant = require("../models/productVariantModel");
+const ChatHistory = require("../models/historychatModel");
 require("dotenv").config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -31,7 +32,11 @@ Chỉ trả lời đúng 1 từ: product / shipping / return / general / other.
 };
 
 const chatWithBot = async (req, res) => {
-  const { message } = req.body;
+  // Lưu ý: yêu cầu FE gửi cả userId và message
+  const { message, userId } = req.body;
+  if (!userId || !message) {
+    return res.status(400).json({ error: "Thiếu userId hoặc message" });
+  }
   const messageLower = message.toLowerCase();
 
   try {
@@ -44,11 +49,14 @@ const chatWithBot = async (req, res) => {
     const isReturn = matchedIntent.includes("return");
     const isGeneral = matchedIntent.includes("general");
 
+    let prompt = "";
+    let reply = "";
+
     // === 1. Hỏi về danh mục
     if (isGeneral) {
       const categories = await Category.find().select("name");
       const categoryList = categories.map((cat) => cat.name).join(", ");
-      const prompt = `
+      prompt = `
 Khách hỏi: "${message}".
 Bạn là trợ lý tư vấn sản phẩm thân thiện. Danh mục hiện có gồm: ${categoryList}.
 Viết câu trả lời ngắn gọn, tự nhiên, không sử dụng dấu sao hay Markdown.
@@ -57,13 +65,14 @@ Viết câu trả lời ngắn gọn, tự nhiên, không sử dụng dấu sao 
       const result = await model.generateContent({
         contents: [{ parts: [{ text: prompt }] }],
       });
-
-      return res.status(200).json({ reply: result.response.text().trim() });
+      reply = result.response.text().trim();
+      await saveChatHistory(userId, message, reply);
+      return res.status(200).json({ reply });
     }
 
     // === 2. Hỏi về giao hàng
     if (isShipping) {
-      const prompt = `
+      prompt = `
 Khách hỏi: "${message}".
 Chính sách giao hàng: miễn phí nội thành nếu mua từ 3 sản phẩm trở lên. Ngoại thành tính phí 30.000 VNĐ.
 Viết câu trả lời rõ ràng, thân thiện, không dùng định dạng Markdown.
@@ -72,23 +81,24 @@ Viết câu trả lời rõ ràng, thân thiện, không dùng định dạng Ma
       const result = await model.generateContent({
         contents: [{ parts: [{ text: prompt }] }],
       });
-
-      return res.status(200).json({ reply: result.response.text().trim() });
+      reply = result.response.text().trim();
+      await saveChatHistory(userId, message, reply);
+      return res.status(200).json({ reply });
     }
 
     // === 3. Hỏi về đổi trả
     if (isReturn) {
-      const prompt = `
+      prompt = `
 Khách hỏi: "${message}".
 Chính sách đổi trả: hỗ trợ trong 7 ngày nếu sản phẩm còn tem mác, chưa sử dụng. Không áp dụng với đồ lót hoặc hàng giảm giá.
 Viết câu trả lời thân thiện, dễ hiểu, không dùng dấu ** hoặc đặc biệt.
       `;
-
       const result = await model.generateContent({
         contents: [{ parts: [{ text: prompt }] }],
       });
-
-      return res.status(200).json({ reply: result.response.text().trim() });
+      reply = result.response.text().trim();
+      await saveChatHistory(userId, message, reply);
+      return res.status(200).json({ reply });
     }
 
     // === 4. Hỏi về sản phẩm
@@ -123,7 +133,7 @@ ${variantInfo}
 `;
       }
 
-      const prompt = `
+      prompt = `
 Khách hỏi: "${message}".
 Dưới đây là các sản phẩm gợi ý:
 
@@ -135,8 +145,9 @@ Viết lại câu trả lời thân thiện, rõ ràng, KHÔNG dùng định d�
       const result = await model.generateContent({
         contents: [{ parts: [{ text: prompt }] }],
       });
-
-      return res.status(200).json({ reply: result.response.text().trim() });
+      reply = result.response.text().trim();
+      await saveChatHistory(userId, message, reply);
+      return res.status(200).json({ reply });
     }
 
     // === 5. Không xác định => học từ mới
@@ -146,15 +157,12 @@ Viết lại câu trả lời thân thiện, rõ ràng, KHÔNG dùng định d�
       const intent = knownIntents.includes(aiIntent) ? aiIntent : "unknown";
 
       await Keyword.create({ word: messageLower, intent });
-      console.log(
-        `🧠 Bot học từ mới: "${messageLower}" với intent "${intent}"`
-      );
+      console.log(`🧠 Bot học từ mới: "${messageLower}" với intent "${intent}"`);
     }
 
-    return res.status(200).json({
-      reply:
-        "Bạn vui lòng cho biết rõ loại sản phẩm hoặc thông tin bạn cần nhé!",
-    });
+    reply = "Bạn vui lòng cho biết rõ loại sản phẩm hoặc thông tin bạn cần nhé!";
+    await saveChatHistory(userId, message, reply);
+    return res.status(200).json({ reply });
   } catch (err) {
     console.error("❌ ChatBot Error:", err);
     return res.status(500).json({
@@ -163,6 +171,30 @@ Viết lại câu trả lời thân thiện, rõ ràng, KHÔNG dùng định d�
     });
   }
 };
+
+// Hàm lưu lịch sử chat
+async function saveChatHistory(userId, userMsg, botReply) {
+  try {
+    const existingChat = await ChatHistory.findOne({ userId });
+    if (existingChat) {
+      existingChat.messages.push({ role: "user", content: userMsg });
+      existingChat.messages.push({ role: "bot", content: botReply });
+      existingChat.updatedAt = Date.now();
+      await existingChat.save();
+    } else {
+      const newChat = new ChatHistory({
+        userId,
+        messages: [
+          { role: "user", content: userMsg },
+          { role: "bot", content: botReply },
+        ],
+      });
+      await newChat.save();
+    }
+  } catch (error) {
+    console.error("❌ Lỗi khi lưu chat history:", error);
+  }
+}
 
 // === Chào ban đầu
 const welcomeMessage = async (req, res) => {
@@ -173,12 +205,12 @@ const welcomeMessage = async (req, res) => {
 Bạn là trợ lý bán hàng của shop quần áo. Hãy chào hỏi thân thiện khách mới và giới thiệu các danh mục hiện có gồm: ${categoryList}.
 Viết câu trả lời tự nhiên, KHÔNG dùng định dạng Markdown (** hoặc *).
     `;
-
     const result = await model.generateContent({
       contents: [{ parts: [{ text: prompt }] }],
     });
-
-    return res.status(200).json({ reply: result.response.text().trim() });
+    const reply = result.response.text().trim();
+    await saveChatHistory(req.body.userId, "", reply); // Nếu có userId, hoặc bạn có thể truyền mặc định
+    return res.status(200).json({ reply });
   } catch (err) {
     console.error("❌ Welcome Error:", err);
     return res.status(500).json({
