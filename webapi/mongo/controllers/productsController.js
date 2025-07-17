@@ -107,8 +107,9 @@ async function addProduct(data) {
 async function searchProductsByName(nameKeyword) {
   try {
     // Tách từ khóa tìm kiếm và tạo regex
-    const keywordRegex = nameKeyword.trim().split(/\s+/).join(".*");
+    const keywordRegex = ".*" + nameKeyword.trim().split(/\s+/).join(".*") + ".*";
     const regex = new RegExp(keywordRegex, "i");
+
 
     const products = await productsModel.find({
       name: { $regex: regex },
@@ -124,7 +125,9 @@ async function searchProductsByName(nameKeyword) {
           img.startsWith("http") ? img : baseUrl + img
         );
       }
-
+      if (!Array.isArray(productObj.variants)) {
+        productObj.variants = [];
+      }
       return productObj;
     });
 
