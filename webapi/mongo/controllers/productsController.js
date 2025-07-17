@@ -104,31 +104,68 @@ async function addProduct(data) {
   }
 }
 
+// async function searchProductsByName(nameKeyword) {
+//   try {
+//     // Tách từ khóa tìm kiếm và tạo regex
+//     const keywordRegex = nameKeyword.trim().split(/\s+/).join(".*");
+//     const regex = new RegExp(keywordRegex, "i");
+
+//     const products = await productsModel.find({
+//       name: { $regex: regex },
+//     });
+
+//     const baseUrl = "http://localhost:3000/images/";
+
+//     const updatedProducts = products.map((product) => {
+//       const productObj = product.toObject();
+
+//       if (Array.isArray(productObj.images)) {
+//         productObj.images = productObj.images.map((img) =>
+//           img.startsWith("http") ? img : baseUrl + img
+//         );
+//       }
+
+//       return productObj;
+//     });
+
+//     return updatedProducts;
+//   } catch (error) {
+//     console.error("Lỗi khi tìm kiếm sản phẩm theo tên:", error);
+//     throw error;
+//   }
+// }
+
 async function searchProductsByName(nameKeyword) {
   try {
-    // Tách từ khóa tìm kiếm và tạo regex
     const keywordRegex = ".*" + nameKeyword.trim().split(/\s+/).join(".*") + ".*";
     const regex = new RegExp(keywordRegex, "i");
 
-
     const products = await productsModel.find({
       name: { $regex: regex },
-    });
+    }).lean();
 
     const baseUrl = "http://localhost:3000/images/";
 
-    const updatedProducts = products.map((product) => {
-      const productObj = product.toObject();
+    // Lấy danh sách product_id để fetch variant
+    const productIds = products.map((p) => p._id);
+    const variantsDocs = await productVariantModel.find({
+      product_id: { $in: productIds },
+    }).lean();
 
-      if (Array.isArray(productObj.images)) {
-        productObj.images = productObj.images.map((img) =>
+    const updatedProducts = products.map((product) => {
+      // Chuẩn hóa ảnh
+      if (Array.isArray(product.images)) {
+        product.images = product.images.map((img) =>
           img.startsWith("http") ? img : baseUrl + img
         );
       }
-      if (!Array.isArray(productObj.variants)) {
-        productObj.variants = [];
-      }
-      return productObj;
+      // Tìm document chứa variants tương ứng
+      const match = variantsDocs.find(
+        (v) => v.product_id.toString() === product._id.toString()
+      );
+      product.variants = match?.variants || [];
+
+      return product;
     });
 
     return updatedProducts;
@@ -137,6 +174,7 @@ async function searchProductsByName(nameKeyword) {
     throw error;
   }
 }
+
 
 async function updateProduct(id, data) {
   try {
