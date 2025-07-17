@@ -13,15 +13,28 @@ router.post('/', async (req, res) => {
   }
 });
 
-// [GET] Lấy đánh giá theo sản phẩm
-// GET /review/product/:productdetail_id
-router.get('/product/:productdetail_id', async (req, res) => {
+// [GET] Lấy đánh giá theo product_id (có thể thêm color, size nếu cần)
+// GET /review/product/:product_id?color=Red&size=L
+router.get('/product/:product_id', async (req, res) => {
   try {
-    const result = await reviewController.getReviewByProductDetail(req.params.productdetail_id);
+    const { color, size } = req.query;
+    const result = await reviewController.getReviewByProduct(req.params.product_id, color, size);
     return res.status(200).json({ status: true, result });
   } catch (err) {
     return res.status(400).json({ status: false, message: err.message });
   }
 });
+
+// [GET] Tìm kiếm/lọc đánh giá (theo keyword sản phẩm, page, limit)
+// GET /review/search?keyword=&page=&limit=
+router.get('/search', async (req, res) => {
+  try {
+    const result = await reviewController.getAllReviews(req.query);
+    return res.status(200).json({ status: true, ...result });
+  } catch (err) {
+    return res.status(400).json({ status: false, message: err.message });
+  }
+});
+
 
 module.exports = router;
