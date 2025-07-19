@@ -9,7 +9,7 @@ const config = {
   endpoint: "https://sb-openapi.zalopay.vn/v2/create",
 };
 
-async function createZaloPayOrder(amount, userId) {
+async function createZaloPayOrder(amount, userId, orderId) {
   const transID = Math.floor(Math.random() * 1000000);
   const embed_data = {};
   const items = [{}];
@@ -24,7 +24,7 @@ async function createZaloPayOrder(amount, userId) {
     amount,
     description: `Thanh toán đơn hàng #${transID}`,
     bank_code: "zalopayapp",
-    return_url: "https://order",
+  return_url: `http://localhost:3000/order/${orderId}`
   };
 
   const data = [

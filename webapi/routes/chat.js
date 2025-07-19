@@ -4,9 +4,9 @@ const { chatWithBot } = require('../mongo/controllers/chatController');
 const Keyword = require('../mongo/models/keywordModel')
 
 
-// http://localhost:3000/chat
-router.post('/', chatWithBot);
-router.get('/welcome', chatWithBot);
+  // http://localhost:3000/chat
+  router.post('/', chatWithBot);
+  router.post('/welcome', chatWithBot);
 //  http://localhost:3000/chat/seed-intents
 router.post("/seed-intents", async (req, res) => {
   try {

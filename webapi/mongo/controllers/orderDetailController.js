@@ -1,5 +1,5 @@
 const OrderDetailModel = require("../models/orderDetailModel");
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 async function addOrderDetail(data) {
   try {
@@ -27,6 +27,7 @@ async function getDetailsByOrderId(orderId) {
           order_id: new mongoose.Types.ObjectId(orderId),
         },
       },
+      // Join product
       {
         $lookup: {
           from: "products",
@@ -36,6 +37,30 @@ async function getDetailsByOrderId(orderId) {
         },
       },
       { $unwind: "$product" },
+
+      // Join variant
+      {
+        $lookup: {
+          from: "productvariant",
+          localField: "variant_id",
+          foreignField: "_id",
+          as: "variant",
+        },
+      },
+      { $unwind: { path: "$variant", preserveNullAndEmptyArrays: true } },
+
+      // Join size
+      {
+        $lookup: {
+          from: "size",
+          localField: "size_id",
+          foreignField: "_id",
+          as: "size",
+        },
+      },
+      { $unwind: { path: "$size", preserveNullAndEmptyArrays: true } },
+
+      // Xử lý ảnh thành link đầy đủ
       {
         $addFields: {
           "product.images": {
@@ -53,33 +78,30 @@ async function getDetailsByOrderId(orderId) {
           },
         },
       },
+
+      // Format dữ liệu trả về
       {
-        $group: {
-          _id: "$order_id",
-          products: {
-            $push: {
-              product_id: "$product._id",
-              name: "$product.name",
-              images: "$product.images",
-              price: "$product.price",
-              quantity: "$quantity",
-            },
-          },
+        $project: {
+          _id: 0,
+          order_id: "$order_id",
+          product_id: "$product._id",
+          name: "$product.name",
+          images: "$product.images",
+          price: "$product.price",
+          quantity: "$quantity",
+          variant: "$variant",
+          size: "$size",
         },
       },
     ]);
 
-    if (!details.length) return null;
-
-    return {
-      order_id: details[0]._id,
-      products: details[0].products,
-    };
+    return details;
   } catch (error) {
     console.error("Lỗi lấy chi tiết đơn hàng theo ID:", error.message);
     throw new Error("Lỗi lấy chi tiết đơn hàng");
   }
 }
+
 
 async function deleteDetailsByOrderId(orderId) {
   try {
