@@ -53,5 +53,13 @@ userSchema.methods.toJSON = function () {
 
   return obj;
 };
+userSchema.virtual("addresses", {
+  ref: "Address",
+  localField: "_id",
+  foreignField: "user_id",
+  justOne: false,
+});
+userSchema.set("toObject", { virtuals: true });
+userSchema.set("toJSON", { virtuals: true });
 
 module.exports = mongoose.models.User || mongoose.model("User", userSchema);
