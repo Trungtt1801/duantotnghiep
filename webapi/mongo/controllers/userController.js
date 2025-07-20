@@ -1,5 +1,6 @@
 require("dotenv").config();
 const usersModel = require("../models/userModels");
+const Address = require("../models/addressModel");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
@@ -16,12 +17,17 @@ const transporter = nodemailer.createTransport({
 // Lấy tất cả user (ẩn password)
 async function getAllUsers() {
   try {
-    const users = await usersModel.find().select("-password");
+    const users = await usersModel
+      .find()
+      .select("-password")
+      .populate("addresses"); // lấy từ virtual populate
+
     return users;
   } catch (error) {
     throw new Error("Lỗi lấy dữ liệu người dùng");
   }
 }
+
 
 // Đăng ký người dùng
 async function register(data) {
@@ -218,7 +224,27 @@ async function findOrCreateFacebookUser({ name, email }) {
 
   return user;
 }
+async function getUserById(userId) {
+  try {
+    const user = await usersModel
+      .findById(userId)
+      .select("-password");
 
+    if (!user) throw new Error("Không tìm thấy người dùng");
+
+    const defaultAddress = await Address.findOne({
+      user_id: userId,
+      is_default: true,
+    });
+
+    const userObj = user.toObject(); // chuyển sang object thường để gán thêm field
+    userObj.defaultAddress = defaultAddress;
+
+    return userObj;
+  } catch (error) {
+    throw new Error("Lỗi khi lấy thông tin người dùng");
+  }
+}
 
 
 module.exports = {
@@ -230,4 +256,6 @@ module.exports = {
   resetPassword,
   findOrCreateGoogleUser,
   findOrCreateFacebookUser,
+  getUserById
 };
+

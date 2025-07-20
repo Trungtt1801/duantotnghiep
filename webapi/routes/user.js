@@ -189,6 +189,18 @@ if (!fbData.email) {
     });
   }
 });
-
+router.get("/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await userController.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ status: false, message: "Người dùng không tồn tại" });
+    }
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error("Lỗi lấy thông tin người dùng:", error);
+    return res.status(500).json({ status: false, message: "Lỗi lấy thông tin người dùng", error: error.message });
+  }
+});
 
 module.exports = router;
