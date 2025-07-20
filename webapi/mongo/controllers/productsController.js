@@ -53,7 +53,7 @@ async function addProduct(data) {
       shop_id,
       description,
       sale_count,
-      isHidden, // ✅ Thêm dòng này
+      isHidden,
     } = data;
 
 
@@ -76,7 +76,7 @@ async function addProduct(data) {
       price,
       sale,
       material,
-      isHidden: isHidden ?? false, // ✅ Ưu tiên dùng isHidden từ client, fallback false
+      isHidden: isHidden ?? false,
       shop_id: shop_id || 1,
       description,
       sale_count,

@@ -37,14 +37,19 @@ router.get("/", async (req, res) => {
           name: product.name,
           description: product.description,
           price: product.price,
+          sale: product.sale,
+          sale_count: product.sale_count,
+          material: product.material,
+          shop_id: product.shop_id,
           category_id: product.category_id,
           isHidden: product.isHidden,
+          create_at: product.create_at,
           images: product.images?.map((imgName) =>
             imgName.startsWith("http") ? imgName : baseUrl + imgName
           ),
           variants: variantsDoc ? variantsDoc.variants : [],
-          isHidden: product.isHidden,
         };
+
       })
     );
 
