@@ -16,8 +16,10 @@ const productSchema = new Schema({
     categoryName: { type: String, required: true },
     categoryId: { type: ObjectId, required: true, ref: "Category" },
   },
-
   isHidden: { type: Boolean, default: false },
+
+  
+  quantity: { type: Number, required: true, default: 0 },
 });
 
 module.exports =
