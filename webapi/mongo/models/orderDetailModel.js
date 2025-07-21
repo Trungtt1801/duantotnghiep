@@ -8,9 +8,9 @@ const OrderDetailSchema = new Schema({
     ref: 'order',
     required: true,
   },
-  productdetail_id: {
+  product_id: {
     type: Schema.Types.ObjectId,
-    ref: 'productDetails',
+    ref: 'products',
     required: true,
   },
   quantity: {
