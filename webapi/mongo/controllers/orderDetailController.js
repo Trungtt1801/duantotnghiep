@@ -22,7 +22,7 @@ async function addOrderDetail(data) {
   }
 }
 
-<<<<<<< HEAD
+
 // async function getDetailsByOrderId(orderId) {
 //   try {
 //     const BASE_URL = "http://localhost:3000/images/";
@@ -108,8 +108,7 @@ async function addOrderDetail(data) {
 //   }
 // }
 
-=======
->>>>>>> Trung
+
 async function getOrderDetailByOrderId(orderId) {
   try {
     // 1. Lấy chi tiết đơn hàng
