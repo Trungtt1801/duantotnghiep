@@ -96,20 +96,19 @@ async function addOrder(data) {
   });
 
   // 4. Thêm chi tiết đơn hàng
-console.log("Req body:", req.body);
-console.log("Products:", req.body.products);
-const orderDetails = req.body.products.map((item) => {
-  console.log("Chi tiết item:", item); // <-- debug ở đây
-  return {
-    order_id: savedOrder._id,
-    product_id: item.product_id,
-    image: item.image,
-    quantity: item.quantity,
-    variant_id: item.variant_id,
-    size_id: item.size_id,
-  };
-});
+  console.log("Data body:", data);
+  console.log("Products:", data.products);
 
+  const orderDetails = data.products.map((item) => {
+    console.log("Chi tiết item:", item);
+    return {
+      order_id: savedOrder._id,
+      product_id: item.product_id,
+      image: item.image,
+      quantity: item.quantity,
+      variant_id: item.variant_id,
+    };
+  });
 
   await orderDetailModel.insertMany(orderDetails);
 
@@ -230,7 +229,7 @@ async function filterOrders(query) {
 }
 async function createOrderWithZaloPay(data) {
   try {
-    const { user_id, address_id, voucher_id, total_price, products, size_id } = data;
+    const { user_id, address_id, voucher_id, total_price, products} = data;
 
     if (!user_id || !total_price || !products || products.length === 0)
       throw new Error("Thiếu thông tin đơn hàng hoặc sản phẩm");
@@ -257,7 +256,6 @@ async function createOrderWithZaloPay(data) {
       variant_id: product.variant_id, // nếu bạn có sử dụng variant
       quantity: product.quantity,
       price: product.price,
-      size_id: product.size_id, // nếu bạn có sử dụng size
     }));
 
     await orderDetailModel.insertMany(orderDetails);

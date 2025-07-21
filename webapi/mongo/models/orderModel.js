@@ -10,14 +10,14 @@ const OrderSchema = new Schema(
       enum: ["pending", "confirmed", "shipped", " delivered", "cancelled"],
       default: "pending",
     },
-    // address_id: { type: Schema.Types.ObjectId, ref: "Address" }, // REAL
-    address_id: { type: String, required: true }, // FAKE
+    address_id: { type: Schema.Types.ObjectId, ref: "Address" , require: false}, // REAL
+    address_id_guess: { type: String, required: false }, // FAKE
     voucher_id: { type: Schema.Types.ObjectId, ref: "Voucher" },
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
     evaluate: String,
     payment_method: {
       type: String,
-      enum: ["cod", "vnpay", "zalopay"],
+      enum: ["cod", "vnpay", "zalopay","COD"],
       required: true,
     },
     transaction_code: String,

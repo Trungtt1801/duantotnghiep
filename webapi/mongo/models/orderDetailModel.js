@@ -19,11 +19,6 @@ const OrderDetailSchema = new Schema(
       ref: 'productvariants', // hoặc tên model đúng là gì, bạn kiểm tra nhé
       required: true,
     },
-    size_id: {
-      type: Schema.Types.ObjectId,
-      required: true,
-      ref:'Size'
-    },
     quantity: {
       type: Number,
       required: true,

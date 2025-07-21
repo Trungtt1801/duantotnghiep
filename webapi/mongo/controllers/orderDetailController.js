@@ -106,6 +106,7 @@ async function addOrderDetail(data) {
 //     throw new Error("Lỗi lấy chi tiết đơn hàng");
 //   }
 // }
+
 async function getOrderDetailByOrderId(orderId) {
   try {
     // 1. Lấy chi tiết đơn hàng
@@ -176,14 +177,11 @@ async function getOrderDetailByOrderId(orderId) {
           color: matchedVariant.color,
         };
 
-        const matchedSize = matchedVariant.sizes?.find(
-          (s) => s?._id?.toString() === item?.size_id?.toString()
-        );
+       
 
         if (matchedSize) {
           sizeData = {
             _id: matchedSize._id,
-            size: matchedSize.size,
             sku: matchedSize.sku,
             quantity: matchedSize.quantity,
           };
