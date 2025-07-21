@@ -22,6 +22,7 @@ async function addOrderDetail(data) {
   }
 }
 
+<<<<<<< HEAD
 // async function getDetailsByOrderId(orderId) {
 //   try {
 //     const BASE_URL = "http://localhost:3000/images/";
@@ -107,6 +108,8 @@ async function addOrderDetail(data) {
 //   }
 // }
 
+=======
+>>>>>>> Trung
 async function getOrderDetailByOrderId(orderId) {
   try {
     // 1. Lấy chi tiết đơn hàng
@@ -128,30 +131,28 @@ async function getOrderDetailByOrderId(orderId) {
     }
 
     // 3. Lấy thông tin user
-    const user = await User.findById(order.user_id).lean();
+const user = await User.findById(order.user_id).lean();
 
-    // ✅ Lấy địa chỉ mặc định (is_default) của user
-    const address = await AddressModel.findOne({
-      user_id: order.user_id,
-      is_default: true, // chứ không phải isDefault
-    }).lean();
+// ✅ Sửa lại: lấy đúng địa chỉ đã chọn khi đặt hàng (không phải mặc định)
+const address = await AddressModel.findById(order.address_id).lean();
 
-    const userInfo = user
-      ? {
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          address: address
-            ? {
-                name: address.name,
-                phone: address.phone,
-                address: address.address,
-                detail: address.detail,
-                type: address.type,
-              }
-            : null,
-        }
-      : null;
+const userInfo = user
+  ? {
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      address: address
+        ? {
+            name: address.name,
+            phone: address.phone,
+            address: address.address,
+            detail: address.detail,
+            type: address.type,
+          }
+        : null,
+    }
+  : null;
+
 
     // 4. Xử lý chi tiết sản phẩm
     const result = [];

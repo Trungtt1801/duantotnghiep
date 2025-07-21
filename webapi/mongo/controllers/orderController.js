@@ -43,6 +43,7 @@ async function addOrder(data) {
 
   if (
     !user_id ||
+    !address_id ||
     !total_price ||
     !payment_method ||
     !products ||
@@ -55,7 +56,7 @@ async function addOrder(data) {
   let transaction_status = "unpaid";
   let payment_url = null;
 
-  // 1. Tạo đơn hàng trước để lấy _id
+  // 1. Tạo đơn hàng
   const newOrder = new orderModel({
     user_id,
     address_id,
@@ -65,9 +66,9 @@ async function addOrder(data) {
     transaction_status,
   });
 
-  const savedOrder = await newOrder.save(); // Có savedOrder._id
+  const savedOrder = await newOrder.save();
 
-  // 2. Gọi tới ZaloPay hoặc VNPAY sau khi có order_id
+  // 2. Gọi ZaloPay hoặc VNPAY nếu cần
   if (payment_method.toLowerCase() === "zalopay") {
     const zaloRes = await createZaloPayOrder(
       total_price,
@@ -90,12 +91,13 @@ async function addOrder(data) {
     payment_url = vnpayRes.payment_url;
   }
 
-  // 3. Cập nhật mã giao dịch vào đơn hàng
+  // 3. Cập nhật mã giao dịch
   await orderModel.findByIdAndUpdate(savedOrder._id, {
     transaction_code,
   });
 
   // 4. Thêm chi tiết đơn hàng
+<<<<<<< HEAD
   console.log("Data body:", data);
   console.log("Products:", data.products);
 
@@ -109,13 +111,26 @@ async function addOrder(data) {
       variant_id: item.variant_id,
     };
   });
+=======
+  const orderDetails = data.products.map((item) => ({
+    order_id: savedOrder._id,
+    product_id: item.product_id,
+    image: item.image,
+    quantity: item.quantity,
+    variant_id: item.variant_id,
+    size_id: item.size_id,
+  }));
+>>>>>>> Trung
 
   await orderDetailModel.insertMany(orderDetails);
+
+  // 🔄 5. Reload lại order để trả về đầy đủ address_id và các field mới nhất
+  const updatedOrder = await orderModel.findById(savedOrder._id).lean();
 
   return {
     status: true,
     message: "Tạo đơn hàng và chi tiết thành công",
-    order: { ...savedOrder.toObject(), transaction_code },
+    order: { ...updatedOrder, transaction_code },
     payment_url,
   };
 }
@@ -229,7 +244,12 @@ async function filterOrders(query) {
 }
 async function createOrderWithZaloPay(data) {
   try {
+<<<<<<< HEAD
     const { user_id, address_id, voucher_id, total_price, products} = data;
+=======
+    const { user_id, address_id, voucher_id, total_price, products, size_id } =
+      data;
+>>>>>>> Trung
 
     if (!user_id || !total_price || !products || products.length === 0)
       throw new Error("Thiếu thông tin đơn hàng hoặc sản phẩm");
