@@ -249,7 +249,6 @@ async function createOrderWithZaloPay(data) {
       transaction_status: "unpaid",
     });
 
-    // 👇 Tạo các bản ghi orderDetail
     const orderDetails = products.map((product) => ({
       order_id: newOrder._id,
       product_id: product.product_id,
