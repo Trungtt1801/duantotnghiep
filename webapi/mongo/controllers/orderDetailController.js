@@ -106,6 +106,7 @@ const userInfo = user
 
       result.push({
         order_id: item.order_id,
+        createdAt: item.createdAt,
         quantity: item.quantity,
         product: {
           product_id: product._id,
