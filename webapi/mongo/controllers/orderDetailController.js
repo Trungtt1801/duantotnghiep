@@ -22,6 +22,7 @@ async function addOrderDetail(data) {
   }
 }
 
+
 async function getOrderDetailByOrderId(orderId) {
   try {
     // 1. Lấy chi tiết đơn hàng
@@ -50,11 +51,13 @@ const address = await AddressModel.findById(order.address_id).lean();
 
 const userInfo = user
   ? {
+      _id: user._id, // ✅ Thêm user._id
       name: user.name,
       email: user.email,
       phone: user.phone,
       address: address
         ? {
+            _id: address._id, // ✅ Thêm address._id
             name: address.name,
             phone: address.phone,
             address: address.address,
