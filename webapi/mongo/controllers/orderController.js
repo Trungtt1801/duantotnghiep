@@ -135,16 +135,19 @@ async function confirmOrder(id) {
   try {
     const order = await orderModel.findById(id);
     if (!order) throw new Error("Không tìm thấy đơn hàng");
+
     if (order.status_order !== "pending") {
       throw new Error("Chỉ đơn hàng ở trạng thái pending mới được xác nhận");
     }
-    order.status_order = "confirmed";
+
+    order.status_order = "preparing";
     return await order.save();
   } catch (error) {
     console.error("Lỗi xác nhận đơn hàng:", error.message);
     throw new Error(error.message || "Lỗi khi xác nhận đơn hàng");
   }
 }
+
 
 //Cập nhật trạng thái đơn hàng
 async function updateOrderStatus(id, status) {

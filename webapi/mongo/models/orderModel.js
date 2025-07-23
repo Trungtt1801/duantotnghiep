@@ -7,9 +7,10 @@ const OrderSchema = new Schema(
     total_price: { type: Number, required: true },
     status_order: {
       type: String,
-      enum: ["pending", "confirmed", "shipped", " delivered", "cancelled"],
-      default: "pending",
+      enum: ["pending", "preparing", "shipping", "delivered", "cancelled", "refund"],
+      required: true,
     },
+
     address_id: { type: Schema.Types.ObjectId, ref: "Address" },
     voucher_id: { type: Schema.Types.ObjectId, ref: "Voucher" },
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
