@@ -7,9 +7,21 @@ const OrderSchema = new Schema(
     total_price: { type: Number, required: true },
     status_order: {
       type: String,
-      enum: ["pending", "confirmed", "shipped", " delivered", "cancelled"],
+      enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
       default: "pending",
     },
+    // ✅ Mảng lịch sử trạng thái
+    status_history: [
+      {
+        status: {
+          type: String,
+          enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
+        },
+        updatedAt: { type: Date, default: Date.now },
+        note: { type: String }, 
+      },
+    ],
+
     address_id: { type: Schema.Types.ObjectId, ref: "Address" },
     voucher_id: { type: Schema.Types.ObjectId, ref: "Voucher" },
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -28,6 +40,7 @@ const OrderSchema = new Schema(
   },
   { timestamps: true }
 );
+
 
 OrderSchema.methods.toJSON = function () {
   const obj = this.toObject();

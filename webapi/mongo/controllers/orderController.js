@@ -64,6 +64,13 @@ async function addOrder(data) {
     total_price,
     payment_method,
     transaction_status,
+    status_history: [
+      {
+        status: "pending",
+        updatedAt: new Date(),
+        note: "Đơn hàng được tạo",
+      },
+    ],
   });
 
   const savedOrder = await newOrder.save();
@@ -130,21 +137,37 @@ async function deleteOrder(id) {
   }
 }
 
-//Xác nhận đơn hàng
 async function confirmOrder(id) {
   try {
     const order = await orderModel.findById(id);
     if (!order) throw new Error("Không tìm thấy đơn hàng");
+
     if (order.status_order !== "pending") {
       throw new Error("Chỉ đơn hàng ở trạng thái pending mới được xác nhận");
     }
+
+    // Kiểm tra nếu đã có "confirmed" trong lịch sử
+    const hasConfirmed = order.status_history.some(
+      (item) => item.status === "confirmed"
+    );
+    if (hasConfirmed) {
+      throw new Error("Đơn hàng đã được xác nhận trước đó");
+    }
+
     order.status_order = "confirmed";
+    order.status_history.push({
+      status: "confirmed",
+      updatedAt: new Date(),
+      note: "Admin xác nhận đơn hàng",
+    });
+
     return await order.save();
   } catch (error) {
     console.error("Lỗi xác nhận đơn hàng:", error.message);
     throw new Error(error.message || "Lỗi khi xác nhận đơn hàng");
   }
 }
+
 
 //Cập nhật trạng thái đơn hàng
 async function updateOrderStatus(id, status) {
@@ -156,6 +179,11 @@ async function updateOrderStatus(id, status) {
     if (!order) throw new Error("Không tìm thấy đơn hàng");
 
     order.status_order = status;
+    order.status_history.push({
+      status,
+      updatedAt: new Date(),
+      note: "Admin cập nhật trạng thái",
+    });
     return await order.save();
   } catch (error) {
     console.error("Lỗi cập nhật trạng thái đơn hàng:", error.message);
@@ -196,6 +224,11 @@ async function cancelOrder(id, isAdmin = false) {
     }
 
     order.status_order = "cancelled";
+    order.status_history.push({
+      status: "cancelled",
+      updatedAt: new Date(),
+      note: isAdmin ? "Admin huỷ đơn hàng" : "Người dùng huỷ đơn hàng",
+    });
     return await order.save();
   } catch (error) {
     console.error("Lỗi hủy đơn hàng:", error.message);

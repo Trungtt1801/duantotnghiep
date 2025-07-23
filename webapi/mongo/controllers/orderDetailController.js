@@ -5,7 +5,6 @@ const OrderModel = require("../models/orderModel");
 const User = require("../models/userModels");
 const AddressModel = require("../models/addressModel");
 
-
 async function addOrderDetail(data) {
   try {
     const { order_id, product_id, quantity } = data;
@@ -43,28 +42,27 @@ async function getOrderDetailByOrderId(orderId) {
     }
 
     // 3. Lấy thông tin user
-const user = await User.findById(order.user_id).lean();
+    const user = await User.findById(order.user_id).lean();
 
-// ✅ Sửa lại: lấy đúng địa chỉ đã chọn khi đặt hàng (không phải mặc định)
-const address = await AddressModel.findById(order.address_id).lean();
+    // ✅ Sửa lại: lấy đúng địa chỉ đã chọn khi đặt hàng (không phải mặc định)
+    const address = await AddressModel.findById(order.address_id).lean();
 
-const userInfo = user
-  ? {
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      address: address
-        ? {
-            name: address.name,
-            phone: address.phone,
-            address: address.address,
-            detail: address.detail,
-            type: address.type,
-          }
-        : null,
-    }
-  : null;
-
+    const userInfo = user
+      ? {
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          address: address
+            ? {
+                name: address.name,
+                phone: address.phone,
+                address: address.address,
+                detail: address.detail,
+                type: address.type,
+              }
+            : null,
+        }
+      : null;
 
     // 4. Xử lý chi tiết sản phẩm
     const result = [];
@@ -127,6 +125,13 @@ const userInfo = user
       status: true,
       result,
       user: userInfo,
+      order: {
+        payment_method: order.payment_method,
+        status_order: order.status_order,
+        transaction_status: order.transaction_status, // optional
+        total_price: order.total_price, // optional nếu FE cần hiển thị tổng
+        createdAt: order.createdAt, // optional nếu FE cần
+      },
     };
   } catch (error) {
     console.error("❌ Lỗi khi lấy chi tiết đơn hàng:", error);
@@ -136,7 +141,6 @@ const userInfo = user
     };
   }
 }
-
 
 async function deleteDetailsByOrderId(orderId) {
   try {
