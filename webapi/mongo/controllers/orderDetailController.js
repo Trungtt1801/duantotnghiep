@@ -21,6 +21,7 @@ async function addOrderDetail(data) {
   }
 }
 
+
 async function getOrderDetailByOrderId(orderId) {
   try {
     // 1. Lấy chi tiết đơn hàng
@@ -44,26 +45,27 @@ async function getOrderDetailByOrderId(orderId) {
     // 3. Lấy thông tin user
     const user = await User.findById(order.user_id).lean();
 
-    // ✅ Sửa lại: lấy đúng địa chỉ đã chọn khi đặt hàng (không phải mặc định)
-    const address = await AddressModel.findById(order.address_id).lean();
+// ✅ Sửa lại: lấy đúng địa chỉ đã chọn khi đặt hàng (không phải mặc định)
+const address = await AddressModel.findById(order.address_id).lean();
 
-    const userInfo = user
-      ? {
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          address: address
-            ? {
-                name: address.name,
-                phone: address.phone,
-                address: address.address,
-                detail: address.detail,
-                type: address.type,
-              }
-            : null,
-        }
-      : null;
-
+const userInfo = user
+  ? {
+      _id: user._id, // ✅ Thêm user._id
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      address: address
+        ? {
+            _id: address._id, // ✅ Thêm address._id
+            name: address.name,
+            phone: address.phone,
+            address: address.address,
+            detail: address.detail,
+            type: address.type,
+          }
+        : null,
+    }
+  : null;
     // 4. Xử lý chi tiết sản phẩm
     const result = [];
 
