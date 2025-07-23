@@ -152,7 +152,14 @@ async function confirmOrder(id) {
 //Cập nhật trạng thái đơn hàng
 async function updateOrderStatus(id, status) {
   try {
-    const allowed = ["confirmed", "shipped", "delivered", "cancelled"];
+    const allowed = [
+      "preparing",
+      "awaiting_shipment",
+      "shipping",
+      "delivered",
+      "cancelled",
+      "refund",
+    ];
     if (!allowed.includes(status)) throw new Error("Trạng thái không hợp lệ");
 
     const order = await orderModel.findById(id);
