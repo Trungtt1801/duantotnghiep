@@ -234,20 +234,22 @@ async function createOrderWithZaloPay(data) {
     if (!user_id || !total_price || !products || products.length === 0)
       throw new Error("Thiếu thông tin đơn hàng hoặc sản phẩm");
 
-    const zaloResponse = await createZaloPayOrder(
-      total_price,
-      user_id.toString()
-    );
-
+    // 1. Tạo trước đơn hàng để lấy orderId
     const newOrder = await orderModel.create({
       user_id,
       address_id,
       voucher_id,
       total_price,
       payment_method: "zalopay",
-      transaction_code: zaloResponse.app_trans_id,
       transaction_status: "unpaid",
     });
+
+    // 2. Gọi createZaloPayOrder với order._id
+    const zaloResponse = await createZaloPayOrder(
+      total_price,
+      user_id.toString(),
+      newOrder._id.toString() // 👈 Truyền orderId vào đây
+    );
 
     const orderDetails = products.map((product) => ({
       order_id: newOrder._id,
