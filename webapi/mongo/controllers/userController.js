@@ -235,12 +235,6 @@ async function findOrCreateFacebookUser({ name, email }) {
 }
 async function getUserById(userId) {
   try {
-    // Kiểm tra ObjectId hợp lệ
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      throw new Error("ID không hợp lệ");
-    }
-
-    // Tìm user và populate địa chỉ mặc định
     const user = await usersModel
       .findById(userId)
       .select("-password")
@@ -250,18 +244,24 @@ async function getUserById(userId) {
         options: { limit: 1 },
       });
 
-    if (!user) throw new Error("Không tìm thấy người dùng");
+    if (!user) {
+      console.log("Không tìm thấy userId:", userId);
+      throw new Error("Không tìm thấy người dùng");
+    }
 
-    const userObj = user.toObject();
+    // ✅ Lưu ý: phải truyền { virtuals: true }
+    const userObj = user.toObject({ virtuals: true });
     userObj.defaultAddress = userObj.addresses?.[0] || null;
     delete userObj.addresses;
 
     return userObj;
   } catch (error) {
-    console.error("Lỗi getUserById:", error.message);
-    throw error;
+    console.error("Lỗi tại getUserById:", error);
+    throw new Error("Lỗi server");
   }
 }
+
+
 
 
 

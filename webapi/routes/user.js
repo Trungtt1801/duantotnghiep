@@ -190,15 +190,19 @@ if (!fbData.email) {
 });
 router.get("/:id", async (req, res) => {
   try {
-    const user = await getUserById(req.params.id);
-    res.json(user);
+    const user = await userController.getUserById(req.params.id); 
+
+    res.status(200).json({ status: true, data: user });
   } catch (err) {
     console.error("Lỗi khi gọi API /user/:id:", err.message);
-    if (err.message.includes("Không tìm thấy") || err.message.includes("ID không hợp lệ")) {
-      return res.status(404).json({ message: err.message });
-    }
-    res.status(500).json({ message: "Lỗi server" });
+
+    const statusCode = err.message.includes("Không tìm thấy") || err.message.includes("ID không hợp lệ")
+      ? 404
+      : 500;
+
+    res.status(statusCode).json({ status: false, message: err.message });
   }
 });
+
 
 module.exports = router;

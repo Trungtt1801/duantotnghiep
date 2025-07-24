@@ -1,4 +1,5 @@
 const addressModel = require("../models/addressModel");
+
 // [GET] Lấy tất cả địa chỉ
 async function getAllAddresses() {
   try {
@@ -89,33 +90,31 @@ async function deleteAddress(id) {
     throw new Error("Lỗi xoá địa chỉ");
   }
 }
+async function findAddressesByUserId(user_id) {
+  if (!mongoose.Types.ObjectId.isValid(user_id)) {
+    throw new Error("ID không hợp lệ");
+  }
 
-// [GET] Lấy tất cả địa chỉ theo user_id
-const getAddressesByUserId = async (req, res) => {
+  const addresses = await addressModel.find({ user_id }).sort({ updatedAt: -1 });
+  return addresses;
+}
+
+const getAddressesByUserId = async (user_id) => {
   try {
-    const { user_id } = req.query;
-
-    if (!mongoose.Types.ObjectId.isValid(user_id)) {
-      return res.status(400).json({ message: "ID không hợp lệ" });
-    }
-
-    const addresses = await Address.find({ user_id: new mongoose.Types.ObjectId(user_id) });
-
-    if (!addresses.length) {
-      return res.status(404).json({ message: "Không tìm thấy địa chỉ" });
-    }
-
-    res.json(addresses);
+    const addresses = await addressModel.find({ user_id });
+    return addresses;
   } catch (error) {
-    console.error("Lỗi khi lấy địa chỉ:", error.message);
-    res.status(500).json({ message: "Lỗi server" });
+    console.error("Lỗi khi lấy danh sách địa chỉ:", error);
+    throw new Error("Lỗi server");
   }
 };
+
 module.exports = {
   getAllAddresses,
   getAddressById,
   createAddress,
   updateAddress,
   deleteAddress,
+  findAddressesByUserId,
   getAddressesByUserId,
 };
