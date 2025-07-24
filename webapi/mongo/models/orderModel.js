@@ -30,12 +30,12 @@ const OrderSchema = new Schema(
   { timestamps: true }
 );
 
+
 OrderSchema.methods.toJSON = function () {
   const obj = this.toObject();
-  if (obj.createdAt) obj.createdAt = formatDateVN(obj.createdAt);
-  if (obj.updatedAt) obj.updatedAt = formatDateVN(obj.updatedAt);
   if (obj.delivery_date) obj.delivery_date = formatDateVN(obj.delivery_date);
   return obj;
 };
+
 
 module.exports = mongoose.models.order || mongoose.model("order", OrderSchema);
