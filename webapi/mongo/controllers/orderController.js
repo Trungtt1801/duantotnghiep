@@ -63,6 +63,13 @@ async function addOrder(data) {
     total_price,
     payment_method,
     transaction_status,
+    status_history: [
+      {
+        status: "pending",
+        updatedAt: new Date(),
+        note: "Đơn hàng được tạo",
+      },
+    ],
   });
 
   const savedOrder = await newOrder.save(); // Có savedOrder._id
@@ -78,17 +85,12 @@ async function addOrder(data) {
     payment_url = zaloRes.order_url;
   }
 
-  if (payment_method.toLowerCase() === "vnpay") {
-    const ipAddr = ip || "127.0.0.1";
-    const vnpayRes = await createVnpayPayment(
-      total_price,
-      user_id,
-      ipAddr,
-      savedOrder._id.toString()
-    );
-    transaction_code = vnpayRes.transaction_code;
-    payment_url = vnpayRes.payment_url;
-  }
+ if (payment_method.toLowerCase() === "vnpay") {
+  const ip = data.ip || "127.0.0.1"; 
+  const vnpayRes = await createVnpayPayment(total_price, user_id, ip);
+  transaction_code = vnpayRes.transaction_code;
+  payment_url = vnpayRes.payment_url;
+}
 
   // 3. Cập nhật mã giao dịch vào đơn hàng
   await orderModel.findByIdAndUpdate(savedOrder._id, {
@@ -112,6 +114,14 @@ async function addOrder(data) {
 
   await orderDetailModel.insertMany(orderDetails);
 
+<<<<<<< HEAD
+=======
+  // 🔄 5. Reload lại order để trả về đầy đủ address_id và các field mới nhất
+  const updatedOrder = await orderModel.findById(savedOrder._id).lean();
+  // ✅ In log URL thanh toán VNPAY / ZaloPay tại đây
+  console.log("➡️ Final payment URL:", payment_url);
+
+>>>>>>> Trung
   return {
     status: true,
     message: "Tạo đơn hàng và chi tiết thành công",
@@ -131,8 +141,11 @@ async function deleteOrder(id) {
   }
 }
 
+<<<<<<< HEAD
 //Xác nhận đơn hàng
 
+=======
+>>>>>>> Trung
 async function confirmOrder(id) {
   try {
     const order = await orderModel.findById(id);
@@ -174,6 +187,11 @@ async function updateOrderStatus(id, status) {
     if (!order) throw new Error("Không tìm thấy đơn hàng");
 
     order.status_order = status;
+    order.status_history.push({
+      status,
+      updatedAt: new Date(),
+      note: "Admin cập nhật trạng thái",
+    });
     return await order.save();
   } catch (error) {
     console.error("Lỗi cập nhật trạng thái đơn hàng:", error.message);
@@ -214,6 +232,11 @@ async function cancelOrder(id, isAdmin = false) {
     }
 
     order.status_order = "cancelled";
+    order.status_history.push({
+      status: "cancelled",
+      updatedAt: new Date(),
+      note: isAdmin ? "Admin huỷ đơn hàng" : "Người dùng huỷ đơn hàng",
+    });
     return await order.save();
   } catch (error) {
     console.error("Lỗi hủy đơn hàng:", error.message);
@@ -251,22 +274,23 @@ async function createOrderWithZaloPay(data) {
     if (!user_id || !total_price || !products || products.length === 0)
       throw new Error("Thiếu thông tin đơn hàng hoặc sản phẩm");
 
-    const zaloResponse = await createZaloPayOrder(
-      total_price,
-      user_id.toString()
-    );
-
+    // 1. Tạo trước đơn hàng để lấy orderId
     const newOrder = await orderModel.create({
       user_id,
       address_id,
       voucher_id,
       total_price,
       payment_method: "zalopay",
-      transaction_code: zaloResponse.app_trans_id,
       transaction_status: "unpaid",
     });
 
-    // 👇 Tạo các bản ghi orderDetail
+    // 2. Gọi createZaloPayOrder với order._id
+    const zaloResponse = await createZaloPayOrder(
+      total_price,
+      user_id.toString(),
+      newOrder._id.toString() // 👈 Truyền orderId vào đây
+    );
+
     const orderDetails = products.map((product) => ({
       order_id: newOrder._id,
       product_id: product.product_id,

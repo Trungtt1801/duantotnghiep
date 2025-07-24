@@ -189,6 +189,7 @@ if (!fbData.email) {
     });
   }
 });
+// localhost:3000/users/1
 router.get("/:id", async (req, res) => {
   try {
     const userId = req.params.id;

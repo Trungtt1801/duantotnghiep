@@ -106,6 +106,7 @@ router.post("/zalopay-callback", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// localhost:3000/orders/zalopay
 router.post("/zalopay", async (req, res) => {
   try {
     const result = await orderController.createOrderWithZaloPay(req.body);

@@ -10,10 +10,26 @@ const OrderSchema = new Schema(
       enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
       default: "pending",
     },
+<<<<<<< HEAD
 
     address_id: { type: Schema.Types.ObjectId, ref: "Address", required: false },
     address_id_guess: { type: String, required: false },
 
+=======
+    // ✅ Mảng lịch sử trạng thái
+    status_history: [
+      {
+        status: {
+          type: String,
+          enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
+        },
+        updatedAt: { type: Date, default: Date.now },
+        note: { type: String }, 
+      },
+    ],
+
+    address_id: { type: Schema.Types.ObjectId, ref: "Address" },
+>>>>>>> Trung
     voucher_id: { type: Schema.Types.ObjectId, ref: "Voucher" },
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
 
@@ -47,10 +63,18 @@ const OrderSchema = new Schema(
   }
 );
 
+<<<<<<< HEAD
 // ✅ Đừng format ngày ở đây, giữ nguyên để React xử lý được
 OrderSchema.methods.toJSON = function () {
   const obj = this.toObject();
+=======
+
+OrderSchema.methods.toJSON = function () {
+  const obj = this.toObject();
+  if (obj.delivery_date) obj.delivery_date = formatDateVN(obj.delivery_date);
+>>>>>>> Trung
   return obj;
 };
+
 
 module.exports = mongoose.models.order || mongoose.model("order", OrderSchema);
