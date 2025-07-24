@@ -1,40 +1,15 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-const formatDateVN = require('../untils/formDate'); 
 
 const reviewSchema = new Schema({
-  order_id: {
-    type: Schema.Types.ObjectId,
-    ref: 'orders',
-    required: true
-  },
-  productdetail_id: {
-    type: Schema.Types.ObjectId,
-    ref: 'productDetails',
-    required: true
-  },
-  review_id: {
-    type: Schema.Types.ObjectId,
-    ref: 'reviews',
-    required: true
-  },
-  rating: {
-    type: Number,
-    required: true,
-    min: 1,
-    max: 5
-  },
-  content: {
-    type: String,
-    trim: true
-  }
-}, { timestamps: true });
-reviewSchema.methods.toJSON = function () {
-  const obj = this.toObject();
+  order_detail_id: { type: Schema.Types.ObjectId, ref: "orderDetail", required: true, unique: true }, // duy nhất để mỗi sản phẩm chỉ được đánh giá 1 lần/đơn
+  product_id: { type: Schema.Types.ObjectId, ref: "products", required: true },
+  user_id: { type: Schema.Types.ObjectId, ref: "users", required: true },
+  rating: { type: Number, required: true },
+  content: { type: String },
+  images: [String],
+}, {
+  timestamps: true,
+});
 
-  if (obj.createdAt) obj.createdAt = formatDateVN(obj.createdAt);
-  if (obj.updatedAt) obj.updatedAt = formatDateVN(obj.updatedAt);
-
-  return obj;
-};
-module.exports = mongoose.models.review || mongoose.model('review', reviewSchema);
+module.exports = mongoose.models.Review || mongoose.model("Review", reviewSchema);

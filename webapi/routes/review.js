@@ -1,26 +1,36 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const reviewController = require('../mongo/controllers/reviewController');
+const reviewcontroller = require("../mongo/controllers/reviewController");
 
-// [POST] Gửi đánh giá
-// POST /review/
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   try {
-    const result = await reviewController.addReview(req.body);
-    return res.status(201).json(result);
+    await reviewcontroller.addReview(req, res);
   } catch (err) {
-    return res.status(400).json({ status: false, message: err.message });
+    res.status(500).json({ message: "Lỗi server ở route /", error: err.message });
   }
 });
 
-// [GET] Lấy đánh giá theo sản phẩm
-// GET /review/product/:productdetail_id
-router.get('/product/:productdetail_id', async (req, res) => {
+router.get("/product/:product_id", async (req, res) => {
   try {
-    const result = await reviewController.getReviewByProductDetail(req.params.productdetail_id);
-    return res.status(200).json({ status: true, result });
+    await reviewcontroller.getReviewByProduct(req, res);
   } catch (err) {
-    return res.status(400).json({ status: false, message: err.message });
+    res.status(500).json({ message: "Lỗi server ở route /product/:product_id", error: err.message });
+  }
+});
+
+router.get("/order/:order_id", async (req, res) => {
+  try {
+    await reviewcontroller.getReviewByOrder(req, res);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server ở route /order/:order_id", error: err.message });
+  }
+});
+
+router.get("/", async (req, res) => {
+  try {
+    await reviewcontroller.getAllReviews(req, res);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server ở route /", error: err.message });
   }
 });
 
