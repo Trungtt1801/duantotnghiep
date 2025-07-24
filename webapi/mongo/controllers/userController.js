@@ -1,6 +1,6 @@
 require("dotenv").config();
 const usersModel = require("../models/userModels");
-const addressModel = require("../models/addressModel");
+const Address = require("../models/addressModel");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
@@ -17,17 +17,22 @@ const transporter = nodemailer.createTransport({
 // Lấy tất cả user (ẩn password)
 async function getAllUsers() {
   try {
-    const users = await usersModel.find().select("-password");
+    const users = await usersModel
+      .find()
+      .select("-password")
+      .populate("addresses"); // lấy từ virtual populate
+
     return users;
   } catch (error) {
     throw new Error("Lỗi lấy dữ liệu người dùng");
   }
 }
 
+
 // Đăng ký người dùng
 async function register(data) {
   try {
-    const { name, email, password, role, phone, gender, defaultAddress } = data;
+    const { name, email, password, role, phone, gender } = data;
 
     if (await usersModel.findOne({ email })) {
       throw new Error("Email đã tồn tại!");
@@ -48,13 +53,13 @@ async function register(data) {
     // ✅ Danh sách địa chỉ mặc định (nếu có)
     const addressList = defaultAddress
       ? [
-          {
-            name,
-            phone,
-            address: defaultAddress,
-            isDefault: true,
-          },
-        ]
+        {
+          name,
+          phone,
+          address: defaultAddress,
+          isDefault: true,
+        },
+      ]
       : [];
 
     const newUser = new usersModel({
@@ -63,9 +68,7 @@ async function register(data) {
       password: hashedPassword,
       role: userRole,
       phone,
-      gender: gender || "Khác",
-      code,
-      addressList,
+      gender
     });
 
     const result = await newUser.save();
@@ -230,15 +233,37 @@ async function findOrCreateFacebookUser({ name, email }) {
 
   return user;
 }
-async function getUserById(id) {
-  const user = await usersModel.findById(id).select("-password").lean();
-  if (!user) return null;
+async function getUserById(userId) {
+  try {
+    // Kiểm tra ObjectId hợp lệ
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error("ID không hợp lệ");
+    }
 
-  const addresses = await addressModel.find({ user_id: id }).lean();
-  user.addresses = addresses;
+    // Tìm user và populate địa chỉ mặc định
+    const user = await usersModel
+      .findById(userId)
+      .select("-password")
+      .populate({
+        path: "addresses",
+        match: { is_default: true },
+        options: { limit: 1 },
+      });
 
-  return user;
+    if (!user) throw new Error("Không tìm thấy người dùng");
+
+    const userObj = user.toObject();
+    userObj.defaultAddress = userObj.addresses?.[0] || null;
+    delete userObj.addresses;
+
+    return userObj;
+  } catch (error) {
+    console.error("Lỗi getUserById:", error.message);
+    throw error;
+  }
 }
+
+
 
 module.exports = {
   register,
@@ -251,3 +276,4 @@ module.exports = {
   findOrCreateFacebookUser,
   getUserById
 };
+

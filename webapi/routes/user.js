@@ -188,22 +188,16 @@ if (!fbData.email) {
     });
   }
 });
-router.get('/:id', async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
-    const user = await userController.getUserById(req.params.id);
-    if (!user) return res.status(404).json({ status: false, message: "Không tìm thấy người dùng" });
-    res.status(200).json({ status: true, result: user });
-  } catch (error) {
-    res.status(500).json({ status: false, message: error.message });
-  }
-});
-// [GET] Địa chỉ theo user_id
-router.get("/user/:userId", async (req, res) => {
-  try {
-    const result = await addressController.getAddressesByUserId(req.params.userId);
-    return res.status(200).json({ status: true, result });
+    const user = await getUserById(req.params.id);
+    res.json(user);
   } catch (err) {
-    return res.status(404).json({ status: false, message: err.message });
+    console.error("Lỗi khi gọi API /user/:id:", err.message);
+    if (err.message.includes("Không tìm thấy") || err.message.includes("ID không hợp lệ")) {
+      return res.status(404).json({ message: err.message });
+    }
+    res.status(500).json({ message: "Lỗi server" });
   }
 });
 

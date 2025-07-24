@@ -4,17 +4,23 @@ const formatDateVN = require("../untils/formDate");
 
 const AddressSchema = new Schema(
   {
-    name: { type: String, required: true },
-    phone: { type: String, required: true },
-    address: { type: String, required: false },
-isDefault: { type: Boolean, default: false },
-    user_id: { type: Schema.Types.ObjectId, ref: "User", required: true }
-
+    name: { type: String, required: true }, // Tên người nhận
+    phone: {
+      type: String,
+      required: true,
+      match: /^[0-9]{10,15}$/,
+    },
+    address: { type: String }, 
+    is_default: { type: Boolean, default: false }, 
+    user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    type: { type: String }, 
+    detail: { type: String },
   },
   {
     timestamps: true,
   }
 );
+
 AddressSchema.methods.toJSON = function () {
   const obj = this.toObject();
 

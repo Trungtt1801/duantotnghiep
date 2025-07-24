@@ -273,34 +273,90 @@ async function getRelatedProducts(productId) {
   }
 }
 
-async function getRelatedProducts(productId) {
+async function filterFromList(productList, query) {
   try {
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      throw new Error("ID sản phẩm không hợp lệ");
+    const {
+      sort,       // price_asc | price_desc | newest
+      minPrice,
+      maxPrice,
+      price,      // Giá cụ thể muốn tìm gần đúng
+      size,
+      color,
+    } = query;
+
+    let products = [...productList]; // clone để không ảnh hưởng list gốc
+
+    // Lọc theo khoảng ±100k nếu có 'price'
+    if (price && !minPrice && !maxPrice) {
+      const target = parseFloat(price);
+      const range = 100000;
+      products = products.filter(
+        (p) => p.price >= target - range && p.price <= target + range
+      );
     }
 
-    const product = await productsModel.findById(productId);
-    if (!product) {
-      throw new Error("Không tìm thấy sản phẩm");
+    // Lọc theo khoảng giá min/max
+    if (minPrice || maxPrice) {
+      products = products.filter((p) => {
+        if (minPrice && p.price < parseFloat(minPrice)) return false;
+        if (maxPrice && p.price > parseFloat(maxPrice)) return false;
+        return true;
+      });
     }
 
-    const categoryId = product.category_id?.categoryId;
-    if (!categoryId) {
-      throw new Error("Sản phẩm không có thông tin danh mục");
+    // Lọc theo size / color trong biến thể (variants)
+    if (size || color) {
+      products = products.filter((product) => {
+        if (!product.variants) return false;
+        return product.variants.some((variant) => {
+          const matchColor = !color || variant.color === color;
+          const matchSize = !size || variant.sizes?.some((s) => s.size === size);
+          return matchColor && matchSize;
+        });
+      });
     }
 
-    const relatedProducts = await productsModel.find({
-      "category_id.categoryId": categoryId,
-      _id: { $ne: productId },
-    })
-    .limit(12);
+    // Sắp xếp
+    if (price) {
+      const target = parseFloat(price);
+      products.sort(
+        (a, b) => Math.abs(a.price - target) - Math.abs(b.price - target)
+      );
+    } else {
+      switch (sort) {
+        case "newest":
+          products.sort((a, b) => new Date(b.create_at) - new Date(a.create_at));
+          break;
+        case "price_asc":
+          products.sort((a, b) => a.price - b.price);
+          break;
+        case "price_desc":
+          products.sort((a, b) => b.price - a.price);
+          break;
+      }
+    }
 
-    return relatedProducts;
+    // Gắn base URL cho ảnh
+    const baseUrl = "http://localhost:3000/images/";
+    products = products.map((product) => {
+      const updated = { ...product };
+      if (Array.isArray(updated.images)) {
+        updated.images = updated.images.map((img) =>
+          img.startsWith("http") ? img : baseUrl + img
+        );
+      }
+      return updated;
+    });
+
+    return products;
   } catch (error) {
-    console.error("Lỗi khi lấy sản phẩm liên quan:", error);
+    console.error("Lỗi filterFromList:", error);
     throw error;
   }
 }
+
+
+
 module.exports = {
   getProducts,
   getProductById,
@@ -309,4 +365,5 @@ module.exports = {
   updateProduct,
   getProductsByCategoryTree,
   getRelatedProducts,
+  filterFromList,
 };

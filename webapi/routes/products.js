@@ -38,6 +38,7 @@ router.get("/", async (req, res) => {
           description: product.description,
           price: product.price,
           category_id: product.category_id,
+          isHidden: product.isHidden,
           images: product.images?.map((imgName) =>
             imgName.startsWith("http") ? imgName : baseUrl + imgName
           ),
@@ -69,6 +70,36 @@ router.get("/search", async (req, res) => {
     res.status(500).json({ message: "Lỗi server khi tìm kiếm sản phẩm." });
   }
 });
+// http://localhost:3000/filter
+// vidu http://localhost:3000/products/filter?size=M
+router.post("/filter", async (req, res) => {
+  try {
+    const { products, filters } = req.body;
+
+    if (!Array.isArray(products)) {
+      return res.status(400).json({
+        status: false,
+        message: "Danh sách sản phẩm phải là một mảng",
+      });
+    }
+
+    const result = await productController.filterFromList(products, filters);
+
+    return res.status(200).json({
+      status: true,
+      message: "Lọc sản phẩm thành công",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Lỗi khi lọc sản phẩm:", error.message);
+    return res.status(500).json({
+      status: false,
+      message: "Lỗi server khi lọc sản phẩm",
+      error: error.message,
+    });
+  }
+});
+
 //http://localhost:3000/products/:id
 
 router.get("/:id", async (req, res) => {
@@ -236,7 +267,7 @@ router.put("/update/:id", upload.array("images", 10), async (req, res) => {
     });
   }
 });
-// http://localhost:3000/products/category
+// http://localhost:3000/products/category/:categoryId
 router.get("/category/:categoryId", async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
@@ -271,12 +302,13 @@ router.get("/category/:categoryId", async (req, res) => {
   }
 });
 //localhost:3000/products/related/:id
-router.get("/related/:id", async (req, res) =>{
+router.get("/related/:id", async (req, res) => {
   try {
     const related = await productController.getRelatedProducts(req.params.id);
     res.json(related);
   } catch (error) {
-     res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message });
   }
-})
+});
+
 module.exports = router;

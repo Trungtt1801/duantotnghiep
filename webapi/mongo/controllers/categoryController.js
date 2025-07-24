@@ -43,7 +43,7 @@ async function addCate(data) {
 
 async function updateCate(id, data) {
     try {
-        const { name, slug, parentId } = data;
+        const { name, slug, parentId, type } = data;
         const category = await categoriesModel.findById(id);
         if (!category) {
             throw new Error('Danh mục không tồn tại');

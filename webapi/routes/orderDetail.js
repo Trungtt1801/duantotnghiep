@@ -4,13 +4,26 @@ const orderDetailController = require('../mongo/controllers/orderDetailControlle
 
 // [GET] Lấy chi tiết đơn hàng theo order_id
 // GET http://localhost:3000/orderDetail/:orderId
-router.get('/:orderId', async (req, res) => {
+router.get("/:orderId", async (req, res) => {
   try {
-    const result = await orderDetailController.getDetailsByOrderId(req.params.orderId);
-    return res.status(200).json({ status: true, result });
+    const { orderId } = req.params;
+    const result = await orderDetailController.getOrderDetailByOrderId(orderId);
+
+    if (!result.status) {
+      return res.status(500).json({
+        status: false,
+        message: result.message || "Lỗi không xác định"
+      });
+    }
+
+    return res.status(200).json(result);
+
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ status: false, message: 'Lỗi lấy chi tiết đơn hàng' });
+    console.error("❌ Lỗi khi lấy chi tiết đơn hàng:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Lỗi server"
+    });
   }
 });
 

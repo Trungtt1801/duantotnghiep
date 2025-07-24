@@ -22,20 +22,31 @@ const userSchema = new Schema(
       default: "local",
     },
 
-    code: { type: String, unique: true }, // Mã người dùng VD: US001, US002
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'other'],
+      default: 'other',
+    },
 
-    // Thống kê đơn hàng
-    totalOrders: { type: Number, default: 0 },
-    totalSpent: { type: Number, default: 0 },
-
-    // Phục vụ quên mật khẩu
+    // Trường phục vụ reset mật khẩu
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpires: { type: Date },
+
+    // ✅ Trường mới
     resetPasswordCount: { type: Number, default: 0 },
     resetPasswordDate: { type: Date },
+
+    // ✅ Thêm 2 trường phục vụ tích điểm
+    point: { type: Number, default: 0 },
+    rank: {
+      type: String,
+      enum: ['bronze', 'silver', 'gold', 'platinum'],
+      default: 'bronze',
+    },
   },
   { timestamps: true }
 );
+
 
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
@@ -43,5 +54,13 @@ userSchema.methods.toJSON = function () {
   if (obj.updatedAt) obj.updatedAt = formatDateVN(obj.updatedAt);
   return obj;
 };
+userSchema.virtual("addresses", {
+  ref: "Address",
+  localField: "_id",
+  foreignField: "user_id",
+  justOne: false,
+});
+userSchema.set("toObject", { virtuals: true });
+userSchema.set("toJSON", { virtuals: true });
 
 module.exports = mongoose.models.User || mongoose.model("User", userSchema);
