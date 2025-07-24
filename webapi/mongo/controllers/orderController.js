@@ -147,19 +147,19 @@ async function confirmOrder(id) {
       throw new Error("Chỉ đơn hàng ở trạng thái pending mới được xác nhận");
     }
 
-    // Kiểm tra nếu đã có "confirmed" trong lịch sử
-    const hasConfirmed = order.status_history.some(
-      (item) => item.status === "confirmed"
+    // Kiểm tra nếu đã có "preparing" trong lịch sử
+    const hasPreparing = order.status_history.some(
+      (item) => item.status === "preparing"
     );
-    if (hasConfirmed) {
+    if (hasPreparing) {
       throw new Error("Đơn hàng đã được xác nhận trước đó");
     }
 
-    order.status_order = "confirmed";
+    order.status_order = "preparing";
     order.status_history.push({
-      status: "confirmed",
+      status: "preparing",
       updatedAt: new Date(),
-      note: "Admin xác nhận đơn hàng",
+      note: "Admin xác nhận đơn hàng, chuyển sang trạng thái chuẩn bị hàng",
     });
 
     return await order.save();
@@ -168,6 +168,7 @@ async function confirmOrder(id) {
     throw new Error(error.message || "Lỗi khi xác nhận đơn hàng");
   }
 }
+
 
 
 //Cập nhật trạng thái đơn hàng
