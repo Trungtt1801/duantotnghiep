@@ -240,8 +240,7 @@ async function getUserById(userId) {
       .select("-password")
       .populate({
         path: "addresses",
-        match: { is_default: true },
-        options: { limit: 1 },
+        options: { sort: { is_default: -1 } }, // 👈 Địa chỉ mặc định lên đầu
       });
 
     if (!user) {
@@ -249,10 +248,11 @@ async function getUserById(userId) {
       throw new Error("Không tìm thấy người dùng");
     }
 
-    // ✅ Lưu ý: phải truyền { virtuals: true }
+    // ✅ Lưu ý: phải truyền { virtuals: true } để lấy virtual field addresses
     const userObj = user.toObject({ virtuals: true });
-    userObj.defaultAddress = userObj.addresses?.[0] || null;
-    delete userObj.addresses;
+
+    // Nếu bạn vẫn muốn gán riêng địa chỉ mặc định ra một trường:
+    userObj.defaultAddress = userObj.addresses?.find(a => a.is_default) || null;
 
     return userObj;
   } catch (error) {
@@ -260,6 +260,7 @@ async function getUserById(userId) {
     throw new Error("Lỗi server");
   }
 }
+
 
 
 
