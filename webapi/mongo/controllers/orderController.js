@@ -132,14 +132,31 @@ async function deleteOrder(id) {
 }
 
 //Xác nhận đơn hàng
+
 async function confirmOrder(id) {
   try {
     const order = await orderModel.findById(id);
     if (!order) throw new Error("Không tìm thấy đơn hàng");
+
     if (order.status_order !== "pending") {
       throw new Error("Chỉ đơn hàng ở trạng thái pending mới được xác nhận");
     }
+
+    // Kiểm tra nếu đã có "confirmed" trong lịch sử
+    const hasConfirmed = order.status_history.some(
+      (item) => item.status === "confirmed"
+    );
+    if (hasConfirmed) {
+      throw new Error("Đơn hàng đã được xác nhận trước đó");
+    }
+
     order.status_order = "confirmed";
+    order.status_history.push({
+      status: "confirmed",
+      updatedAt: new Date(),
+      note: "Admin xác nhận đơn hàng",
+    });
+
     return await order.save();
   } catch (error) {
     console.error("Lỗi xác nhận đơn hàng:", error.message);
