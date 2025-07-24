@@ -7,9 +7,20 @@ const OrderSchema = new Schema(
     total_price: { type: Number, required: true },
     status_order: {
       type: String,
-      enum: ["pending", "confirmed", "awaiting_shipment", "shipping", "delivered", "cancelled", "refund"],
+      enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered", "cancelled", "refund"],
       required: true,
     },
+    status_history: [
+      {
+        status: {
+          type: String,
+          enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered", "cancelled", "refund"],
+          required: true,
+        },
+        updatedAt: { type: Date, default: Date.now },
+        note: { type: String },
+      },
+    ],
 
     address_id: { type: Schema.Types.ObjectId, ref: "Address" },
     voucher_id: { type: Schema.Types.ObjectId, ref: "Voucher" },
