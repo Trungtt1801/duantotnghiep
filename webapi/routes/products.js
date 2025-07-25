@@ -33,65 +33,22 @@ router.get("/", async (req, res) => {
         });
 
         return {
-  _id: product._id,
-  name: product.name,
-  description: product.description,
-  price: product.price,
-  sale: product.sale, // <-- thêm dòng này
-  category_id: product.category_id,
-  isHidden: product.isHidden,
-  images: product.images?.map((imgName) =>
-    imgName.startsWith("http") ? imgName : baseUrl + imgName
-  ),
-  variants: variantsDoc ? variantsDoc.variants : [],
-};
-
-      })
-    );
-    return res.status(200).json([{ status: true }, ...updatedProducts]);
-  } catch (error) {
-    console.log(error);
-    return res
-      .status(500)
-      .json({ status: false, message: "Lỗi lấy dữ liệu sản phẩm" });
-  }
-});
-
-// http://localhost:3000/products?page=1&limit=10
-router.get("/pro", async (req, res) => {
-  try {
-    const baseUrl = "http://localhost:3000/images/";
-
-    // Lấy page & limit từ query, mặc định page=1, limit=10
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    // Lấy tổng số sản phẩm
-    const total = await productsModel.countDocuments();
-
-    // Lấy danh sách sản phẩm có phân trang
-    const result = await productsModel.find().skip(skip).limit(limit);
-
-    const updatedProducts = await Promise.all(
-      result.map(async (product) => {
-        const variantsDoc = await productVariantModel.findOne({
-          product_id: product._id,
-        });
-
-      return {
-  _id: product._id,
-  name: product.name,
-  description: product.description,
-  price: product.price,
-  sale: product.sale, // <-- thêm dòng này
-  category_id: product.category_id,
-  isHidden: product.isHidden,
-  images: product.images?.map((imgName) =>
-    imgName.startsWith("http") ? imgName : baseUrl + imgName
-  ),
-  variants: variantsDoc ? variantsDoc.variants : [],
-};
+          _id: product._id,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          sale: product.sale,
+          sale_count: product.sale_count,
+          material: product.material,
+          shop_id: product.shop_id,
+          category_id: product.category_id,
+          isHidden: product.isHidden,
+          create_at: product.create_at,
+          images: product.images?.map((imgName) =>
+            imgName.startsWith("http") ? imgName : baseUrl + imgName
+          ),
+          variants: variantsDoc ? variantsDoc.variants : [],
+        };
 
       })
     );
@@ -250,10 +207,11 @@ router.post("/create", upload.array("images", 10), async (req, res) => {
       variants,
       category_id: data.category_id,
       isHidden,
-      shop_id: 1,
+      shop_id: Number(data.shop_id || 1),
       description: data.description,
-      sale_count: data.sale_count || 0,
+      sale_count: Number(data.sale_count || 0),
     };
+
 
     const result = await productController.addProduct(sendData);
 

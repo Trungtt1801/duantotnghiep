@@ -1,5 +1,6 @@
 const categoriesModel = require("../models/categoryModel");
 const productsModel = require("../models/productsModel");
+const mongoose = require("mongoose");
 
 async function getAllCate() {
   try {
@@ -75,7 +76,6 @@ async function updateCate(id, data) {
 
         category.name = name || category.name;
         category.slug = slug || category.slug;
-        category.type = type || category.type;
 
         if (parentId !== undefined) {
             category.parentId = parentId;
@@ -124,32 +124,28 @@ async function getParentCategories() {
     throw new Error("Lỗi khi lấy danh mục cha");
   }
 }
-async function getCategoryByParentAndChildSlug(parentSlug, childSlug) {
+async function filterCategories(req, res) {
   try {
-    // Tìm danh mục cha
-    const parent = await categoriesModel.findOne({ slug: parentSlug, parentId: null });
-    if (!parent) throw new Error("Không tìm thấy danh mục cha");
+    const { search = "", parentId = "" } = req.query;
+    const filter = {};
 
-    // Tìm danh mục con có slug tương ứng và parentId là danh mục cha
-    const child = await categoriesModel.findOne({ slug: childSlug, parentId: parent._id });
-    if (!child) throw new Error("Không tìm thấy danh mục con");
+    if (search) {
+      filter.name = { $regex: search, $options: "i" };
+    }
 
-    // Trả về thông tin danh mục con
-    return {
-      id: child._id,
-      name: child.name,
-      slug: child.slug,
-      parent: {
-        id: parent._id,
-        name: parent.name,
-        slug: parent.slug,
-      },
-    };
+    if (parentId && mongoose.Types.ObjectId.isValid(parentId)) {
+      filter.parentId = parentId;
+    }
+
+const result = await categoriesModel.find(filter);
+    return res.status(200).json(result);
   } catch (error) {
-    console.error("Lỗi khi lấy danh mục con theo slug cha và con:", error.message);
-    throw new Error("Lỗi khi lấy danh mục con theo slug cha và con");
+    console.error("Lỗi tìm kiếm danh mục:", error.message);
+    return res.status(500).json({ message: "Lỗi tìm kiếm danh mục" });
   }
 }
+
+
 
 
 module.exports = {
@@ -161,6 +157,5 @@ module.exports = {
   deleteCate,
   getSubCategories,
   getParentCategories,
-  getParentCategoryBySlug,
- 
+  filterCategories
 };

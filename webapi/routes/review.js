@@ -1,26 +1,50 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const reviewController = require('../mongo/controllers/reviewController');
+const reviewController = require("../mongo/controllers/reviewController");
+const multer = require("multer"); // ✅ CHỈ GIỮ DÒNG NÀY
+const path = require("path");
 
-// [POST] Gửi đánh giá
-// POST /review/
-router.post('/', async (req, res) => {
+// Cấu hình multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./public/images");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+const upload = multer({ storage: storage });
+
+// Routes
+router.post("/", upload.array("images", 5), async (req, res) => {
   try {
-    const result = await reviewController.addReview(req.body);
-    return res.status(201).json(result);
+    await reviewController.addReview(req, res);
   } catch (err) {
-    return res.status(400).json({ status: false, message: err.message });
+    res.status(500).json({ message: "Lỗi server khi thêm đánh giá", error: err.message });
   }
 });
 
-// [GET] Lấy đánh giá theo sản phẩm
-// GET /review/product/:productdetail_id
-router.get('/product/:productdetail_id', async (req, res) => {
+router.get("/product/:product_id", async (req, res) => {
   try {
-    const result = await reviewController.getReviewByProductDetail(req.params.productdetail_id);
-    return res.status(200).json({ status: true, result });
+    await reviewController.getReviewByProduct(req, res);
   } catch (err) {
-    return res.status(400).json({ status: false, message: err.message });
+    res.status(500).json({ message: "Lỗi server khi lấy đánh giá theo sản phẩm", error: err.message });
+  }
+});
+
+router.get("/order/:order_id", async (req, res) => {
+  try {
+    await reviewController.getReviewByOrder(req, res);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server khi lấy đánh giá theo đơn hàng", error: err.message });
+  }
+});
+
+router.get("/", async (req, res) => {
+  try {
+    await reviewController.getAllReviews(req, res);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server khi lấy tất cả đánh giá", error: err.message });
   }
 });
 
