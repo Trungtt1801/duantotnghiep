@@ -7,9 +7,20 @@ const OrderSchema = new Schema(
 
     status_order: {
       type: String,
-      enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
-      default: "pending",
+      enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered", "cancelled", "refund"],
+      required: true,
     },
+    status_history: [
+      {
+        status: {
+          type: String,
+          enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered", "cancelled", "refund"],
+          required: true,
+        },
+        updatedAt: { type: Date, default: Date.now },
+        note: { type: String },
+      },
+    ],
 
     // Nếu là người dùng đăng nhập
     address_id: { type: Schema.Types.ObjectId, ref: "Address", required: false },

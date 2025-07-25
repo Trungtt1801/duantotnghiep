@@ -250,10 +250,11 @@ router.post("/create", upload.array("images", 10), async (req, res) => {
       variants,
       category_id: data.category_id,
       isHidden,
-      shop_id: 1,
+      shop_id: Number(data.shop_id || 1),
       description: data.description,
-      sale_count: data.sale_count || 0,
+      sale_count: Number(data.sale_count || 0),
     };
+
 
     const result = await productController.addProduct(sendData);
 

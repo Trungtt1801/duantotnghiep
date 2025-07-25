@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const voucherController = require('../mongo/controllers/voucherController');
-
+const voucherModel = require('../mongo/models/voucherModel');
 // [GET] Lấy tất cả voucher
 // URL: http://localhost:3000/voucher
 router.get('/', async (req, res) => {
@@ -10,6 +10,19 @@ router.get('/', async (req, res) => {
     res.status(200).json({ status: true, vouchers });
   } catch (error) {
     res.status(500).json({ status: false, message: error.message });
+  }
+});
+// [GET] Tìm kiếm voucher theo từ khoá
+router.get('/search', async (req, res) => {
+  try {
+    const { keyword } = req.query;
+    const query = {
+      voucher_code: { $regex: keyword, $options: 'i' },
+    };
+    const vouchers = await voucherModel.find(query);
+    res.status(200).json({ vouchers });
+  } catch (error) {
+    res.status(400).json({ message: error.message || 'Lỗi tìm kiếm' });
   }
 });
 
@@ -81,4 +94,5 @@ router.patch('/status/:id', async (req, res) => {
     res.status(400).json({ status: false, message: error.message });
   }
 });
+
 module.exports = router;
