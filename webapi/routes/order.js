@@ -28,6 +28,15 @@ router.post("/", async (req, res) => {
     return res.status(500).json({ status: false, message: "Lỗi tạo đơn hàng" });
   }
 });
+router.post("/guess", async (req, res) => {
+  try {
+    const result = await orderController.addOrderForGuest(req.body);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ status: false, message: "Lỗi tạo đơn hàng" });
+  }
+});
 
 // [patch] Xác nhận đơn hàng
 // URL: http://localhost:3000/orders/:id/confirm

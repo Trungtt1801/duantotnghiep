@@ -33,17 +33,19 @@ router.get("/", async (req, res) => {
         });
 
         return {
-          _id: product._id,
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          category_id: product.category_id,
-          isHidden: product.isHidden,
-          images: product.images?.map((imgName) =>
-            imgName.startsWith("http") ? imgName : baseUrl + imgName
-          ),
-          variants: variantsDoc ? variantsDoc.variants : [],
-        };
+  _id: product._id,
+  name: product.name,
+  description: product.description,
+  price: product.price,
+  sale: product.sale, // <-- thêm dòng này
+  category_id: product.category_id,
+  isHidden: product.isHidden,
+  images: product.images?.map((imgName) =>
+    imgName.startsWith("http") ? imgName : baseUrl + imgName
+  ),
+  variants: variantsDoc ? variantsDoc.variants : [],
+};
+
       })
     );
     return res.status(200).json([{ status: true }, ...updatedProducts]);
@@ -54,6 +56,61 @@ router.get("/", async (req, res) => {
       .json({ status: false, message: "Lỗi lấy dữ liệu sản phẩm" });
   }
 });
+
+// http://localhost:3000/products?page=1&limit=10
+router.get("/pro", async (req, res) => {
+  try {
+    const baseUrl = "http://localhost:3000/images/";
+
+    // Lấy page & limit từ query, mặc định page=1, limit=10
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Lấy tổng số sản phẩm
+    const total = await productsModel.countDocuments();
+
+    // Lấy danh sách sản phẩm có phân trang
+    const result = await productsModel.find().skip(skip).limit(limit);
+
+    const updatedProducts = await Promise.all(
+      result.map(async (product) => {
+        const variantsDoc = await productVariantModel.findOne({
+          product_id: product._id,
+        });
+
+      return {
+  _id: product._id,
+  name: product.name,
+  description: product.description,
+  price: product.price,
+  sale: product.sale, // <-- thêm dòng này
+  category_id: product.category_id,
+  isHidden: product.isHidden,
+  images: product.images?.map((imgName) =>
+    imgName.startsWith("http") ? imgName : baseUrl + imgName
+  ),
+  variants: variantsDoc ? variantsDoc.variants : [],
+};
+
+      })
+    );
+
+    return res.status(200).json({
+      status: true,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalItems: total,
+      data: updatedProducts,
+    });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ status: false, message: "Lỗi lấy dữ liệu sản phẩm" });
+  }
+});
+
 
 // http://localhost:3000/products/search?name=Áo
 router.get("/search", async (req, res) => {

@@ -126,6 +126,26 @@ router.get("/:parentSlug/:childSlug", async (req, res) => {
     res.status(404).json({ message: err.message });
   }
 });
+// File routes/category.js (hoặc tương tự)
+router.get("/slug/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    const category = await categoriesModel.findOne({
+      slug: slug,
+      parentId: null, // chỉ lấy danh mục cha
+    });
+
+    if (!category) {
+      return res.status(404).json({ message: "Không tìm thấy danh mục cha" });
+    }
+
+    return res.status(200).json(category); // trả JSON
+  } catch (error) {
+    console.error("Lỗi khi lấy danh mục cha theo slug:", error);
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+});
 
 
 

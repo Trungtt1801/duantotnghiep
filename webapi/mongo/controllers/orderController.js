@@ -30,6 +30,7 @@ async function getOrderById(id) {
   }
 }
 
+
 async function addOrder(data) {
   const {
     user_id,
@@ -114,18 +115,106 @@ async function addOrder(data) {
 
   await orderDetailModel.insertMany(orderDetails);
 
-<<<<<<< HEAD
-=======
   // 🔄 5. Reload lại order để trả về đầy đủ address_id và các field mới nhất
   const updatedOrder = await orderModel.findById(savedOrder._id).lean();
   // ✅ In log URL thanh toán VNPAY / ZaloPay tại đây
   console.log("➡️ Final payment URL:", payment_url);
 
->>>>>>> Trung
   return {
     status: true,
     message: "Tạo đơn hàng và chi tiết thành công",
     order: { ...savedOrder.toObject(), transaction_code },
+    payment_url,
+  };
+  
+}
+async function addOrderForGuest(data) {
+  const {
+    address_guess, // { name, phone, email, address, type, detail }
+    voucher_id,
+    total_price,
+    payment_method,
+    products, // [{ product_id, quantity, image, variant_id }]
+    ip,
+  } = data;
+
+  // Kiểm tra thông tin bắt buộc
+  if (
+    !address_guess ||
+    !address_guess.name ||
+    !address_guess.phone ||
+    !address_guess.address ||
+    !total_price ||
+    !payment_method ||
+    !products ||
+    products.length === 0
+  ) {
+    throw new Error("Thiếu thông tin bắt buộc hoặc thiếu sản phẩm");
+  }
+
+  let transaction_code = null;
+  let transaction_status = "unpaid";
+  let payment_url = null;
+
+  // 1. Tạo đơn hàng
+  const newOrder = new orderModel({
+    address_guess,
+    voucher_id,
+    total_price,
+    payment_method,
+    transaction_status,
+    status_history: [
+      {
+        status: "pending",
+        updatedAt: new Date(),
+        note: "Khách vãng lai tạo đơn hàng",
+      },
+    ],
+  });
+
+  const savedOrder = await newOrder.save();
+
+  // 2. Gọi thanh toán nếu cần
+  if (payment_method.toLowerCase() === "zalopay") {
+    const zaloRes = await createZaloPayOrder(
+      total_price,
+      null, // không có user_id
+      savedOrder._id.toString()
+    );
+    transaction_code = zaloRes.app_trans_id;
+    payment_url = zaloRes.order_url;
+  }
+
+  if (payment_method.toLowerCase() === "vnpay") {
+    const clientIP = ip || "127.0.0.1";
+    const vnpayRes = await createVnpayPayment(total_price, null, clientIP);
+    transaction_code = vnpayRes.transaction_code;
+    payment_url = vnpayRes.payment_url;
+  }
+
+  // 3. Cập nhật mã giao dịch
+  await orderModel.findByIdAndUpdate(savedOrder._id, {
+    transaction_code,
+  });
+
+  // 4. Lưu chi tiết đơn hàng
+  const orderDetails = products.map((item) => ({
+    order_id: savedOrder._id,
+    product_id: item.product_id,
+    image: item.image,
+    quantity: item.quantity,
+    variant_id: item.variant_id,
+  }));
+
+  await orderDetailModel.insertMany(orderDetails);
+
+  // 5. Lấy lại đơn hàng mới nhất
+  const updatedOrder = await orderModel.findById(savedOrder._id).lean();
+
+  return {
+    status: true,
+    message: "Tạo đơn hàng cho khách vãng lai thành công",
+    order: { ...updatedOrder, transaction_code },
     payment_url,
   };
 }
@@ -141,11 +230,8 @@ async function deleteOrder(id) {
   }
 }
 
-<<<<<<< HEAD
 //Xác nhận đơn hàng
 
-=======
->>>>>>> Trung
 async function confirmOrder(id) {
   try {
     const order = await orderModel.findById(id);
@@ -447,4 +533,5 @@ module.exports = {
   vnpayCallback,
   updateUserPoint,
   getOrdersByUserId,
+  addOrderForGuest,
 };

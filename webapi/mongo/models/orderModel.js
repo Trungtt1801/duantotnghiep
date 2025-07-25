@@ -10,28 +10,24 @@ const OrderSchema = new Schema(
       enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
       default: "pending",
     },
-<<<<<<< HEAD
 
+    // Nếu là người dùng đăng nhập
     address_id: { type: Schema.Types.ObjectId, ref: "Address", required: false },
-    address_id_guess: { type: String, required: false },
 
-=======
-    // ✅ Mảng lịch sử trạng thái
-    status_history: [
-      {
-        status: {
-          type: String,
-          enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
-        },
-        updatedAt: { type: Date, default: Date.now },
-        note: { type: String }, 
-      },
-    ],
+    // ✅ Địa chỉ của khách vãng lai (guest)
+    address_guess: {
+      name: { type: String },
+      phone: { type: String },
+      email: { type: String },
+      address: { type: String },
+      type: { type: String },      // ví dụ: Nhà riêng, Cơ quan
+      detail: { type: String },    // chi tiết giao hàng nếu có
+    },
 
-    address_id: { type: Schema.Types.ObjectId, ref: "Address" },
->>>>>>> Trung
     voucher_id: { type: Schema.Types.ObjectId, ref: "Voucher" },
-    user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
+
+    // Nếu là người dùng đã đăng nhập
+    user_id: { type: Schema.Types.ObjectId, ref: "User", required: false },
 
     evaluate: { type: String },
 
@@ -49,7 +45,7 @@ const OrderSchema = new Schema(
       default: "unpaid",
     },
 
-    // ✅ Lịch sử trạng thái
+    // Lịch sử trạng thái đơn hàng
     status_history: [
       {
         status: { type: String, required: true },
@@ -59,22 +55,14 @@ const OrderSchema = new Schema(
     ],
   },
   {
-    timestamps: true, // ✅ tự động có createdAt & updatedAt
+    timestamps: true, // Tự động có createdAt & updatedAt
   }
 );
 
-<<<<<<< HEAD
-// ✅ Đừng format ngày ở đây, giữ nguyên để React xử lý được
+// Không format ngày ở đây
 OrderSchema.methods.toJSON = function () {
   const obj = this.toObject();
-=======
-
-OrderSchema.methods.toJSON = function () {
-  const obj = this.toObject();
-  if (obj.delivery_date) obj.delivery_date = formatDateVN(obj.delivery_date);
->>>>>>> Trung
   return obj;
 };
-
 
 module.exports = mongoose.models.order || mongoose.model("order", OrderSchema);

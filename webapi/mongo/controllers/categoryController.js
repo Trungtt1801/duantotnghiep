@@ -9,6 +9,31 @@ async function getAllCate() {
     throw new Error("Lỗi lấy dữ liệu danh mục");
   }
 }
+async function getParentCategoryBySlug(req, res) {
+  try {
+    const { slug } = req.params;
+    const category = await categoriesModel.findOne({ slug, parentId: null });
+
+    if (!category) {
+      return res.status(404).json({ status: false, message: "Không tìm thấy danh mục cha" });
+    }
+
+    return res.status(200).json({
+      status: true,
+      data: {
+        id: category._id,
+        name: category.name,
+        slug: category.slug,
+        image: category.image,
+        parentId: category.parentId,
+      },
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy danh mục cha theo slug:", error);
+    return res.status(500).json({ status: false, message: "Lỗi server" });
+  }
+}
+
 
 async function getCateById(id) {
   try {
@@ -89,6 +114,7 @@ async function getSubCategories(parentId) {
     throw error;
   }
 }
+
 async function getParentCategories() {
   try {
     const categories = await categoriesModel.find({ parentId: null });
@@ -135,5 +161,6 @@ module.exports = {
   deleteCate,
   getSubCategories,
   getParentCategories,
+  getParentCategoryBySlug,
  
 };

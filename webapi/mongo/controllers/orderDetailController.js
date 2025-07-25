@@ -5,6 +5,7 @@ const OrderModel = require("../models/orderModel");
 const User = require("../models/userModels");
 const AddressModel = require("../models/addressModel");
 
+
 async function addOrderDetail(data) {
   try {
     const { order_id, product_id, quantity } = data;
@@ -22,7 +23,6 @@ async function addOrderDetail(data) {
 }
 
 
-<<<<<<< HEAD
 // async function getDetailsByOrderId(orderId) {
 //   try {
 //     const BASE_URL = "http://localhost:3000/images/";
@@ -108,9 +108,6 @@ async function addOrderDetail(data) {
 //   }
 // }
 
-
-=======
->>>>>>> Trung
 async function getOrderDetailByOrderId(orderId) {
   try {
     // 1. Lấy chi tiết đơn hàng
@@ -123,7 +120,7 @@ async function getOrderDetailByOrderId(orderId) {
     }
 
     // 2. Lấy đơn hàng chính
-    const order = await OrderModel.findById(orderId);
+    const order = await OrderModel.findById(orderId).lean();
     if (!order) {
       return {
         status: false,
@@ -134,27 +131,28 @@ async function getOrderDetailByOrderId(orderId) {
     // 3. Lấy thông tin user
     const user = await User.findById(order.user_id).lean();
 
-// ✅ Sửa lại: lấy đúng địa chỉ đã chọn khi đặt hàng (không phải mặc định)
-const address = await AddressModel.findById(order.address_id).lean();
+    // ✅ Lấy đúng địa chỉ được chọn khi đặt hàng
+    const address = await AddressModel.findById(order.address_id).lean();
 
-const userInfo = user
-  ? {
-      _id: user._id, // ✅ Thêm user._id
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      address: address
-        ? {
-            _id: address._id, // ✅ Thêm address._id
-            name: address.name,
-            phone: address.phone,
-            address: address.address,
-            detail: address.detail,
-            type: address.type,
-          }
-        : null,
-    }
-  : null;
+    const userInfo = user
+      ? {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          address: address
+            ? {
+                _id: address._id,
+                name: address.name,
+                phone: address.phone,
+                address: address.address,
+                detail: address.detail,
+                type: address.type,
+              }
+            : null,
+        }
+      : null;
+
     // 4. Xử lý chi tiết sản phẩm
     const result = [];
 
@@ -179,13 +177,16 @@ const userInfo = user
           color: matchedVariant.color,
         };
 
-       
+        const matchedSize = matchedVariant.sizes?.find(
+          (s) => s?._id?.toString() === item?.size_id?.toString()
+        );
 
         if (matchedSize) {
           sizeData = {
             _id: matchedSize._id,
             sku: matchedSize.sku,
             quantity: matchedSize.quantity,
+            size: matchedSize.size,
           };
         }
       }
@@ -208,7 +209,7 @@ const userInfo = user
       });
     }
 
-    // 5. Trả kết quả
+    // 5. Trả kết quả, thêm status_history
     return {
       status: true,
       result,
@@ -216,9 +217,10 @@ const userInfo = user
       order: {
         payment_method: order.payment_method,
         status_order: order.status_order,
-        transaction_status: order.transaction_status, // optional
-        total_price: order.total_price, // optional nếu FE cần hiển thị tổng
-        createdAt: order.createdAt, // optional nếu FE cần
+        transaction_status: order.transaction_status || null,
+        total_price: order.total_price || 0,
+        createdAt: order.createdAt,
+        status_history: order.status_history || [],
       },
     };
   } catch (error) {
