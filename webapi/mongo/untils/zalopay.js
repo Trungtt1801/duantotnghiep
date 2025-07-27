@@ -24,11 +24,9 @@ async function createZaloPayOrder(amount, userId, orderId) {
     amount,
     description: `Thanh toán đơn hàng #${transID}`,
     bank_code: "zalopayapp",
- return_url: `https://test-ebooks-orbit.netlify.app/order-success?orderId=${orderId}`
+    return_url: `https://test-ebooks-orbit.netlify.app/order-success?orderId=${orderId}`,
   };
 
-  // ✅ Log toàn bộ order object
-  console.log("📦 Order gửi tới ZaloPay:", order);
 
   const data = [
     order.app_id,
@@ -42,20 +40,12 @@ async function createZaloPayOrder(amount, userId, orderId) {
 
   order.mac = CryptoJS.HmacSHA256(data, config.key1).toString();
 
-  // ✅ Log MAC để kiểm tra
-  console.log("🔑 MAC chuỗi:", data);
-  console.log("🔑 MAC ký:", order.mac);
-
   const response = await axios.post(config.endpoint, null, { params: order });
-
-  // ✅ Log response trả về từ ZaloPay
-  console.log("📨 ZaloPay response:", response.data);
 
   return {
     ...response.data,
     app_trans_id: order.app_trans_id,
   };
 }
-
 
 module.exports = createZaloPayOrder;

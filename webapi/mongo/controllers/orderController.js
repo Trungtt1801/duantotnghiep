@@ -86,12 +86,12 @@ async function addOrder(data) {
     payment_url = zaloRes.order_url;
   }
 
- if (payment_method.toLowerCase() === "vnpay") {
-  const ip = data.ip || "127.0.0.1"; 
-  const vnpayRes = await createVnpayPayment(total_price, user_id, ip);
-  transaction_code = vnpayRes.transaction_code;
-  payment_url = vnpayRes.payment_url;
-}
+  if (payment_method.toLowerCase() === "vnpay") {
+    const ip = data.ip || "127.0.0.1";
+    const vnpayRes = await createVnpayPayment(total_price, user_id, ip);
+    transaction_code = vnpayRes.transaction_code;
+    payment_url = vnpayRes.payment_url;
+  }
 
   // 3. Cập nhật mã giao dịch
   await orderModel.findByIdAndUpdate(savedOrder._id, {
@@ -279,6 +279,9 @@ async function createOrderWithZaloPay(data) {
       user_id.toString(),
       newOrder._id.toString() // 👈 Truyền orderId vào đây
     );
+    await orderModel.findByIdAndUpdate(newOrder._id, {
+      transaction_code: zaloResponse.app_trans_id, // <- Cập nhật mã giao dịch
+    });
 
     const orderDetails = products.map((product) => ({
       order_id: newOrder._id,
