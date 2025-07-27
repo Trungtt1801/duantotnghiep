@@ -173,6 +173,7 @@ async function updateOrderStatus(id, status) {
       "awaiting_shipment",
       "shipping",
       "delivered",
+      "failed",
       "cancelled",
       "refund",
     ];

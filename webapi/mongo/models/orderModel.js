@@ -14,7 +14,7 @@ const OrderSchema = new Schema(
       {
         status: {
           type: String,
-          enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered", "cancelled", "refund"],
+          enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered","failed", "cancelled", "refund"],
           required: true,
         },
         updatedAt: { type: Date, default: Date.now },
