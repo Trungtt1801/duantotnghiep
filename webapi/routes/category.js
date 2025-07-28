@@ -73,6 +73,45 @@ router.post("/create", async (req, res) => {
       .json({ status: false, message: "Lỗi thêm danh mục" });
   }
 });
+router.get("/slug/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const category = await categoryController.getParentCategoryBySlug(slug);
+
+    if (!category) {
+      return res.status(404).json({
+        status: false,
+        message: "Không tìm thấy danh mục cha",
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      data: category,
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy danh mục cha theo slug:", error.message);
+    return res.status(500).json({
+      status: false,
+      message: "Lỗi server",
+    });
+  }
+});
+
+
+router.get("/:parentSlug/:childSlug", async (req, res) => {
+  const { parentSlug, childSlug } = req.params;
+
+  try {
+    const category = await categoryController.getCategoryByParentAndChildSlug(parentSlug, childSlug);
+    res.json(category);
+  } catch (err) {
+    res.status(404).json({ message: err.message });
+  }
+});
+// File routes/category.js (hoặc tương tự)
+
+// Trong route
 
 // [PUT] Cập nhật danh mục theo ID
 // http://localhost:3000/category/:id
@@ -115,38 +154,6 @@ router.delete("/:id", async (req, res) => {
     return res.status(500).json({ status: false, message: "Lỗi xóa danh mục" });
   }
 });
-
-router.get("/:parentSlug/:childSlug", async (req, res) => {
-  const { parentSlug, childSlug } = req.params;
-
-  try {
-    const category = await categoryController.getCategoryByParentAndChildSlug(parentSlug, childSlug);
-    res.json(category);
-  } catch (err) {
-    res.status(404).json({ message: err.message });
-  }
-});
-// File routes/category.js (hoặc tương tự)
-router.get("/slug/:slug", async (req, res) => {
-  try {
-    const { slug } = req.params;
-
-    const category = await categoriesModel.findOne({
-      slug: slug,
-      parentId: null, // chỉ lấy danh mục cha
-    });
-
-    if (!category) {
-      return res.status(404).json({ message: "Không tìm thấy danh mục cha" });
-    }
-
-    return res.status(200).json(category); // trả JSON
-  } catch (error) {
-    console.error("Lỗi khi lấy danh mục cha theo slug:", error);
-    return res.status(500).json({ message: "Lỗi server" });
-  }
-});
-
 
 
 module.exports = router;
