@@ -38,16 +38,35 @@ router.post("/guess", async (req, res) => {
   }
 });
 
-// [patch] Xác nhận đơn hàng
-// URL: http://localhost:3000/orders/:id/confirm
-router.patch("/:id/confirm", async (req, res) => {
+router.get("/confirm-order/:id", async (req, res) => {
   try {
-    const result = await orderController.confirmOrder(req.params.id);
-    return res.status(200).json({ status: true, result });
+    const orderId = req.params.id;
+    const order = await orderModel.findById(orderId);
+
+    if (!order) return res.status(404).send("Không tìm thấy đơn hàng");
+
+    if (order.status_order !== "pending") {
+      return res.send("✅ Đơn hàng đã được xác nhận hoặc xử lý trước đó");
+    }
+
+    order.status_order = "confirmed";
+    order.status_history.push({
+      status: "confirmed",
+      updatedAt: new Date(),
+      note: "Khách vãng lai xác nhận đơn qua email",
+    });
+
+    await order.save();
+
+    return res.send("✅ Đơn hàng đã được xác nhận thành công. Cảm ơn bạn!");
   } catch (err) {
-    return res.status(400).json({ status: false, message: err.message });
+    console.error(err);
+    return res.status(500).send("❌ Lỗi xác nhận đơn hàng");
   }
 });
+
+// [patch] Xác nhận đơn hàng
+// URL: http://localhost:3000/orders/:id/confirm
 
 // [patch] Cập nhật trạng thái đơn hàng
 // URL: http://localhost:3000/orders/:id/status
@@ -234,5 +253,6 @@ router.delete("/:id", async (req, res) => {
     return res.status(500).json({ status: false, message: "Lỗi xoá đơn hàng" });
   }
 });
+
 
 module.exports = router;

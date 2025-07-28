@@ -11,7 +11,7 @@ const OrderSchema = new Schema(
       default: "pending",
     },
 
-    // Nếu là người dùng đăng nhập
+    // ✅ Địa chỉ nếu là người dùng đăng nhập
     address_id: { type: Schema.Types.ObjectId, ref: "Address", required: false },
 
     // ✅ Địa chỉ của khách vãng lai (guest)
@@ -24,9 +24,10 @@ const OrderSchema = new Schema(
       detail: { type: String },    // chi tiết giao hàng nếu có
     },
 
-    voucher_id: { type: Schema.Types.ObjectId, ref: "Voucher" },
+    // Mã giảm giá nếu có
+    voucher_id: { type: Schema.Types.ObjectId, ref: "Voucher", required: false },
 
-    // Nếu là người dùng đã đăng nhập
+    // ✅ Người dùng nếu đã đăng nhập
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: false },
 
     evaluate: { type: String },
@@ -45,21 +46,34 @@ const OrderSchema = new Schema(
       default: "unpaid",
     },
 
-    // Lịch sử trạng thái đơn hàng
+    // ✅ Token dùng để xác nhận đơn hàng (chỉ dùng cho khách vãng lai)
+    order_token: { type: String },
+
+    // ✅ Trạng thái xác nhận đơn hàng
+    confirmed: {
+      type: Boolean,
+      default: false,
+    },
+
+    // ✅ Lịch sử trạng thái đơn hàng
     status_history: [
       {
-        status: { type: String, required: true },
+        status: {
+          type: String,
+          enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
+          required: true,
+        },
         updatedAt: { type: Date, default: Date.now },
         note: { type: String },
       },
     ],
   },
   {
-    timestamps: true, // Tự động có createdAt & updatedAt
+    timestamps: true, // Tự động thêm createdAt và updatedAt
   }
 );
 
-// Không format ngày ở đây
+// Chuyển về JSON
 OrderSchema.methods.toJSON = function () {
   const obj = this.toObject();
   return obj;
