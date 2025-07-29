@@ -257,11 +257,6 @@ async function getUserById(userId) {
   }
 }
 
-
-
-
-
-
 module.exports = {
   register,
   getAllUsers,
