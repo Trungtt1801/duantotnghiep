@@ -65,13 +65,8 @@ async function addOrder(data) {
     total_price,
     payment_method,
     transaction_status,
-    status_history: [
-      {
-        status: "pending",
-        updatedAt: new Date(),
-        note: "Đơn hàng được tạo",
-      },
-    ],
+     status_order: "pending"
+   
   });
 
   const savedOrder = await newOrder.save(); // Có savedOrder._id
@@ -130,6 +125,7 @@ async function addOrder(data) {
   
 }
 
+
   async function addOrderForGuest(data) {
     const {
       address_guess, // { name, phone, email, address, type, detail }
@@ -166,6 +162,7 @@ async function addOrder(data) {
       total_price,
       payment_method,
       transaction_status,
+      status_order: "unpending",
     });
     const savedOrder = await newOrder.save();
 
