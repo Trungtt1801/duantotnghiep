@@ -14,25 +14,34 @@ router.get('/add', async (req, res) => {
 });
 // [GET] Lấy tất cả địa chỉ hoặc theo user_id
 // URL: http://localhost:3000/address?user_id=64531a...
-router.get('/', async (req, res) => {
+// router.get('/', async (req, res) => {
+//   try {
+//     const { user_id } = req.query;
+
+//     if (user_id) {
+//       const addresses = await addressController.getAddressesByUserId(user_id);
+//       if (!addresses || addresses.length === 0) {
+//         return res.status(404).json({ status: false, message: "Không tìm thấy địa chỉ cho user này." });
+//       }
+//       const formatted = addresses.map((a) => a.toJSON()); // ✅ format ngày
+//       return res.status(200).json({ status: true, result: formatted });
+//     }
+
+//     const result = await addressController.getAllAddresses();
+//     const formatted = result.map((a) => a.toJSON());
+//     return res.status(200).json({ status: true, result: formatted });
+//   } catch (err) {
+//     console.error("Lỗi khi lấy danh sách địa chỉ:", err);
+//     return res.status(500).json({ status: false, message: err.message });
+//   }
+// });
+
+router.get('/user/:userId', async (req, res) => {
   try {
-    const { user_id } = req.query;
-
-    if (user_id) {
-      const addresses = await addressController.getAddressesByUserId(user_id);
-      if (!addresses || addresses.length === 0) {
-        return res.status(404).json({ status: false, message: "Không tìm thấy địa chỉ cho user này." });
-      }
-      const formatted = addresses.map((a) => a.toJSON()); // ✅ format ngày
-      return res.status(200).json({ status: true, result: formatted });
-    }
-
-    const result = await addressController.getAllAddresses();
-    const formatted = result.map((a) => a.toJSON());
-    return res.status(200).json({ status: true, result: formatted });
+    const result = await addressController.getAddressesByUserId(req.params.userId);
+    return res.status(200).json(result);
   } catch (err) {
-    console.error("Lỗi khi lấy danh sách địa chỉ:", err);
-    return res.status(500).json({ status: false, message: err.message });
+    return res.status(400).json({ status: false, message: err.message });
   }
 });
 
