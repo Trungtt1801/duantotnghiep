@@ -10,7 +10,6 @@ const OrderSchema = new Schema(
       enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
       default: "pending",
     },
-    // ✅ Mảng lịch sử trạng thái
     status_history: [
       {
         status: {

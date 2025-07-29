@@ -115,6 +115,19 @@ router.post("/zalopay", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+// ZaloPay return sau khi thanh toán thành công
+// Controller xử lý khi ZaloPay redirect về
+router.get("/zalopay_return", async (req, res) => {
+  try {
+    await orderController.zaloCallback(req.query);
+    const returnUrl = req.query.return_url || "/order"; // fallback
+    res.redirect(returnUrl);
+  } catch (err) {
+    res.redirect("/thanh-toan-that-bai");
+  }
+});
+
+
 // localhost:3000/orders/vnpay
 router.post("/vnpay", async (req, res) => {
   try {
@@ -205,7 +218,7 @@ router.get("/:id", async (req, res) => {
         .status(404)
         .json({ status: false, message: "Không tìm thấy đơn hàng" });
     }
-    return res.status(200).json({ status: true, result });
+    return res.status(200).json({ status: true, order: result });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ status: false, message: "Lỗi lấy đơn hàng" });
