@@ -26,7 +26,7 @@ async function createZaloPayOrder(amount, userId, orderId) {
     bank_code: "zalopayapp",
     return_url: `http://localhost:3001/orders/${orderId}`,
   };
-  console.log("return_url:", `http://localhost:3000/order/${orderId}`);
+  // console.log("return_url:", `http://localhost:3000/order/${orderId}`);
 
   const data = [
     order.app_id,
