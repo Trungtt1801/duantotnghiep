@@ -8,12 +8,9 @@ async function sendOrderConfirmationEmail(email, orderId, name) {
       pass: process.env.EMAIL_PASS,
     },
   });
-
- const confirmUrl = `${process.env.CLIENT_URL}/page/confirm-order/${orderId}`;
-
-
+  const confirmUrl = `${process.env.CLIENT_URL}/page/confirm-order/${orderId}`;
   const mailOptions = {
-    from: '"Shop của bạn" <no-reply@shop.com>',
+    from: 'Shop của bạn <no-reply@shop.com>',
     to: email,
     subject: "Xác nhận đơn hàng",
     html: `
