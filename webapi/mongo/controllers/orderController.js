@@ -166,15 +166,7 @@ async function addOrder(data) {
       total_price,
       payment_method,
       transaction_status,
-      status_history: [
-        {
-          status: "pending",
-          updatedAt: new Date(),
-          note: "Khách vãng lai tạo đơn hàng",
-        },
-      ],
     });
-
     const savedOrder = await newOrder.save();
 
     // 2. Gọi thanh toán nếu cần

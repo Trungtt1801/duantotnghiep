@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const orderController = require("../mongo/controllers/orderController");
 const { createVnpayPayment } = require("../mongo/untils/vnpay");
-
+const orderModel = require("../mongo/models/orderModel");
 // [GET] Lấy tất cả đơn hàng
 // URL: http://localhost:3000/orders
 router.get("/", async (req, res) => {
@@ -254,5 +254,80 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+
+// Route GET cho link xác nhận qua email
+router.get("/confirm-guess/:orderId", async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const updated = await orderModel.findByIdAndUpdate(
+      orderId,
+      {
+        confirmed: true,
+        $push: {
+          status_history: {
+            status: "confirmed",
+            updatedAt: new Date(),
+            note: "Khách xác nhận đơn hàng qua email",
+          },
+        },
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).send("Không tìm thấy đơn hàng");
+    }
+
+    // Gửi giao diện xác nhận đơn hàng thành công
+    return res.send(`
+      <h2>✅ Đơn hàng đã được xác nhận thành công!</h2>
+      <p>Cảm ơn bạn đã xác nhận đơn hàng. Chúng tôi sẽ tiến hành xử lý sớm nhất.</p>
+    `);
+  } catch (err) {
+    console.error("Lỗi xác nhận đơn:", err);
+    return res.status(500).send("Đã xảy ra lỗi khi xác nhận đơn hàng.");
+  }
+});
+
+router.put("/confirm-guess/:orderId", async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const updated = await orderModel.findByIdAndUpdate(
+      orderId,
+      {
+        confirmed: true,
+        $push: {
+          status_history: {
+            status: "confirmed",
+            updatedAt: new Date(),
+            note: "Khách xác nhận đơn hàng",
+          },
+        },
+      },
+      { new: true } // Trả về bản ghi đã cập nhật
+    );
+
+    if (!updated) {
+      return res.status(404).json({
+        status: false,
+        message: "Không tìm thấy đơn hàng",
+      });
+    }
+
+    return res.json({
+      status: true,
+      message: "Xác nhận đơn hàng thành công",
+      order: updated,
+    });
+  } catch (err) {
+    console.error("Lỗi xác nhận đơn:", err);
+    return res.status(500).json({
+      status: false,
+      message: "Lỗi xác nhận đơn hàng",
+    });
+  }
+});
 
 module.exports = router;
