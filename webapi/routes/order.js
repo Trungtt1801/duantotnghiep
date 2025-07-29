@@ -254,42 +254,6 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-
-// Route GET cho link xác nhận qua email
-router.get("/confirm-guess/:orderId", async (req, res) => {
-  const { orderId } = req.params;
-
-  try {
-    const updated = await orderModel.findByIdAndUpdate(
-      orderId,
-      {
-        confirmed: true,
-        $push: {
-          status_history: {
-            status: "confirmed",
-            updatedAt: new Date(),
-            note: "Khách xác nhận đơn hàng qua email",
-          },
-        },
-      },
-      { new: true }
-    );
-
-    if (!updated) {
-      return res.status(404).send("Không tìm thấy đơn hàng");
-    }
-
-    // Gửi giao diện xác nhận đơn hàng thành công
-    return res.send(`
-      <h2>✅ Đơn hàng đã được xác nhận thành công!</h2>
-      <p>Cảm ơn bạn đã xác nhận đơn hàng. Chúng tôi sẽ tiến hành xử lý sớm nhất.</p>
-    `);
-  } catch (err) {
-    console.error("Lỗi xác nhận đơn:", err);
-    return res.status(500).send("Đã xảy ra lỗi khi xác nhận đơn hàng.");
-  }
-});
-
 router.put("/confirm-guess/:orderId", async (req, res) => {
   const { orderId } = req.params;
 
@@ -298,13 +262,8 @@ router.put("/confirm-guess/:orderId", async (req, res) => {
       orderId,
       {
         confirmed: true,
-        $push: {
-          status_history: {
-            status: "confirmed",
-            updatedAt: new Date(),
-            note: "Khách xác nhận đơn hàng",
-          },
-        },
+        status_order: "pending", // ✅ vẫn cập nhật trạng thái đơn
+        // ❌ không cập nhật status_history nữa
       },
       { new: true } // Trả về bản ghi đã cập nhật
     );
@@ -329,5 +288,6 @@ router.put("/confirm-guess/:orderId", async (req, res) => {
     });
   }
 });
+
 
 module.exports = router;
