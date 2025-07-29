@@ -5,23 +5,10 @@ const addressController = require('../mongo/controllers/addressController');
 // [GET] Lấy tất cả địa chỉ
 // URL: http://localhost:3000/address
 router.get('/add', async (req, res) => {
-    try {
-    const { user_id } = req.query;
-
-    if (user_id) {
-      const addresses = await addressController.getAddressesByUserId(user_id);
-      if (!addresses || addresses.length === 0) {
-        return res.status(404).json({ status: false, message: "Không tìm thấy địa chỉ cho user này." });
-      }
-      const formatted = addresses.map((a) => a.toJSON()); // ✅ format ngày
-      return res.status(200).json({ status: true, result: formatted });
-    }
-
+  try {
     const result = await addressController.getAllAddresses();
-    const formatted = result.map((a) => a.toJSON());
-    return res.status(200).json({ status: true, result: formatted });
+    return res.status(200).json({ status: true, result });
   } catch (err) {
-    console.error("Lỗi khi lấy danh sách địa chỉ:", err);
     return res.status(500).json({ status: false, message: err.message });
   }
 });
