@@ -1,5 +1,6 @@
 const categoriesModel = require("../models/categoryModel");
 const productsModel = require("../models/productsModel");
+const mongoose = require("mongoose");
 
 async function getAllCate() {
   try {
@@ -39,16 +40,16 @@ async function getCateById(id) {
 }
 
 async function addCate(data) {
-    try {
-        const { name, slug, parentId,type} = data;
-        if (!name) throw new Error('Tên danh mục không được để trống');
-        if (!slug) throw new Error('Slug danh mục không được để trống');
-        const newCate = new categoriesModel({
-            name,
-            slug,
-            parentId: parentId || null,
-            type
-        });
+  try {
+    const { name, slug, parentId, type } = data;
+    if (!name) throw new Error('Tên danh mục không được để trống');
+    if (!slug) throw new Error('Slug danh mục không được để trống');
+    const newCate = new categoriesModel({
+      name,
+      slug,
+      parentId: parentId || null,
+      type
+    });
 
     return await newCate.save();
   } catch (error) {
@@ -58,26 +59,25 @@ async function addCate(data) {
 }
 
 async function updateCate(id, data) {
-    try {
-        const { name, slug, parentId, type } = data;
-        const category = await categoriesModel.findById(id);
-        if (!category) {
-            throw new Error('Danh mục không tồn tại');
-        }
-
-        category.name = name || category.name;
-        category.slug = slug || category.slug;
-        category.type = type || category.type;
-
-        if (parentId !== undefined) {
-            category.parentId = parentId;
-        }
-
-        return await category.save();
-    } catch (error) {
-        console.error('Lỗi cập nhật danh mục:', error.message);
-        throw new Error('Lỗi cập nhật danh mục');
+  try {
+    const { name, slug, parentId, type } = data;
+    const category = await categoriesModel.findById(id);
+    if (!category) {
+      throw new Error('Danh mục không tồn tại');
     }
+
+    category.name = name || category.name;
+    category.slug = slug || category.slug;
+
+    if (parentId !== undefined) {
+      category.parentId = parentId;
+    }
+
+    return await category.save();
+  } catch (error) {
+    console.error('Lỗi cập nhật danh mục:', error.message);
+    throw new Error('Lỗi cập nhật danh mục');
+  }
 }
 
 async function deleteCate(id) {
@@ -142,6 +142,28 @@ async function getCategoryByParentAndChildSlug(parentSlug, childSlug) {
     throw new Error("Lỗi khi lấy danh mục con theo slug cha và con");
   }
 }
+async function filterCategories(req, res) {
+  try {
+    const { search = "", parentId = "" } = req.query;
+    const filter = {};
+
+    if (search) {
+      filter.name = { $regex: search, $options: "i" };
+    }
+
+    if (parentId && mongoose.Types.ObjectId.isValid(parentId)) {
+      filter.parentId = parentId;
+    }
+
+    const result = await categoriesModel.find(filter);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Lỗi tìm kiếm danh mục:", error.message);
+    return res.status(500).json({ message: "Lỗi tìm kiếm danh mục" });
+  }
+}
+
+
 
 
 module.exports = {
@@ -153,6 +175,6 @@ module.exports = {
   getSubCategories,
   getParentCategories,
   getParentCategoryBySlug,
-   getCategoryByParentAndChildSlug,
- 
+  getCategoryByParentAndChildSlug,
+  filterCategories
 };
