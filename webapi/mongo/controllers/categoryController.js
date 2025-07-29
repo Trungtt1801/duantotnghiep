@@ -11,9 +11,6 @@ async function getAllCate() {
   }
 
 }
-
-
-
 async function getParentCategoryBySlug(slug) {
   const category = await categoriesModel.findOne({ slug, parentId: null });
 
@@ -23,7 +20,7 @@ async function getParentCategoryBySlug(slug) {
     id: category._id,
     name: category.name,
     slug: category.slug,
-    image: category.image,
+    images: category.images,
     parentId: category.parentId,
   };
 }
@@ -41,12 +38,13 @@ async function getCateById(id) {
 
 async function addCate(data) {
   try {
-    const { name, slug, parentId, type } = data;
+    const { name, slug, parentId, type , images } = data;
     if (!name) throw new Error('Tên danh mục không được để trống');
     if (!slug) throw new Error('Slug danh mục không được để trống');
     const newCate = new categoriesModel({
       name,
       slug,
+      images,
       parentId: parentId || null,
       type
     });
@@ -60,12 +58,14 @@ async function addCate(data) {
 
 async function updateCate(id, data) {
   try {
-    const { name, slug, parentId, type } = data;
+    const { name, slug, parentId, type , images } = data;
     const category = await categoriesModel.findById(id);
     if (!category) {
       throw new Error('Danh mục không tồn tại');
     }
 
+    category.name = name || category.name;
+    category.name = type || category.name;
     category.name = name || category.name;
     category.slug = slug || category.slug;
 
@@ -131,6 +131,7 @@ async function getCategoryByParentAndChildSlug(parentSlug, childSlug) {
       id: child._id,
       name: child.name,
       slug: child.slug,
+      images: child.images,
       parent: {
         id: parent._id,
         name: parent.name,
