@@ -8,7 +8,7 @@ const OrderSchema = new Schema(
     status_order: {
       type: String,
       enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered","failed", "cancelled", "refund"],
-      required: false,
+      required: true,
     },
     status_history: [
       {
