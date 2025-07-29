@@ -28,6 +28,10 @@ router.get("/parents", async (req, res) => {
     });
   }
 });
+// [GET] Tìm kiếm danh mục 
+// http://localhost:3000/search/
+router.get('/search', categoryController.filterCategories);
+
 // GET /category/children/:parentId
 router.get("/children/:parentId", async (req, res) => {
   try {
