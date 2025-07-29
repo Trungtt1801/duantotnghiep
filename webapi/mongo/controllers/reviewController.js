@@ -1,49 +1,145 @@
-const Review = require('../models/reviewModel');
-const Order = require('../models/orderModel');
-const OrderDetail = require('../models/orderDetailModel');
+const mongoose = require("mongoose");
+const Review = require("../models/reviewModel");
+const Product = require("../models/productsModel");
+const User = require("../models/userModels");
+const OrderDetail = require("../models/orderDetailModel");
 
-async function addReview(data) {
-    try {
-        const { order_id, productdetail_id, user_id, rating, content } = data;
+const baseUrl = "http://localhost:3000/images/";
 
-        const order = await Order.findOne({ _id: order_id, user_id });
-        if (!order) throw new Error('Không tìm thấy đơn hàng thuộc người dùng');
+// Thêm đánh giá
+const addReview = async (req, res) => {
+  try {
+    const { product_id, user_id, content, rating } = req.body;
+    const images = req.files?.map((file) => `${baseUrl}/${file.filename}`) || [];
 
-        if (order.status_order !== 'delivered') {
-            throw new Error('Chỉ đơn hàng đã giao mới có thể đánh giá');
-        }
-
-        const orderDetail = await OrderDetail.findOne({ order_id, productdetail_id });
-        if (!orderDetail) throw new Error('Sản phẩm không thuộc đơn hàng này');
-
-        const existed = await Review.findOne({ order_id, productdetail_id, user_id });
-        if (existed) throw new Error('Bạn đã đánh giá sản phẩm này');
-
-        const review = new Review({
-            order_id,
-            productdetail_id,
-            user_id,
-            rating,
-            content
-        });
-
-        return await review.save();
-    } catch (error) {
-        console.error('Lỗi thêm đánh giá:', error.message);
-        throw new Error(error.message || 'Lỗi khi thêm đánh giá');
+    if (!product_id || !user_id || !content || !rating) {
+      return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
     }
-}
 
-async function getReviewByProductDetail(productdetail_id) {
-    try {
-        return await Review.find({ productdetail_id });
-    } catch (error) {
-        console.error('Lỗi lấy đánh giá theo productdetail_id:', error.message);
-        throw new Error('Lỗi khi lấy danh sách đánh giá');
+    const newReview = new Review({
+      product_id,
+      user_id,
+      content,
+      rating,
+      images,
+    });
+
+    await newReview.save();
+    res.status(201).json({ message: "Thêm đánh giá thành công", review: newReview });
+  } catch (error) {
+    console.log("Lỗi:", error);
+    res.status(500).json({ message: "Lỗi server khi thêm đánh giá", error: error.message });
+  }
+};
+
+// Lấy tất cả đánh giá
+const getAllReviews = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, rating, product_id, user_id, keyword } = req.query;
+    const filter = {};
+    if (rating) filter.rating = Number(rating);
+    if (product_id) filter.product_id = product_id;
+    if (user_id) filter.user_id = user_id;
+    if (keyword) filter.content = { $regex: keyword, $options: "i" };
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const total = await Review.countDocuments(filter);
+
+    const reviews = await Review.find(filter)
+      .populate("user_id", "name avatar")
+      .populate("product_id", "name image")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    const updated = reviews.map((r) => ({
+      ...r.toObject(),
+      images: (r.images || []).map((img) =>
+        img.startsWith("http") ? img : `${baseUrl}/${img}`
+      ),
+    }));
+
+    res.status(200).json({
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / limit),
+      reviews: updated,
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: "Lỗi server khi lấy danh sách đánh giá",
+      error: err.message,
+    });
+  }
+};
+
+// Lấy đánh giá theo sản phẩm
+const getReviewByProduct = async (req, res) => {
+  try {
+    const { product_id } = req.params;
+
+    const reviews = await Review.find({ product_id })
+      .populate("user_id", "name avatar")
+      .populate("product_id", "name image");
+
+    const updated = reviews.map((r) => ({
+      ...r.toObject(),
+      images: (r.images || []).map((img) =>
+        img.startsWith("http") ? img : `${baseUrl}/${img}`
+      ),
+    }));
+
+    res.status(200).json(updated);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi lấy đánh giá theo sản phẩm", error: err.message });
+  }
+};
+
+// Lấy đánh giá theo đơn hàng
+const getReviewByOrder = async (req, res) => {
+  try {
+    const { order_id } = req.params;
+
+    const details = await OrderDetail.find({ order_id }).select("_id");
+    const detailIds = details.map((d) => d._id);
+
+    const reviews = await Review.find({ order_detail_id: { $in: detailIds } })
+      .populate("user_id", "name avatar")
+      .populate("product_id", "name image");
+
+    const updated = reviews.map((r) => ({
+      ...r.toObject(),
+      images: (r.images || []).map((img) =>
+        img.startsWith("http") ? img : `${baseUrl}/${img}`
+      ),
+    }));
+
+    res.status(200).json(updated);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi lấy đánh giá theo đơn hàng", error: err.message });
+  }
+};
+
+// Xoá đánh giá
+const deleteReview = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const review = await Review.findByIdAndDelete(id);
+    if (!review) {
+      return res.status(404).json({ message: "Không tìm thấy đánh giá" });
     }
-}
+
+    res.status(200).json({ message: "Xoá đánh giá thành công" });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi xoá đánh giá", error: err.message });
+  }
+};
 
 module.exports = {
-    addReview,
-    getReviewByProductDetail
+  addReview,
+  getAllReviews,
+  getReviewByProduct,
+  getReviewByOrder,
+  deleteReview,
 };

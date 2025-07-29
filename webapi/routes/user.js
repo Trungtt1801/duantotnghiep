@@ -75,6 +75,7 @@ router.post("/forgot-password", async (req, res) => {
 });
 
 // Đặt lại mật khẩu
+
 router.post("/reset-password", async (req, res) => {
   try {
     const { token, newPassword } = req.body;
@@ -191,16 +192,19 @@ if (!fbData.email) {
 // localhost:3000/users/1
 router.get("/:id", async (req, res) => {
   try {
-    const userId = req.params.id;
-    const user = await userController.getUserById(userId);
-    if (!user) {
-      return res.status(404).json({ status: false, message: "Người dùng không tồn tại" });
-    }
-    return res.status(200).json(user);
-  } catch (error) {
-    console.error("Lỗi lấy thông tin người dùng:", error);
-    return res.status(500).json({ status: false, message: "Lỗi lấy thông tin người dùng", error: error.message });
+    const user = await userController.getUserById(req.params.id); 
+
+    res.status(200).json({ status: true, data: user });
+  } catch (err) {
+    console.error("Lỗi khi gọi API /user/:id:", err.message);
+
+    const statusCode = err.message.includes("Không tìm thấy") || err.message.includes("ID không hợp lệ")
+      ? 404
+      : 500;
+
+    res.status(statusCode).json({ status: false, message: err.message });
   }
 });
+
 
 module.exports = router;

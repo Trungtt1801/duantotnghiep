@@ -28,6 +28,10 @@ router.get("/parents", async (req, res) => {
     });
   }
 });
+// [GET] Tìm kiếm danh mục 
+// http://localhost:3000/search/
+router.get('/search', categoryController.filterCategories);
+
 // GET /category/children/:parentId
 router.get("/children/:parentId", async (req, res) => {
   try {
@@ -73,6 +77,45 @@ router.post("/create", async (req, res) => {
       .json({ status: false, message: "Lỗi thêm danh mục" });
   }
 });
+router.get("/slug/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const category = await categoryController.getParentCategoryBySlug(slug);
+
+    if (!category) {
+      return res.status(404).json({
+        status: false,
+        message: "Không tìm thấy danh mục cha",
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      data: category,
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy danh mục cha theo slug:", error.message);
+    return res.status(500).json({
+      status: false,
+      message: "Lỗi server",
+    });
+  }
+});
+
+
+router.get("/:parentSlug/:childSlug", async (req, res) => {
+  const { parentSlug, childSlug } = req.params;
+
+  try {
+    const category = await categoryController.getCategoryByParentAndChildSlug(parentSlug, childSlug);
+    res.json(category);
+  } catch (err) {
+    res.status(404).json({ message: err.message });
+  }
+});
+// File routes/category.js (hoặc tương tự)
+
+// Trong route
 
 // [PUT] Cập nhật danh mục theo ID
 // http://localhost:3000/category/:id
@@ -115,7 +158,6 @@ router.delete("/:id", async (req, res) => {
     return res.status(500).json({ status: false, message: "Lỗi xóa danh mục" });
   }
 });
-
 
 
 module.exports = router;

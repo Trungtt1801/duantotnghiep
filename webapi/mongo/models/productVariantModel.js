@@ -13,7 +13,7 @@ const variantSchema = new Schema({
           _id: { type: mongoose.Schema.Types.ObjectId, auto: true }, 
           size: { type: String, required: true },
           quantity: { type: Number, required: true },
-          sku: { type: String, required: true }
+          sku: { type: String, required: false }
         }
       ]
     }
