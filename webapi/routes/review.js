@@ -48,4 +48,12 @@
     }
   });
 
+router.get("/check/:product_id/:user_id", async (req, res) => {
+  try {
+    await reviewController.checkIfReviewed(req, res);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server khi kiểm tra đánh giá", error: err.message });
+  }
+});
+
   module.exports = router;

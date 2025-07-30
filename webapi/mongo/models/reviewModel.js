@@ -12,4 +12,3 @@ product_id: { type: mongoose.Schema.Types.ObjectId, ref: "products", required: t
 });
 
 module.exports = mongoose.models.Review || mongoose.model("Review", reviewSchema);
-  

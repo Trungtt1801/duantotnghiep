@@ -106,6 +106,7 @@ async function addOrder(data) {
       image: item.image,
       quantity: item.quantity,
       variant_id: item.variant_id,
+      size_id: item.size_id,
     };
   });
 
@@ -196,6 +197,7 @@ async function addOrder(data) {
       image: item.image,
       quantity: item.quantity,
       variant_id: item.variant_id,
+        size_id: item.size_id,
     }));
 
     await orderDetailModel.insertMany(orderDetails);

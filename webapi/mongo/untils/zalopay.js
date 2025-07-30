@@ -24,8 +24,7 @@ async function createZaloPayOrder(amount, userId, orderId) {
     amount,
     description: `Thanh toán đơn hàng #${transID}`,
     bank_code: "zalopayapp",
-return_url: `https://fine-sea-lion.clouldflare.dev/orders/${orderId}`
-
+    return_url: `https://test-ebooks-orbit.netlify.app/order-success?orderId=${orderId}`,
   };
 
 

@@ -4,7 +4,7 @@ const Product = require("../models/productsModel");
 const User = require("../models/userModels");
 const OrderDetail = require("../models/orderDetailModel");
 
-const baseUrl = "http://localhost:3000/images/";
+const baseUrl = "http://localhost:3000/images";
 
 // Thêm đánh giá
 const addReview = async (req, res) => {
@@ -16,6 +16,17 @@ const addReview = async (req, res) => {
       return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
     }
 
+    // ✅ Kiểm tra xem user đã từng đánh giá sản phẩm này chưa
+    const existingReview = await Review.findOne({ product_id, user_id });
+
+    if (existingReview) {
+      return res.status(400).json({
+        message: "Bạn đã đánh giá sản phẩm này rồi.",
+        review: existingReview,
+      });
+    }
+
+    // ✅ Nếu chưa có thì tiếp tục thêm mới
     const newReview = new Review({
       product_id,
       user_id,
@@ -25,11 +36,25 @@ const addReview = async (req, res) => {
     });
 
     await newReview.save();
-    res.status(201).json({ message: "Thêm đánh giá thành công", review: newReview });
+
+    res.status(201).json({
+      message: "Thêm đánh giá thành công",
+      review: newReview,
+    });
   } catch (error) {
     console.log("Lỗi:", error);
     res.status(500).json({ message: "Lỗi server khi thêm đánh giá", error: error.message });
   }
+};
+
+
+  const checkIfReviewed = async (req, res) => {
+  const { product_id, user_id } = req.params;
+  const existed = await Review.findOne({ product_id, user_id });
+  if (existed) {
+    return res.status(200).json({ reviewed: true });
+  }
+  res.status(200).json({ reviewed: false });
 };
 
 // Lấy tất cả đánh giá
@@ -142,4 +167,5 @@ module.exports = {
   getReviewByProduct,
   getReviewByOrder,
   deleteReview,
+  checkIfReviewed 
 };
