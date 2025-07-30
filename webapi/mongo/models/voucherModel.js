@@ -10,15 +10,21 @@ const VoucherSchema = new Schema({
   min_total: { type: Number, default: 0 },
   max_total: { type: Number, default: null },
   expired_at: { type: Date, default: null },
+
+  target_rank: {
+    type: String,
+    enum: ['bronze', 'silver', 'gold', 'platinum', null],
+    default: null,
+  },
+
+  description: { type: String, default: '' },
 }, {
   timestamps: true 
 });
+
 VoucherSchema.methods.toJSON = function () {
   const obj = this.toObject();
-
-  if (obj.createdAt) obj.createdAt = formatDateVN(obj.createdAt);
-  if (obj.updatedAt) obj.updatedAt = formatDateVN(obj.updatedAt);
-
+  if (obj.delivery_date) obj.delivery_date = formatDateVN(obj.delivery_date);
   return obj;
 };
 

@@ -82,12 +82,18 @@ async function addOrder(data) {
     payment_url = zaloRes.order_url;
   }
 
-  if (payment_method.toLowerCase() === "vnpay") {
-    const ip = data.ip || "127.0.0.1";
-    const vnpayRes = await createVnpayPayment(total_price, user_id, ip);
-    transaction_code = vnpayRes.transaction_code;
-    payment_url = vnpayRes.payment_url;
-  }
+if (payment_method.toLowerCase() === "vnpay") {
+  const ipAddr = ip || "127.0.0.1";
+  const vnpayRes = await createVnpayPayment(
+    total_price,
+    user_id,
+    ipAddr,
+    savedOrder._id.toString() // ✅ truyền thêm orderId
+  );
+  transaction_code = vnpayRes.transaction_code;
+  payment_url = vnpayRes.payment_url;
+}
+
 
   // 3. Cập nhật mã giao dịch vào đơn hàng
   await orderModel.findByIdAndUpdate(savedOrder._id, {

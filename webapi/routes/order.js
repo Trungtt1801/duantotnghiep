@@ -143,10 +143,30 @@ router.post("/zalopay", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+// ZaloPay return sau khi thanh toán thành công
+// Controller xử lý khi ZaloPay redirect về
+router.get("/zalopay_return", async (req, res) => {
+  try {
+    await orderController.zaloCallback(req.query);
+    const returnUrl = req.query.return_url || "/order"; // fallback
+    res.redirect(returnUrl);
+  } catch (err) {
+    res.redirect("/thanh-toan-that-bai");
+  }
+});
+
+
 // localhost:3000/orders/vnpay
 router.post("/vnpay", async (req, res) => {
   try {
-    const { user_id, total_price, products, locale, address_id, voucher_id } = req.body;
+    const {
+      user_id,
+      total_price,
+      products,
+      locale,
+      address_id,
+      voucher_id
+    } = req.body;
 
     const ipAddr =
       req.headers["x-forwarded-for"] ||
@@ -155,17 +175,15 @@ router.post("/vnpay", async (req, res) => {
       req.connection?.socket?.remoteAddress ||
       "127.0.0.1";
 
-    // Gọi đúng hàm tạo thanh toán VNPAY
+    // ✅ Gọi hàm thanh toán VNPAY với 4 tham số như cũ
     const vnpayRes = await createVnpayPayment(
       total_price,
       user_id,
       ipAddr,
-      locale,
-      address_id,
-      voucher_id
+      locale
     );
 
-    // ✅ Bạn cần truyền address_id và voucher_id ở đây
+    // ✅ Gọi tạo đơn hàng sau khi có URL thanh toán
     const newOrder = await orderController.addOrder({
       user_id,
       total_price,
@@ -173,8 +191,8 @@ router.post("/vnpay", async (req, res) => {
       products,
       transaction_code: vnpayRes.transaction_code,
       ip: ipAddr,
-      address_id, 
-      voucher_id, 
+      address_id,   // ✅ Optional – thêm nếu BE chấp nhận
+      voucher_id,   // ✅ Optional – thêm nếu BE chấp nhận
     });
 
     res.status(200).json({
@@ -192,6 +210,7 @@ router.post("/vnpay", async (req, res) => {
     });
   }
 });
+
 
 router.get("/vnpay_return", async (req, res) => {
   try {
@@ -233,7 +252,7 @@ router.get("/:id", async (req, res) => {
         .status(404)
         .json({ status: false, message: "Không tìm thấy đơn hàng" });
     }
-    return res.status(200).json({ status: true, result });
+    return res.status(200).json({ status: true, order: result });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ status: false, message: "Lỗi lấy đơn hàng" });
