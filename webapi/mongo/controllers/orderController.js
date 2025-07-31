@@ -383,6 +383,7 @@ async function createOrderWithZaloPay(data) {
       total_price,
       payment_method: "zalopay",
       transaction_status: "unpaid",
+      status_order: "pending"
     });
 
     // 2. Gọi createZaloPayOrder với order._id
