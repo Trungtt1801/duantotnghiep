@@ -374,4 +374,31 @@ router.get("/related/:id", async (req, res) => {
   }
 });
 
+router.put("/:id/visibility", async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const { isHidden } = req.body;
+
+    console.log("🟡 productId:", productId);
+    console.log("🟡 isHidden (raw):", isHidden);
+
+    const parsedIsHidden = isHidden === "true" || isHidden === true || isHidden === 1;
+    console.log("🟢 isHidden (parsed):", parsedIsHidden);
+
+    const result = await productController.updateProductVisibility(productId, parsedIsHidden);
+
+    return res.status(200).json({
+      status: true,
+      message: result.message,
+    });
+  } catch (err) {
+    console.error("🔴 Lỗi cập nhật hiển thị:", err.message);
+    return res.status(400).json({
+      status: false,
+      message: "Không thể cập nhật trạng thái hiển thị",
+    });
+  }
+});
+
+
 module.exports = router;
