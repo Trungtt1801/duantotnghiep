@@ -418,13 +418,6 @@ const updateProductVisibility = async (id, isHidden) => {
   return { message: "Cập nhật trạng thái hiển thị thành công" };
 };
 
-module.exports = {
-  updateProductVisibility,
-};
-
-module.exports = {
-  updateProductVisibility,
-};
 
 module.exports = {
   getProducts,
