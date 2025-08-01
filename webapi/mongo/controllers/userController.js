@@ -51,17 +51,7 @@ async function register(data) {
     const code = `US${(totalUsers + 1).toString().padStart(3, "0")}`;
 
     // ✅ Danh sách địa chỉ mặc định (nếu có)
-    const addressList = defaultAddress
-      ? [
-        {
-          name,
-          phone,
-          address: defaultAddress,
-          isDefault: true,
-        },
-      ]
-      : [];
-
+   
     const newUser = new usersModel({
       name,
       email,

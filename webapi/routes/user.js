@@ -31,16 +31,15 @@ router.post("/register", async (req, res) => {
     return res.status(500).json({ status: false, message: "Lỗi đăng ký người dùng", error: error.message });
   }
 });
-
 // Đăng nhập người dùng
 router.post("/login", async (req, res) => {
   console.log("===> VÀO LOGIN THƯỜNG");
   try {
     const { email, password } = req.body;
+
     const user = await userController.login({ email, password });
 
     const jwtSecret = process.env.PRIVATE_KEY || "defaultSecretKey";
-
     const token = jwt.sign(
       { email: user.email, role: user.role },
       jwtSecret,
@@ -53,7 +52,20 @@ router.post("/login", async (req, res) => {
       token,
       user
     });
+
   } catch (error) {
+    // Xử lý lỗi logic người dùng
+    if (
+      error.message === "Email chưa được đăng ký!" ||
+      error.message === "Sai mật khẩu!"
+    ) {
+      return res.status(401).json({
+        status: false,
+        message: error.message
+      });
+    }
+
+    // Lỗi máy chủ
     return res.status(500).json({
       status: false,
       message: "Lỗi đăng nhập",
