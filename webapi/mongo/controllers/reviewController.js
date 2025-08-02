@@ -1,19 +1,30 @@
 const mongoose = require("mongoose");
 const Review = require("../models/reviewModel");
+const baseUrl = "http://localhost:3000/images/";
 const Product = require("../models/productsModel");
 const User = require("../models/userModels");
 const OrderDetail = require("../models/orderDetailModel");
-
-const baseUrl = "http://localhost:3000/images/";
-
-// Thêm đánh giá
 const addReview = async (req, res) => {
   try {
-    const { product_id, user_id, content, rating } = req.body;
+    const { product_id, user_id, content, rating, order_detail_id } = req.body;
     const images = req.files?.map((file) => `${baseUrl}/${file.filename}`) || [];
 
-    if (!product_id || !user_id || !content || !rating) {
+    if (!product_id || !user_id || !content || !rating || !order_detail_id) {
       return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
+    }
+
+    const orderDetail = await OrderDetail.findById(order_detail_id);
+    if (!orderDetail) {
+      return res.status(404).json({ message: "Không tìm thấy chi tiết đơn hàng" });
+    }
+
+    if (orderDetail.user_id.toString() !== user_id.toString()) {
+      return res.status(403).json({ message: "Bạn không có quyền đánh giá sản phẩm này" });
+    }
+
+    const existingReview = await Review.findOne({ order_detail_id });
+    if (existingReview) {
+      return res.status(400).json({ message: "Sản phẩm trong đơn hàng này đã được đánh giá" });
     }
 
     const newReview = new Review({
@@ -22,15 +33,17 @@ const addReview = async (req, res) => {
       content,
       rating,
       images,
+      order_detail_id,
     });
 
     await newReview.save();
-    res.status(201).json({ message: "Thêm đánh giá thành công", review: newReview });
+    res.status(201).json({ message: "Đánh giá thành công", review: newReview });
   } catch (error) {
-    console.log("Lỗi:", error);
-    res.status(500).json({ message: "Lỗi server khi thêm đánh giá", error: error.message });
+    console.error("Lỗi khi thêm đánh giá:", error);
+    res.status(500).json({ message: "Lỗi server", error: error.message });
   }
 };
+
 
 // Lấy tất cả đánh giá
 const getAllReviews = async (req, res) => {
