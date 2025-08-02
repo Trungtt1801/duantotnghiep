@@ -64,10 +64,11 @@ async function updateCate(id, data) {
       throw new Error('Danh mục không tồn tại');
     }
 
-    category.name = name || category.name;
-    category.name = type || category.name;
-    category.name = name || category.name;
-    category.slug = slug || category.slug;
+category.name = name || category.name;
+category.slug = slug || category.slug;
+category.type = type || category.type;
+category.images = images || category.images;
+
 
     if (parentId !== undefined) {
       category.parentId = parentId;

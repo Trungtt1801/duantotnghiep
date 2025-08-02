@@ -42,7 +42,16 @@ router.get("/children/:parentId", async (req, res) => {
     res.status(500).json({ message: "Lỗi lấy danh mục con" });
   }
 });
+router.get("/:parentSlug/:childSlug", async (req, res) => {
+  const { parentSlug, childSlug } = req.params;
 
+  try {
+    const category = await categoryController.getCategoryByParentAndChildSlug(parentSlug, childSlug);
+    res.json(category);
+  } catch (err) {
+    res.status(404).json({ message: err.message });
+  }
+});
 // [GET] Lấy chi tiết danh mục theo ID
 // http://localhost:3000/category/:id
 router.get("/:id", async (req, res) => {
@@ -103,16 +112,7 @@ router.get("/slug/:slug", async (req, res) => {
 });
 
 
-router.get("/:parentSlug/:childSlug", async (req, res) => {
-  const { parentSlug, childSlug } = req.params;
 
-  try {
-    const category = await categoryController.getCategoryByParentAndChildSlug(parentSlug, childSlug);
-    res.json(category);
-  } catch (err) {
-    res.status(404).json({ message: err.message });
-  }
-});
 // File routes/category.js (hoặc tương tự)
 
 // Trong route
