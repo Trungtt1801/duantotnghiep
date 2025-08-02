@@ -68,6 +68,7 @@ async function register(data) {
     return userData;
   } catch (error) {
     throw new Error(error.message || "Lỗi đăng ký");
+    
   }
 }
 

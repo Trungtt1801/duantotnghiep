@@ -27,10 +27,14 @@ router.post("/register", async (req, res) => {
     const result = await userController.register(data);
     return res.status(200).json({ status: true, result });
   } catch (error) {
-    console.error("Lỗi đăng ký:", error);
-    return res.status(500).json({ status: false, message: "Lỗi đăng ký người dùng", error: error.message });
+    console.error("Lỗi đăng ký:", error.message);
+    return res.status(400).json({ //  đổi 500 thành 400 để báo lỗi hợp lệ từ client
+      status: false,
+      message: error.message 
+    });
   }
 });
+
 // Đăng nhập người dùng
 router.post("/login", async (req, res) => {
   console.log("===> VÀO LOGIN THƯỜNG");
@@ -174,7 +178,6 @@ if (!fbData.email) {
     fbData,
   });
 }
-
 
     const { id: name, email } = fbData;
     const user = await userController.findOrCreateFacebookUser({ name, email });
