@@ -68,7 +68,15 @@ router.get("/parents", async (req, res) => {
 });
 
 // [GET] Tìm kiếm danh mục
-router.get("/search", categoryController.filterCategories);
+router.get("/search", async (req, res) => {
+  try {
+    const result = await categoryController.filterCategoriesByQuery(req.query);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Lỗi tìm kiếm danh mục:", error.message);
+    res.status(500).json({ message: "Lỗi server khi tìm kiếm danh mục" });
+  }
+});
 
 // [GET] Lấy danh mục con theo parentId
 router.get("/children/:parentId", async (req, res) => {
