@@ -159,7 +159,7 @@ router.post("/create", upload.array("images", 5), async (req, res) => {
       type,
     };
 
-    const category = await categoryController.createCate(data);
+    const category = await categoryController.addCate(data);
     res
       .status(200)
       .json({ status: true, message: "Thêm danh mục thành công", category });

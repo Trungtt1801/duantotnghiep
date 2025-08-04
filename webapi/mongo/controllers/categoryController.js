@@ -101,6 +101,7 @@ async function updateCate(id, data) {
   }
 }
 
+
 async function deleteCate(id) {
   try {
     const cate = await categoriesModel.findById(id);
