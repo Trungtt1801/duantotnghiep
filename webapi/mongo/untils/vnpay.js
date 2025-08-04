@@ -40,7 +40,6 @@ async function createVnpayPayment(amount, userId, ipAddr = '127.0.0.1', locale =
     vnp_IpAddr: ipAddr,
     vnp_CreateDate: createDate,
   };
-
   const sortedParams = sortObject(vnp_Params);
   const signData = qs.stringify(sortedParams, { encode: false });
 
