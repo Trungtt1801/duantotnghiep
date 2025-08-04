@@ -4,6 +4,8 @@ const baseUrl = "http://localhost:3000/images/";
 const Product = require("../models/productsModel");
 const User = require("../models/userModels");
 const OrderDetail = require("../models/orderDetailModel");
+
+// Thêm đánh giá
 const addReview = async (req, res) => {
   try {
     const { product_id, user_id, content, rating, order_detail_id } = req.body;
@@ -13,20 +15,17 @@ const addReview = async (req, res) => {
       return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
     }
 
-    const orderDetail = await OrderDetail.findById(order_detail_id);
-    if (!orderDetail) {
-      return res.status(404).json({ message: "Không tìm thấy chi tiết đơn hàng" });
-    }
+    // ✅ Kiểm tra xem user đã từng đánh giá sản phẩm này chưa
+    const existingReview = await Review.findOne({ product_id, user_id });
 
-    if (orderDetail.user_id.toString() !== user_id.toString()) {
-      return res.status(403).json({ message: "Bạn không có quyền đánh giá sản phẩm này" });
-    }
-
-    const existingReview = await Review.findOne({ order_detail_id });
     if (existingReview) {
-      return res.status(400).json({ message: "Sản phẩm trong đơn hàng này đã được đánh giá" });
+      return res.status(400).json({
+        message: "Bạn đã đánh giá sản phẩm này rồi.",
+        review: existingReview,
+      });
     }
 
+    // ✅ Nếu chưa có thì tiếp tục thêm mới
     const newReview = new Review({
       product_id,
       user_id,
@@ -37,13 +36,26 @@ const addReview = async (req, res) => {
     });
 
     await newReview.save();
-    res.status(201).json({ message: "Đánh giá thành công", review: newReview });
+
+    res.status(201).json({
+      message: "Thêm đánh giá thành công",
+      review: newReview,
+    });
   } catch (error) {
     console.error("Lỗi khi thêm đánh giá:", error);
     res.status(500).json({ message: "Lỗi server", error: error.message });
   }
 };
 
+
+  const checkIfReviewed = async (req, res) => {
+  const { product_id, user_id } = req.params;
+  const existed = await Review.findOne({ product_id, user_id });
+  if (existed) {
+    return res.status(200).json({ reviewed: true });
+  }
+  res.status(200).json({ reviewed: false });
+};
 
 // Lấy tất cả đánh giá
 const getAllReviews = async (req, res) => {
@@ -155,4 +167,5 @@ module.exports = {
   getReviewByProduct,
   getReviewByOrder,
   deleteReview,
+  checkIfReviewed 
 };

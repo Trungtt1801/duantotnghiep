@@ -129,29 +129,46 @@ async function getOrderDetailByOrderId(orderId) {
     }
 
     // 3. Lấy thông tin user
-    const user = await User.findById(order.user_id).lean();
+    // 3. Xử lý thông tin user hoặc address_guess
+    let userInfo = null;
 
-    // ✅ Lấy đúng địa chỉ được chọn khi đặt hàng
-    const address = await AddressModel.findById(order.address_id).lean();
+    if (order.user_id) {
+      const user = await User.findById(order.user_id).lean();
+      const address = await AddressModel.findById(order.address_id).lean();
 
-    const userInfo = user
-      ? {
+      userInfo = user
+        ? {
           _id: user._id,
           name: user.name,
           email: user.email,
           phone: user.phone,
           address: address
             ? {
-                _id: address._id,
-                name: address.name,
-                phone: address.phone,
-                address: address.address,
-                detail: address.detail,
-                type: address.type,
-              }
+              _id: address._id,
+              name: address.name,
+              phone: address.phone,
+              address: address.address,
+              detail: address.detail,
+              type: address.type,
+            }
             : null,
         }
-      : null;
+        : null;
+    } else if (order.address_guess) {
+      const guessed = order.address_guess;
+      userInfo = {
+        name: guessed.name,
+        email: guessed.email,
+        phone: guessed.phone,
+        address: {
+          name: guessed.name,
+          phone: guessed.phone,
+          address: guessed.address,
+          detail: guessed.detail,
+          type: guessed.type,
+        },
+      };
+    }
 
     // 4. Xử lý chi tiết sản phẩm
     const result = [];
