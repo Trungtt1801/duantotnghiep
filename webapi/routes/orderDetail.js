@@ -50,5 +50,18 @@ router.delete('/:orderId', async (req, res) => {
     return res.status(500).json({ status: false, message: 'Lỗi xoá chi tiết đơn hàng' });
   }
 });
+// Tồn kho
+// [GET] Lấy top sản phẩm bán ít nhất theo khoảng thời gian (week, month, year)
+// GET http://localhost:3000/orderDetail/reports/least-sold?timePeriod=week&limit=10
+router.get('/reports/least-sold', async (req, res) => {
+  try {
+    const { timePeriod, limit } = req.query;
+    const data = await orderDetailController.getLeastSoldProducts(timePeriod, parseInt(limit) || 10);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 module.exports = router;
