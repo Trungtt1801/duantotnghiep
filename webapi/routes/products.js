@@ -374,4 +374,18 @@ router.get("/related/:id", async (req, res) => {
   }
 });
 
+
+// [GET] Lấy sản phẩm bán ít nhất trong khoảng thời gian nhất định
+// GET http://localhost:3000/products/reports/least-sold?timePeriod=week
+router.get("/reports/least-sold", async (req, res) => {
+  try {
+    const { timePeriod } = req.query;
+    const result = await productController.getLeastSoldProducts(timePeriod);
+    return res.status(200).json({ status: true, result });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ status: false, message: "Lỗi lấy sản phẩm bán ít nhất" });
+  }
+});
+
 module.exports = router;

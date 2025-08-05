@@ -408,7 +408,78 @@ async function filterFromList(productList, filters) {
   }
 }
 
+// loc sản phẩm bán ít nhất trong khoảng thời gian nhất định
+// timePeriod: 'week', 'month', 'year'
+async function getLeastSoldProducts(timePeriod) {
+  try {
+    const validPeriods = ["week", "month", "year"];
+    if (!validPeriods.includes(timePeriod)) {
+      throw new Error("Khoảng thời gian không hợp lệ");
+    }
 
+    const startDate = new Date();
+    switch (timePeriod) {
+      case "week":
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case "month":
+        startDate.setMonth(startDate.getMonth() - 1);
+        break;
+      case "year":
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
+    }
+
+    const leastSoldProducts = await productsModel.aggregate([
+      {
+        $lookup: {
+          from: "orderdetails",
+          let: { productId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$product_id", "$$productId"] },
+                    { $gte: ["$created_at", startDate] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "orderDetailsFiltered",
+        },
+      },
+      {
+        $addFields: {
+          totalSold: {
+            $sum: "$orderDetailsFiltered.quantity",
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          images: 1,
+          price: 1,
+          totalSold: 1,
+        },
+      },
+      {
+        $sort: { totalSold: 1 },
+      },
+      {
+        $limit: 10,
+      },
+    ]);
+
+    return leastSoldProducts;
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm bán ít nhất:", error);
+    throw error;
+  }
+}
 
 
 module.exports = {
@@ -420,4 +491,5 @@ module.exports = {
   getProductsByCategoryTree,
   getRelatedProducts,
   filterFromList,
+  getLeastSoldProducts,
 };

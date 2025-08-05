@@ -241,88 +241,11 @@ async function deleteDetailsByOrderId(orderId) {
   }
 }
 
-async function getLeastSoldProducts(timePeriod = 'week', limit = 10) {
-  try {
-    const now = new Date();
-    let startDate;
 
-    switch (timePeriod) {
-      case 'month':
-        // Ngày đầu tiên của tháng hiện tại
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        break;
-      case 'year':
-        // Ngày đầu tiên của năm hiện tại
-        startDate = new Date(now.getFullYear(), 0, 1);
-        break;
-      case 'week':
-      default:
-        // Ngày đầu tiên của tuần hiện tại (Chủ nhật)
-        startDate = new Date(now);
-        startDate.setDate(now.getDate() - now.getDay());
-        startDate.setHours(0, 0, 0, 0);
-        break;
-    }
 
-    const result = await OrderDetailModel.aggregate([
-      // Join với collection 'orders' để lấy thông tin createdAt
-      {
-        $lookup: {
-          from: 'orders',
-          localField: 'order_id',
-          foreignField: '_id',
-          as: 'orderInfo',
-        },
-      },
-      { $unwind: '$orderInfo' },
-      // Lọc các đơn hàng trong khoảng thời gian đã chọn và không bị hủy
-      {
-        $match: {
-          'orderInfo.createdAt': { $gte: startDate },
-          'orderInfo.status_order': { $ne: 'cancelled' }
-        },
-      },
-      // Gom nhóm theo product_id để tính tổng số lượng bán
-      {
-        $group: {
-          _id: '$product_id',
-          totalSold: { $sum: '$quantity' },
-        },
-      },
-      // Sắp xếp theo số lượng bán tăng dần (ít bán nhất)
-      { $sort: { totalSold: 1 } },
-      // Giới hạn số lượng kết quả
-      { $limit: limit },
-      // Join với collection 'products' để lấy thêm thông tin sản phẩm
-      {
-        $lookup: {
-          from: 'products',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'productInfo',
-        },
-      },
-      { $unwind: '$productInfo' },
-      // Lựa chọn các trường dữ liệu cần trả về
-      {
-        $project: {
-          product_id: '$_id',
-          name: '$productInfo.name',
-          stock: '$productInfo.stock', // Lấy số lượng tồn kho
-          totalSold: 1,
-        },
-      },
-    ]);
-
-    return result;
-  } catch (err) {
-    console.error(`Lỗi lấy sản phẩm bán ít trong ${timePeriod}:`, err.message);
-    throw new Error(`Không thể lấy sản phẩm bán ít theo ${timePeriod}`);
-  }
-}
 module.exports = {
   addOrderDetail,
   getOrderDetailByOrderId,
   deleteDetailsByOrderId,
-  getLeastSoldProducts,
+  
 };
