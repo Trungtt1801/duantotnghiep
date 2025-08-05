@@ -80,14 +80,15 @@ async function addCate(data) {
 async function updateCate(id, data) {
   try {
     const { name, slug, parentId, type, images } = data;
+
     const category = await categoriesModel.findById(id);
     if (!category) throw new Error("Danh mục không tồn tại");
 
     if (name) category.name = name;
     if (slug) category.slug = slug;
     if (type) category.type = type;
-    if (images) category.images = images;
     if (parentId !== undefined) category.parentId = parentId;
+    if (images) category.images = images;
 
     const updated = await category.save();
 

@@ -175,17 +175,26 @@ router.put("/:id", upload.array("images", 5), async (req, res) => {
     const { id } = req.params;
     const { name, slug, parentId, type } = req.body;
 
-    const images =
+    // Lấy danh sách ảnh cũ từ req.body (gửi từ frontend)
+    let existingImages = [];
+    if (req.body.existingImages) {
+      existingImages = Array.isArray(req.body.existingImages)
+        ? req.body.existingImages
+        : [req.body.existingImages]; // nếu chỉ có 1 ảnh
+    }
+
+    // Nếu có ảnh mới thì dùng ảnh mới, nếu không thì giữ lại ảnh cũ
+    const newImages =
       req.files && req.files.length > 0
         ? req.files.map((file) => file.filename)
-        : undefined;
+        : existingImages;
 
     const updateData = {
       ...(name && { name }),
       ...(slug && { slug }),
       ...(type && { type }),
       ...(parentId !== undefined && { parentId: parentId || null }),
-      ...(images && { images }),
+      images: newImages, // luôn cập nhật images
     };
 
     const updatedCategory = await categoryController.updateCate(id, updateData);
@@ -206,6 +215,7 @@ router.put("/:id", upload.array("images", 5), async (req, res) => {
     res.status(500).json({ status: false, message: "Lỗi server" });
   }
 });
+
 
 // [DELETE] Xóa danh mục
 router.delete("/:id", async (req, res) => {
