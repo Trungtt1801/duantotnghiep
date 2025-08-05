@@ -185,7 +185,7 @@ async function resetPassword(token, newPassword) {
   } catch (error) {
     console.error("Lỗi resetPassword:", error);
     if (error.name === "TokenExpiredError") {
-      throw new Error("Token đã hết hạn.");
+      throw new Error("Thời gian đổi mật khẩu đã quá hạn. Vui lòng gửi yêu cầu mới.");
     } else if (error.name === "JsonWebTokenError") {
       throw new Error("Token không hợp lệ.");
     } else {
