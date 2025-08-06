@@ -3,7 +3,6 @@ const createZaloPayOrder = require("../untils/zalopay");
 const { createVnpayPayment } = require("../untils/vnpay");
 const orderDetailModel = require("../models/orderDetailModel");
 const userModels = require("../models/userModels");
-const { createVnpayPaymentForGuest } = require("../untils/vnpayForGuest");
 require("dotenv").config();
 
 
@@ -85,7 +84,6 @@ async function addOrder(data) {
     payment_url = zaloRes.order_url;
   }
 
-  
 if (payment_method.toLowerCase() === "vnpay") {
   const ipAddr = ip || "127.0.0.1";
   const vnpayRes = await createVnpayPayment(
@@ -188,17 +186,12 @@ if (payment_method.toLowerCase() === "vnpay") {
       payment_url = zaloRes.order_url;
     }
 
-   if (payment_method.toLowerCase() === "vnpay") {
-  const clientIP = ip || "127.0.0.1";
-  const vnpayRes = await createVnpayPaymentForGuest(
-    total_price,
-    clientIP,
-    savedOrder._id.toString() // dùng order._id làm mã giao dịch
-  );
-  transaction_code = vnpayRes.transaction_code;
-  payment_url = vnpayRes.payment_url;
-}
-
+    if (payment_method.toLowerCase() === "vnpay") {
+      const clientIP = ip || "127.0.0.1";
+      const vnpayRes = await createVnpayPayment(total_price, null, clientIP);
+      transaction_code = vnpayRes.transaction_code;
+      payment_url = vnpayRes.payment_url;
+    }
 
     // 3. Cập nhật mã giao dịch
     await orderModel.findByIdAndUpdate(savedOrder._id, {
@@ -533,67 +526,6 @@ async function vnpayCallback(query) {
   return { status: true };
 }
 
-async function vnpayCallbackForGuest(query) {
-   const crypto = require("crypto"); 
-  const vnp_Params = { ...query };
-  const secureHash = vnp_Params["vnp_SecureHash"];
-  delete vnp_Params["vnp_SecureHash"];
-  delete vnp_Params["vnp_SecureHashType"];
-
-  // 1. Sắp xếp lại tham số theo thứ tự alphabet
-  const sortedParams = Object.keys(vnp_Params)
-    .sort()
-    .reduce((acc, key) => {
-      acc[key] = vnp_Params[key];
-      return acc;
-    }, {});
-
-  // 2. Encode đúng format VNPAY
-  const signData = Object.entries(sortedParams)
-    .map(([key, val]) => `${key}=${encodeURIComponent(val).replace(/%20/g, "+")}`)
-    .join("&");
-
-  // 3. Tạo HMAC SHA512
-  const signed = crypto
-    .createHmac("sha512", process.env.VNP_HASH_SECRET)
-    .update(Buffer.from(signData, "utf-8"))
-    .digest("hex");
-
-  // 4. So sánh chữ ký
-  if (secureHash !== signed) {
-    console.error("❌ Checksum mismatch (guest)");
-    throw new Error("Sai checksum");
-  }
-
-  // 5. Tìm và xử lý đơn hàng
-  const txnRef = vnp_Params["vnp_TxnRef"];
-  const order = await orderModel.findOne({ transaction_code: txnRef });
-
-  if (!order) {
-    console.log("❌ Không tìm thấy đơn hàng (guest):", txnRef);
-    throw new Error("Không tìm thấy đơn hàng");
-  }
-
-  console.log("🧾 Đơn hàng khách vãng lai:", order);
-
-  order.transaction_status =
-    vnp_Params["vnp_ResponseCode"] === "00" ? "paid" : "failed";
-
-  if (vnp_Params["vnp_ResponseCode"] === "00") {
-    order.status_order = "confirmed";
-
-    order.status_history.push({
-      status: "confirmed",
-      updatedAt: new Date(),
-      note: "Thanh toán thành công (vãng lai)",
-    });
-  }
-
-  await order.save();
-  return { status: true };
-}
-
-
 
 function getRankByPoint(point) {
   if (point >= 1000000) return "platinum";
@@ -649,5 +581,4 @@ module.exports = {
   updateUserPoint,
   getOrdersByUserId,
   addOrderForGuest,
-  vnpayCallbackForGuest
 };
