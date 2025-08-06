@@ -5,6 +5,8 @@ const productController = require("../mongo/controllers/productsController");
 const productVariantModel = require("../mongo/models/productVariantModel");
 const productsModel = require("../mongo/models/productsModel");
 
+
+
 const multer = require("multer");
 
 // Cấu hình multer
@@ -33,7 +35,7 @@ router.get("/", async (req, res) => {
         });
 
         return {
-         _id: product._id,
+          _id: product._id,
           name: product.name,
           description: product.description,
           price: product.price,
@@ -83,8 +85,8 @@ router.get("/pro", async (req, res) => {
           product_id: product._id,
         });
 
-      return {
-         _id: product._id,
+        return {
+          _id: product._id,
           name: product.name,
           description: product.description,
           price: product.price,
@@ -375,16 +377,16 @@ router.get("/related/:id", async (req, res) => {
 });
 
 
-// [GET] Lấy sản phẩm bán ít nhất trong khoảng thời gian nhất định
-// GET http://localhost:3000/products/reports/least-sold?timePeriod=week
+// [GET] Lấy sản phẩm bán ít theo salecount nhất trong khoảng thời gian nhất định
 router.get("/reports/least-sold", async (req, res) => {
   try {
     const { timePeriod } = req.query;
-    const result = await productController.getLeastSoldProducts(timePeriod);
-    return res.status(200).json({ status: true, result });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ status: false, message: "Lỗi lấy sản phẩm bán ít nhất" });
+   const result = await productController.getLeastSoldProducts(timePeriod);
+
+    res.status(200).json({ status: true, result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ status: false, error: err.message });
   }
 });
 

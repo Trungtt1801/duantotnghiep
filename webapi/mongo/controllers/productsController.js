@@ -408,79 +408,80 @@ async function filterFromList(productList, filters) {
   }
 }
 
-// loc sản phẩm bán ít nhất trong khoảng thời gian nhất định
-// timePeriod: 'week', 'month', 'year'
+// loc sản phẩm dựa vào salecount bán ít nhất trong khoảng thời gian nhất định
+// loc sản phẩm dựa vào salecount bán ít nhất trong khoảng thời gian nhất định
 async function getLeastSoldProducts(timePeriod) {
   try {
-    const validPeriods = ["week", "month", "year"];
-    if (!validPeriods.includes(timePeriod)) {
-      throw new Error("Khoảng thời gian không hợp lệ");
-    }
+    const timeMap = {
+      week: 7,
+      month: 30,
+      year: 365
+    };
 
-    const startDate = new Date();
-    switch (timePeriod) {
-      case "week":
-        startDate.setDate(startDate.getDate() - 7);
-        break;
-      case "month":
-        startDate.setMonth(startDate.getMonth() - 1);
-        break;
-      case "year":
-        startDate.setFullYear(startDate.getFullYear() - 1);
-        break;
-    }
+    const days = timeMap[timePeriod];
+    if (!days) throw new Error("Invalid time period. Must be 'week', 'month', or 'year'.");
 
-    const leastSoldProducts = await productsModel.aggregate([
+    const dateCondition = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const result = await productVariantModel.aggregate([
       {
         $lookup: {
-          from: "orderdetails",
-          let: { productId: "$_id" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$product_id", "$$productId"] },
-                    { $gte: ["$created_at", startDate] },
-                  ],
-                },
-              },
-            },
-          ],
-          as: "orderDetailsFiltered",
-        },
+          from: "products",
+          localField: "product_id",
+          foreignField: "_id",
+          as: "product"
+        }
+      },
+      { $unwind: "$product" },
+      {
+        $match: {
+          "product.create_at": { $gte: dateCondition }
+        }
       },
       {
         $addFields: {
-          totalSold: {
-            $sum: "$orderDetailsFiltered.quantity",
-          },
-        },
+          total_quantity: {
+            $sum: {
+              $map: {
+                input: "$variants",
+                as: "v",
+                in: {
+                  $sum: "$$v.sizes.quantity"
+                }
+              }
+            }
+          }
+        }
       },
+      {
+        $sort: {
+          "product.sale_count": 1
+        }
+      },
+      { $limit: 50 },
       {
         $project: {
-          _id: 1,
-          name: 1,
-          images: 1,
-          price: 1,
-          totalSold: 1,
-        },
-      },
-      {
-        $sort: { totalSold: 1 },
-      },
-      {
-        $limit: 10,
-      },
+          _id: 0,
+          product_id: "$product._id",
+          total_quantity: 1,
+          sale_count: "$product.sale_count",
+          name: "$product.name",
+          images: "$product.images",
+          price: "$product.price",
+          sale: "$product.sale",
+          create_at: "$product.create_at"
+        }
+      }
     ]);
-
-    return leastSoldProducts;
+    return result.map(item => ({
+      ...item,
+      images: item.images.map(img => img.startsWith("http") ? img : `http://localhost:3000/images/${img}`)
+    }));
   } catch (error) {
     console.error("Lỗi khi lấy sản phẩm bán ít nhất:", error);
     throw error;
   }
 }
-
 
 module.exports = {
   getProducts,
@@ -492,4 +493,5 @@ module.exports = {
   getRelatedProducts,
   filterFromList,
   getLeastSoldProducts,
+
 };
