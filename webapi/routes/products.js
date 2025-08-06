@@ -33,7 +33,7 @@ router.get("/", async (req, res) => {
         });
 
         return {
-         _id: product._id,
+          _id: product._id,
           name: product.name,
           description: product.description,
           price: product.price,
@@ -83,8 +83,8 @@ router.get("/pro", async (req, res) => {
           product_id: product._id,
         });
 
-      return {
-         _id: product._id,
+        return {
+          _id: product._id,
           name: product.name,
           description: product.description,
           price: product.price,
@@ -308,12 +308,14 @@ router.put("/update/:id", upload.array("images", 10), async (req, res) => {
       price: Number(data.price),
       sale: Number(data.sale || 0),
       material: data.material || "",
+      description: data.description || "",  // <-- Thêm dòng này
       images,
       isHidden,
       category_id: data.category_id,
       variants,
       sale_count: data.sale_count,
     };
+
 
     const result = await productController.updateProduct(productId, sendData);
 
