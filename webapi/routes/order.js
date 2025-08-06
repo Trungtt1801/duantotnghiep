@@ -68,7 +68,18 @@ router.get("/confirm-order/:id", async (req, res) => {
 
 // [patch] Xác nhận đơn hàng
 // URL: http://localhost:3000/orders/:id/confirm
-
+router.patch("/:id/confirm", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedOrder = await orderController.confirmOrder(id);
+    res.status(200).json({
+      message: "Xác nhận đơn hàng thành công và cập nhật tồn kho",
+      data: updatedOrder,
+    });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
 
 // [patch] Cập nhật trạng thái đơn hàng
 // URL: http://localhost:3000/orders/:id/status
