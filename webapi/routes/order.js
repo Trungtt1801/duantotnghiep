@@ -3,6 +3,7 @@ const router = express.Router();
 const orderController = require("../mongo/controllers/orderController");
 const { createVnpayPayment } = require("../mongo/untils/vnpay");
 const orderModel = require("../mongo/models/orderModel");
+
 // [GET] Lấy tất cả đơn hàng
 // URL: http://localhost:3000/orders
 router.get("/", async (req, res) => {
@@ -67,6 +68,7 @@ router.get("/confirm-order/:id", async (req, res) => {
 
 // [patch] Xác nhận đơn hàng
 // URL: http://localhost:3000/orders/:id/confirm
+
 
 // [patch] Cập nhật trạng thái đơn hàng
 // URL: http://localhost:3000/orders/:id/status
@@ -142,7 +144,7 @@ router.post("/zalopay", async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-});
+}); 
 // ZaloPay return sau khi thanh toán thành công
 // Controller xử lý khi ZaloPay redirect về
 router.get("/zalopay_return", async (req, res) => {
@@ -214,12 +216,15 @@ router.post("/vnpay", async (req, res) => {
 
 router.get("/vnpay_return", async (req, res) => {
   try {
+    console.log("📥 VNPay return query:", req.query); // ✅ Log query
     await orderController.vnpayCallback(req.query);
-    res.redirect("/thanh-toan-thanh-cong"); // FE xử lý URL này
+    return res.redirect(`${process.env.CLIENT_URL}/page/payment/success/${req.query.vnp_TxnRef}`);
   } catch (err) {
-    res.redirect("/thanh-toan-that-bai");
+    console.error("❌ VNPay Callback Lỗi:", err.message); // ✅ Log lỗi rõ hơn
+    return res.redirect("/page/payment/fail");
   }
 });
+
 
 // IPN từ VNPAY
 router.get("/vnpay_ipn", async (req, res) => {

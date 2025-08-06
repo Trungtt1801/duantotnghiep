@@ -33,7 +33,7 @@ router.get("/", async (req, res) => {
         });
 
         return {
-         _id: product._id,
+          _id: product._id,
           name: product.name,
           description: product.description,
           price: product.price,
@@ -83,8 +83,8 @@ router.get("/pro", async (req, res) => {
           product_id: product._id,
         });
 
-      return {
-         _id: product._id,
+        return {
+          _id: product._id,
           name: product.name,
           description: product.description,
           price: product.price,
@@ -308,12 +308,14 @@ router.put("/update/:id", upload.array("images", 10), async (req, res) => {
       price: Number(data.price),
       sale: Number(data.sale || 0),
       material: data.material || "",
+      description: data.description || "",  // <-- Thêm dòng này
       images,
       isHidden,
       category_id: data.category_id,
       variants,
       sale_count: data.sale_count,
     };
+
 
     const result = await productController.updateProduct(productId, sendData);
 
@@ -373,5 +375,19 @@ router.get("/related/:id", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
+router.put("/:id/visibility", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const parsedIsHidden = req.body.isHidden === "true" || req.body.isHidden === true || req.body.isHidden === 1;
+
+    const result = await productController.updateProductVisibility(id, parsedIsHidden);
+
+    res.status(200).json({ status: true, message: result.message });
+  } catch (err) {
+    res.status(400).json({ status: false, message: "Không thể cập nhật trạng thái hiển thị" });
+  }
+});
+
 
 module.exports = router;

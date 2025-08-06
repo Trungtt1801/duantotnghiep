@@ -385,6 +385,18 @@ async function filterFromList(productList, filters) {
   }
 }
 
+const updateProductVisibility = async (id, isHidden) => {
+  const product = await productsModel.findById(id);
+  if (!product) throw new Error("Sản phẩm không tồn tại");
+
+  product.isHidden = isHidden;
+  await product.save();
+
+  return { message: "Cập nhật trạng thái hiển thị thành công" };
+};
+
+
+
 module.exports = {
   getProducts,
   getProductById,
@@ -394,4 +406,5 @@ module.exports = {
   getProductsByCategoryTree,
   getRelatedProducts,
   filterFromList,
+  updateProductVisibility,
 };

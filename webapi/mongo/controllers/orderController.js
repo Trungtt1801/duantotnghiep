@@ -3,6 +3,8 @@ const createZaloPayOrder = require("../untils/zalopay");
 const { createVnpayPayment } = require("../untils/vnpay");
 const orderDetailModel = require("../models/orderDetailModel");
 const userModels = require("../models/userModels");
+require("dotenv").config();
+
 
 
 require("../models/addressModel");
@@ -112,6 +114,7 @@ if (payment_method.toLowerCase() === "vnpay") {
       image: item.image,
       quantity: item.quantity,
       variant_id: item.variant_id,
+      size_id: item.size_id,
     };
   });
 
@@ -202,6 +205,7 @@ if (payment_method.toLowerCase() === "vnpay") {
       image: item.image,
       quantity: item.quantity,
       variant_id: item.variant_id,
+        size_id: item.size_id,
     }));
 
     await orderDetailModel.insertMany(orderDetails);
@@ -381,6 +385,7 @@ async function createOrderWithZaloPay(data) {
       total_price,
       payment_method: "zalopay",
       transaction_status: "unpaid",
+      status_order: "pending"
     });
 
     // 2. Gọi createZaloPayOrder với order._id
@@ -455,27 +460,47 @@ async function zaloCallback(data) {
   }
 }
 
+
 async function vnpayCallback(query) {
+  const crypto = require("crypto");
   const vnp_Params = { ...query };
   const secureHash = vnp_Params["vnp_SecureHash"];
   delete vnp_Params["vnp_SecureHash"];
   delete vnp_Params["vnp_SecureHashType"];
 
-  const qs = require("qs");
-  const crypto = require("crypto");
-  const signData = qs.stringify(vnp_Params, { encode: false });
+  // 1. Sắp xếp lại tham số theo thứ tự alphabet
+  const sortedParams = Object.keys(vnp_Params)
+    .sort()
+    .reduce((acc, key) => {
+      acc[key] = vnp_Params[key];
+      return acc;
+    }, {});
+
+  // 2. Encode đúng format VNPAY (dùng encodeURIComponent và thay %20 thành +)
+  const signData = Object.entries(sortedParams)
+    .map(([key, val]) => `${key}=${encodeURIComponent(val).replace(/%20/g, "+")}`)
+    .join("&");
+
+  // 3. Tạo HMAC SHA512
   const signed = crypto
     .createHmac("sha512", process.env.VNP_HASH_SECRET)
     .update(Buffer.from(signData, "utf-8"))
     .digest("hex");
 
-  if (secureHash !== signed) throw new Error("Sai checksum");
+  // 4. So sánh chữ ký
+  if (secureHash !== signed) {
+    console.error("❌ Checksum mismatch");
+    console.error("Expected:", signed);
+    console.error("Received:", secureHash);
+    throw new Error("Sai checksum");
+  }
 
+  // 5. Xử lý đơn hàng
   const txnRef = vnp_Params["vnp_TxnRef"];
   const order = await orderModel.findOne({ transaction_code: txnRef });
 
   if (!order) {
-    console.log("❌ Không tìm thấy đơn hàng với mã giao dịch:", txnRef);
+    console.log("❌ Không tìm thấy đơn hàng với mã:", txnRef);
     throw new Error("Không tìm thấy đơn hàng");
   }
 
@@ -487,18 +512,24 @@ async function vnpayCallback(query) {
   if (vnp_Params["vnp_ResponseCode"] === "00") {
     order.status_order = "confirmed";
 
-    console.log("🟡 Gọi cộng điểm cho user:", order.user_id);
-    console.log("🟡 Tổng tiền cần cộng điểm:", order.total_price);
+    const userId =
+      typeof order.user_id === "object" && order.user_id !== null
+        ? order.user_id._id
+        : order.user_id;
 
-    await updateUserPoint(order.user_id?.toString(), order.total_price);
+    if (userId) {
+      await updateUserPoint(userId.toString(), order.total_price);
+    }
   }
 
   await order.save();
   return { status: true };
 }
 
+
 function getRankByPoint(point) {
   if (point >= 1000000) return "platinum";
+  if (point >= 5000000) return "platinum";
   if (point >= 500000) return "gold";
   if (point >= 200000) return "silver";
   return "bronze";

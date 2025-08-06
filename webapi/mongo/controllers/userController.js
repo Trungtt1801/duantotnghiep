@@ -51,17 +51,7 @@ async function register(data) {
     const code = `US${(totalUsers + 1).toString().padStart(3, "0")}`;
 
     // ✅ Danh sách địa chỉ mặc định (nếu có)
-    const addressList = defaultAddress
-      ? [
-        {
-          name,
-          phone,
-          address: defaultAddress,
-          isDefault: true,
-        },
-      ]
-      : [];
-
+   
     const newUser = new usersModel({
       name,
       email,
@@ -78,6 +68,7 @@ async function register(data) {
     return userData;
   } catch (error) {
     throw new Error(error.message || "Lỗi đăng ký");
+    
   }
 }
 
@@ -194,7 +185,7 @@ async function resetPassword(token, newPassword) {
   } catch (error) {
     console.error("Lỗi resetPassword:", error);
     if (error.name === "TokenExpiredError") {
-      throw new Error("Token đã hết hạn.");
+      throw new Error("Thời gian đổi mật khẩu đã quá hạn. Vui lòng gửi yêu cầu mới.");
     } else if (error.name === "JsonWebTokenError") {
       throw new Error("Token không hợp lệ.");
     } else {
