@@ -15,7 +15,8 @@ const userSchema = new Schema(
     },
     gender: { type: String, enum: ["Nam", "Nữ", "Khác"], default: "Khác" },
 
-    role: { type: Number, required: true, default: 1 },
+   role: {type: Number, required: true, enum: [0, 1, 2], default: 1,},
+// 0: Admin, 1: User, 2: Shipper
     authType: {
       type: String,
       enum: ["local", "google", "facebook"],

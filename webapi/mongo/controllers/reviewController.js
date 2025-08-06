@@ -8,37 +8,38 @@ const OrderDetail = require("../models/orderDetailModel");
 // Thêm đánh giá
 const addReview = async (req, res) => {
   try {
-    const { product_id, user_id, content, rating, order_detail_id } = req.body;
+    const { product_id, user_id, content, rating, orderDetail_id } = req.body;
     const images = req.files?.map((file) => `${baseUrl}/${file.filename}`) || [];
 
-    if (!product_id || !user_id || !content || !rating || !order_detail_id) {
+    if (!product_id || !user_id || !content || !rating || !orderDetail_id) {
       return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
     }
 
-    // ✅ Kiểm tra xem user đã từng đánh giá sản phẩm này chưa
-    const existingReview = await Review.findOne({ product_id, user_id });
-
+    // ✅ Kiểm tra user đã đánh giá sản phẩm này trong đơn hàng này chưa
+    const existingReview = await Review.findOne({ product_id, user_id, orderDetail_id });
     if (existingReview) {
       return res.status(400).json({
-        message: "Bạn đã đánh giá sản phẩm này rồi.",
+        message: "Bạn đã đánh giá sản phẩm này trong đơn hàng này rồi.",
         review: existingReview,
       });
     }
 
-    // ✅ Nếu chưa có thì tiếp tục thêm mới
     const newReview = new Review({
       product_id,
       user_id,
       content,
       rating,
       images,
-      order_detail_id,
+      orderDetail_id,
     });
 
     await newReview.save();
 
-    res.status(201).json({
-      message: "Thêm đánh giá thành công",
+    const bonus = images.length > 0 ? 1500 : 1000;
+    await User.findByIdAndUpdate(user_id, { $inc: { point: bonus } });
+
+    res.status(200).json({
+      message: `Cảm ơn bạn đã đánh giá đơn hàng, bạn đã được cộng ${bonus} điểm`,
       review: newReview,
     });
   } catch (error) {
@@ -47,8 +48,8 @@ const addReview = async (req, res) => {
   }
 };
 
-
-  const checkIfReviewed = async (req, res) => {
+// Kiểm tra đã đánh giá hay chưa
+const checkIfReviewed = async (req, res) => {
   const { product_id, user_id } = req.params;
   const existed = await Review.findOne({ product_id, user_id });
   if (existed) {
@@ -128,7 +129,7 @@ const getReviewByOrder = async (req, res) => {
     const details = await OrderDetail.find({ order_id }).select("_id");
     const detailIds = details.map((d) => d._id);
 
-    const reviews = await Review.find({ order_detail_id: { $in: detailIds } })
+    const reviews = await Review.find({ orderDetail_id: { $in: detailIds } })
       .populate("user_id", "name avatar")
       .populate("product_id", "name image");
 
@@ -167,5 +168,5 @@ module.exports = {
   getReviewByProduct,
   getReviewByOrder,
   deleteReview,
-  checkIfReviewed 
+  checkIfReviewed,
 };
