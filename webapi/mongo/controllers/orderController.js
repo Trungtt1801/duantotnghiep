@@ -344,14 +344,14 @@ async function updateOrderStatus(id, status) {
         console.warn("⚠️ Không tìm thấy user để cộng điểm");
       } else {
         const rewardPoints = Math.floor(order.total_price / 1000);
-        user.points = (user.points || 0) + rewardPoints;
+        user.point = (user.point || 0) + rewardPoints;
 
         // Cập nhật user và order cùng lúc
         await user.save({ validateBeforeSave: false });
         await order.save(); // đảm bảo lưu chính xác
 
         console.log(
-          `🎁 Cộng ${rewardPoints} điểm cho user ${user._id} (hiện tại: ${user.points})`
+          `🎁 Cộng ${rewardPoints} điểm cho user ${user._id} (hiện tại: ${user.point })`
         );
         return order;
       }
