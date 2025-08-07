@@ -328,22 +328,15 @@ async function updateOrderStatus(id, status) {
     // Cập nhật trạng thái
     order.status_order = status;
 
-    // Ghi lại lịch sử trạng thái
-    order.status_history.push({
-      status,
-      updatedAt: new Date(),
-      note: "Admin cập nhật trạng thái",
-    });
-
     console.log(`📝 Đơn hàng ${order._id} cập nhật trạng thái -> ${status}`);
 
     // ✅ Nếu là COD, trạng thái mới là "delivered" và chưa paid → cập nhật
     if (
-      order.payment_method === "cod" &&
+      order.payment_method === "COD" &&
       status === "delivered" &&
-      order.translate_status !== "paid"
+      order.transaction_status !== "paid"
     ) {
-      order.translate_status = "paid";
+      order.transaction_status = "paid";
       console.log("✅ Đã cập nhật translate_status = paid");
 
       const user = await userModels.findById(order.user_id);
