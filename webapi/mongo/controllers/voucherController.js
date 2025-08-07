@@ -20,6 +20,33 @@ async function getVoucherById(id) {
     }
 }
 
+async function getVoucherByUserId(id, userId) {
+    try {
+        const voucher = await voucherModel.findById(id);
+        if (!voucher) throw new Error('Không tìm thấy voucher');
+
+        // Lấy user để check rank
+        const user = await userModel.findById(userId).select('rank');
+        if (!user) throw new Error('Không tìm thấy user');
+
+        // Thứ tự rank
+        const rankOrder = ['bronze', 'silver', 'gold', 'platinum'];
+
+        // Nếu rank user nhỏ hơn rank voucher -> không cho xem
+        const userRankIndex = rankOrder.indexOf(user.rank);
+        const voucherRankIndex = rankOrder.indexOf(voucher.target_rank);
+
+        if (voucherRankIndex > userRankIndex) {
+            throw new Error('Bạn không đủ rank để sử dụng voucher này');
+        }
+
+        return voucher;
+    } catch (error) {
+        throw new Error(error.message || 'Lỗi lấy chi tiết voucher');
+    }
+}
+
+
 // Tạo voucher mới
 async function addVoucher(data) {
   try {
@@ -161,6 +188,7 @@ async function searchVouchers(keywordRegex) {
 module.exports = {
     getAllVouchers,
     getVoucherById,
+    getVoucherByUserId,
     addVoucher,
     updateVoucher,
     deleteVoucher,
