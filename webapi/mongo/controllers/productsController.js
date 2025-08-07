@@ -468,7 +468,6 @@ async function getLeastSoldProducts(timePeriod) {
           name: "$product.name",
           images: "$product.images",
           price: "$product.price",
-          sale: "$product.sale",
           create_at: "$product.create_at"
         }
       }
