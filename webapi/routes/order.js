@@ -67,6 +67,18 @@ router.get("/confirm-order/:id", async (req, res) => {
 
 // [patch] Xác nhận đơn hàng
 // URL: http://localhost:3000/orders/:id/confirm
+router.patch("/:id/confirm", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedOrder = await orderController.confirmOrder(id);
+    res.status(200).json({
+      message: "Xác nhận đơn hàng thành công và cập nhật tồn kho",
+      data: updatedOrder,
+    });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
 
 // [patch] Cập nhật trạng thái đơn hàng
 // URL: http://localhost:3000/orders/:id/status
@@ -155,6 +167,56 @@ router.get("/zalopay_return", async (req, res) => {
   }
 });
 
+router.post("/vnpay-guest", async (req, res) => {
+  try {
+    const {
+      total_price,
+      payment_method,
+      locale,
+      customer_info, // { name, phone, email, address, type }
+      products
+    } = req.body;
+
+    const ipAddr =
+      req.headers["x-forwarded-for"] ||
+      req.connection.remoteAddress ||
+      req.socket?.remoteAddress ||
+      req.connection?.socket?.remoteAddress ||
+      "127.0.0.1";
+
+    const address_guess = {
+      name: customer_info.name,
+      phone: customer_info.phone,
+      email: customer_info.email,
+      address: customer_info.address,
+      type: customer_info.type,
+      detail: "", // có thể lấy thêm nếu có
+    };
+
+    const newOrder = await orderController.addOrderForGuest({
+      address_guess,
+      total_price,
+      payment_method,
+      products,
+      ip: ipAddr,
+    });
+
+    res.status(200).json({
+      status: true,
+      message: "Tạo đơn hàng vãng lai thành công",
+      payment_url: newOrder.payment_url,
+      order: newOrder.order,
+    });
+  } catch (err) {
+    console.error("🔥 Lỗi tạo đơn hàng guest:", err.message);
+    res.status(500).json({
+      status: false,
+      message: "Lỗi tạo đơn hàng guest",
+      error: err.message,
+    });
+  }
+});
+
 
 // localhost:3000/orders/vnpay
 router.post("/vnpay", async (req, res) => {
@@ -218,6 +280,16 @@ router.get("/vnpay_return", async (req, res) => {
     res.redirect("/thanh-toan-thanh-cong"); // FE xử lý URL này
   } catch (err) {
     res.redirect("/thanh-toan-that-bai");
+  }
+});
+router.get("/vnpay_return_guess", async (req, res) => {
+  try {
+    console.log("📥 VNPay return query:", req.query); // ✅ Log query
+    await orderController.vnpayCallbackForGuest(req.query);
+    return res.redirect(`${process.env.CLIENT_URL}/page/payment_guess/success/${req.query.vnp_TxnRef}`);
+  } catch (err) {
+    console.error("❌ VNPay Callback Lỗi:", err.message); // ✅ Log lỗi rõ hơn
+    return res.redirect("/page/payment/fail");
   }
 });
 

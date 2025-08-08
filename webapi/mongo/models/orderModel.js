@@ -14,7 +14,7 @@ const OrderSchema = new Schema(
       {
         status: {
           type: String,
-          enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered","failed", "cancelled", "refund"],
+          enum: ["pending", "preparing",   "confirmed",  "awaiting_shipment", "shipping", "delivered","failed", "cancelled", "refund"],
           required: true,
         },
         updatedAt: { type: Date, default: Date.now },
@@ -67,17 +67,17 @@ const OrderSchema = new Schema(
     },
 
     // ✅ Lịch sử trạng thái đơn hàng
-    status_history: [
-      {
-        status: {
-          type: String,
-          enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered","failed", "cancelled", "refund"],
-          required: true,
-        },
-        updatedAt: { type: Date, default: Date.now },
-        note: { type: String },
-      },
-    ],
+    // status_history: [
+    //   {
+    //     status: {
+    //       type: String,
+    //       enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered","failed", "cancelled", "refund"],
+    //       required: true,
+    //     },
+    //     updatedAt: { type: Date, default: Date.now },
+    //     note: { type: String },
+    //   },
+    // ],
   },
   {
     timestamps: true, // Tự động thêm createdAt và updatedAt

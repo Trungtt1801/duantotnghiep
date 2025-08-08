@@ -376,6 +376,20 @@ router.get("/related/:id", async (req, res) => {
   }
 });
 
+router.put("/:id/visibility", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const parsedIsHidden = req.body.isHidden === "true" || req.body.isHidden === true || req.body.isHidden === 1;
+
+    const result = await productController.updateProductVisibility(id, parsedIsHidden);
+
+    res.status(200).json({ status: true, message: result.message });
+  } catch (err) {
+    res.status(400).json({ status: false, message: "Không thể cập nhật trạng thái hiển thị" });
+  }
+});
+
+
 
 // [GET] Lấy sản phẩm bán ít theo salecount nhất trong khoảng thời gian nhất định
 router.get("/reports/least-sold", async (req, res) => {

@@ -16,7 +16,11 @@ const OrderDetailSchema = new Schema(
     },
     variant_id: {
       type: Schema.Types.ObjectId,
-      ref: 'productvariants', // hoặc tên model đúng là gì, bạn kiểm tra nhé
+      ref: 'ProductVariant', // hoặc tên model đúng là gì, bạn kiểm tra nhé
+      required: true,
+    },
+       size_id: {
+      type: Schema.Types.ObjectId,
       required: true,
     },
     quantity: {

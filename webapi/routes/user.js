@@ -5,6 +5,18 @@ const https = require("https");
 const userController = require("../mongo/controllers/userController");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
+const multer = require("multer");
+
+// Cấu hình multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./public/images");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+const upload = multer({ storage: storage });
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -205,6 +217,41 @@ router.get("/:id", async (req, res) => {
     res.status(statusCode).json({ status: false, message: err.message });
   }
 });
+router.patch("/update/:id", upload.single("avatar"), async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { name, phone, email,gender } = req.body;
+
+    let avatar;
+    if (req.file) {
+      const baseUrl = "http://localhost:3000/images/";
+      avatar = baseUrl + req.file.filename;
+    }
+
+    const dataToUpdate = {
+      ...(name && { name }),
+      ...(phone && { phone }),
+      ...(email && { email }),
+      ...(avatar && { avatar }),
+      ...(gender && { gender }),
+    };
+
+    const updatedUser = await userController.updateUserInfo(id, dataToUpdate);
+
+    res.status(200).json({
+      status: true,
+      message: "Cập nhật người dùng thành công",
+      data: updatedUser,
+    });
+  } catch (err) {
+    console.error("Lỗi cập nhật người dùng:", err.message);
+    res.status(400).json({
+      status: false,
+      message: err.message,
+    });
+  }
+});
+
 
 
 module.exports = router;

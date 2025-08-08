@@ -56,7 +56,6 @@ async function addProduct(data) {
       isHidden,
     } = data;
 
-
     if (!mongoose.Types.ObjectId.isValid(category_id)) {
       throw new Error("ID danh mục không hợp lệ!");
     }
@@ -86,7 +85,6 @@ async function addProduct(data) {
       },
     });
 
-
     if (variants && variants.length > 0) {
       await productVariantModel.create({
         product_id: newProduct._id,
@@ -104,53 +102,27 @@ async function addProduct(data) {
   }
 }
 
-// async function searchProductsByName(nameKeyword) {
-//   try {
-//     // Tách từ khóa tìm kiếm và tạo regex
-//     const keywordRegex = nameKeyword.trim().split(/\s+/).join(".*");
-//     const regex = new RegExp(keywordRegex, "i");
-
-//     const products = await productsModel.find({
-//       name: { $regex: regex },
-//     });
-
-//     const baseUrl = "http://localhost:3000/images/";
-
-//     const updatedProducts = products.map((product) => {
-//       const productObj = product.toObject();
-
-//       if (Array.isArray(productObj.images)) {
-//         productObj.images = productObj.images.map((img) =>
-//           img.startsWith("http") ? img : baseUrl + img
-//         );
-//       }
-
-//       return productObj;
-//     });
-
-//     return updatedProducts;
-//   } catch (error) {
-//     console.error("Lỗi khi tìm kiếm sản phẩm theo tên:", error);
-//     throw error;
-//   }
-// }
-
 async function searchProductsByName(nameKeyword) {
   try {
-    const keywordRegex = ".*" + nameKeyword.trim().split(/\s+/).join(".*") + ".*";
+    const keywordRegex =
+      ".*" + nameKeyword.trim().split(/\s+/).join(".*") + ".*";
     const regex = new RegExp(keywordRegex, "i");
 
-    const products = await productsModel.find({
-      name: { $regex: regex },
-    }).lean();
+    const products = await productsModel
+      .find({
+        name: { $regex: regex },
+      })
+      .lean();
 
     const baseUrl = "http://localhost:3000/images/";
 
     // Lấy danh sách product_id để fetch variant
     const productIds = products.map((p) => p._id);
-    const variantsDocs = await productVariantModel.find({
-      product_id: { $in: productIds },
-    }).lean();
+    const variantsDocs = await productVariantModel
+      .find({
+        product_id: { $in: productIds },
+      })
+      .lean();
 
     const updatedProducts = products.map((product) => {
       // Chuẩn hóa ảnh
@@ -174,7 +146,6 @@ async function searchProductsByName(nameKeyword) {
     throw error;
   }
 }
-
 
 async function updateProduct(id, data) {
   try {
@@ -331,7 +302,9 @@ async function filterFromList(productList, filters) {
     const { sort, size, color, minPrice, maxPrice } = filters;
 
     // Bước 1: Lọc sản phẩm hợp lệ
-    let products = [...productList].filter(p => p && typeof p.price === "number");
+    let products = [...productList].filter(
+      (p) => p && typeof p.price === "number"
+    );
 
     // Bước 2: Lọc theo khoảng giá
     if (minPrice || maxPrice) {
@@ -350,8 +323,13 @@ async function filterFromList(productList, filters) {
 
           // Lọc variants phù hợp
           const filteredVariants = product.variants.filter((variant) => {
-            const matchColor = !color || removeVietnameseTones(variant.color || "").includes(removeVietnameseTones(color));
-            const matchSize = !size || (variant.sizes?.some((s) => s.size === size));
+            const matchColor =
+              !color ||
+              removeVietnameseTones(variant.color || "").includes(
+                removeVietnameseTones(color)
+              );
+            const matchSize =
+              !size || variant.sizes?.some((s) => s.size === size);
             return matchColor && matchSize;
           });
 
@@ -401,13 +379,21 @@ async function filterFromList(productList, filters) {
 
     // ✅ Trả về mảng sản phẩm trực tiếp
     return products;
-
   } catch (error) {
     console.error("Lỗi trong filterFromList:", error);
     throw error; // giữ nguyên để bên ngoài xử lý
   }
 }
 
+const updateProductVisibility = async (id, isHidden) => {
+  const product = await productsModel.findById(id);
+  if (!product) throw new Error("Sản phẩm không tồn tại");
+
+  product.isHidden = isHidden;
+  await product.save();
+
+  return { message: "Cập nhật trạng thái hiển thị thành công" };
+};
 // loc sản phẩm dựa vào salecount bán ít nhất trong khoảng thời gian nhất định
 // loc sản phẩm dựa vào salecount bán ít nhất trong khoảng thời gian nhất định
 async function getLeastSoldProducts(timePeriod) {
@@ -490,6 +476,7 @@ module.exports = {
   getProductsByCategoryTree,
   getRelatedProducts,
   filterFromList,
+  updateProductVisibility,
   getLeastSoldProducts,
 
 };
