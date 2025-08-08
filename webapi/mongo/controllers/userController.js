@@ -132,6 +132,7 @@ async function sendResetPasswordEmail(email, resetLink) {
   }
 }
 
+
 async function forgotPassword(email) {
   try {
     console.log("Email nhận được trong forgotPassword:", email);
@@ -164,7 +165,7 @@ async function forgotPassword(email) {
       expiresIn: "15m",
     });
 
-    const resetLink = `http://localhost:3001/reset-password/${token}`;
+    const resetLink = `http://localhost:3001/page/reset/${token}`;
 
     await sendResetPasswordEmail(email, resetLink);
 

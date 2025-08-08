@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const orderController = require("../mongo/controllers/orderController");
 const { createVnpayPayment } = require("../mongo/untils/vnpay");
-
+const orderModel = require("../mongo/models/orderModel");
 // [GET] Lấy tất cả đơn hàng
 // URL: http://localhost:3000/orders
 router.get("/", async (req, res) => {
@@ -28,17 +28,45 @@ router.post("/", async (req, res) => {
     return res.status(500).json({ status: false, message: "Lỗi tạo đơn hàng" });
   }
 });
+router.post("/guess", async (req, res) => {
+  try {
+    const result = await orderController.addOrderForGuest(req.body);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ status: false, message: "Lỗi tạo đơn hàng" });
+  }
+});
+
+router.get("/confirm-order/:id", async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const order = await orderModel.findById(orderId);
+
+    if (!order) return res.status(404).send("Không tìm thấy đơn hàng");
+
+    if (order.status_order !== "pending") {
+      return res.send("✅ Đơn hàng đã được xác nhận hoặc xử lý trước đó");
+    }
+
+    order.status_order = "confirmed";
+    order.status_history.push({
+      status: "confirmed",
+      updatedAt: new Date(),
+      note: "Khách vãng lai xác nhận đơn qua email",
+    });
+
+    await order.save();
+
+    return res.send("✅ Đơn hàng đã được xác nhận thành công. Cảm ơn bạn!");
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send("❌ Lỗi xác nhận đơn hàng");
+  }
+});
 
 // [patch] Xác nhận đơn hàng
 // URL: http://localhost:3000/orders/:id/confirm
-router.patch("/:id/confirm", async (req, res) => {
-  try {
-    const result = await orderController.confirmOrder(req.params.id);
-    return res.status(200).json({ status: true, result });
-  } catch (err) {
-    return res.status(400).json({ status: false, message: err.message });
-  }
-});
 
 // [patch] Cập nhật trạng thái đơn hàng
 // URL: http://localhost:3000/orders/:id/status
@@ -106,6 +134,7 @@ router.post("/zalopay-callback", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// localhost:3000/orders/zalopay
 router.post("/zalopay", async (req, res) => {
   try {
     const result = await orderController.createOrderWithZaloPay(req.body);
@@ -114,10 +143,30 @@ router.post("/zalopay", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+// ZaloPay return sau khi thanh toán thành công
+// Controller xử lý khi ZaloPay redirect về
+router.get("/zalopay_return", async (req, res) => {
+  try {
+    await orderController.zaloCallback(req.query);
+    const returnUrl = req.query.return_url || "/order"; // fallback
+    res.redirect(returnUrl);
+  } catch (err) {
+    res.redirect("/thanh-toan-that-bai");
+  }
+});
+
+
 // localhost:3000/orders/vnpay
 router.post("/vnpay", async (req, res) => {
   try {
-    const { user_id, total_price, products, locale, address_id, voucher_id } = req.body;
+    const {
+      user_id,
+      total_price,
+      products,
+      locale,
+      address_id,
+      voucher_id
+    } = req.body;
 
     const ipAddr =
       req.headers["x-forwarded-for"] ||
@@ -126,17 +175,15 @@ router.post("/vnpay", async (req, res) => {
       req.connection?.socket?.remoteAddress ||
       "127.0.0.1";
 
-    // Gọi đúng hàm tạo thanh toán VNPAY
+    // ✅ Gọi hàm thanh toán VNPAY với 4 tham số như cũ
     const vnpayRes = await createVnpayPayment(
       total_price,
       user_id,
       ipAddr,
-      locale,
-      address_id,
-      voucher_id
+      locale
     );
 
-    // ✅ Bạn cần truyền address_id và voucher_id ở đây
+    // ✅ Gọi tạo đơn hàng sau khi có URL thanh toán
     const newOrder = await orderController.addOrder({
       user_id,
       total_price,
@@ -144,8 +191,8 @@ router.post("/vnpay", async (req, res) => {
       products,
       transaction_code: vnpayRes.transaction_code,
       ip: ipAddr,
-      address_id, 
-      voucher_id, 
+      address_id,   // ✅ Optional – thêm nếu BE chấp nhận
+      voucher_id,   // ✅ Optional – thêm nếu BE chấp nhận
     });
 
     res.status(200).json({
@@ -163,6 +210,7 @@ router.post("/vnpay", async (req, res) => {
     });
   }
 });
+
 
 router.get("/vnpay_return", async (req, res) => {
   try {
@@ -204,7 +252,7 @@ router.get("/:id", async (req, res) => {
         .status(404)
         .json({ status: false, message: "Không tìm thấy đơn hàng" });
     }
-    return res.status(200).json({ status: true, result });
+    return res.status(200).json({ status: true, order: result });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ status: false, message: "Lỗi lấy đơn hàng" });
@@ -222,6 +270,82 @@ router.delete("/:id", async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ status: false, message: "Lỗi xoá đơn hàng" });
+  }
+});
+
+
+// Route GET cho link xác nhận qua email
+router.get("/confirm-guess/:orderId", async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const updated = await orderModel.findByIdAndUpdate(
+      orderId,
+      {
+        confirmed: true,
+        $push: {
+          status_history: {
+            status: "confirmed",
+            updatedAt: new Date(),
+            note: "Khách xác nhận đơn hàng qua email",
+          },
+        },
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).send("Không tìm thấy đơn hàng");
+    }
+
+    // Gửi giao diện xác nhận đơn hàng thành công
+    return res.send(`
+      <h2>✅ Đơn hàng đã được xác nhận thành công!</h2>
+      <p>Cảm ơn bạn đã xác nhận đơn hàng. Chúng tôi sẽ tiến hành xử lý sớm nhất.</p>
+    `);
+  } catch (err) {
+    console.error("Lỗi xác nhận đơn:", err);
+    return res.status(500).send("Đã xảy ra lỗi khi xác nhận đơn hàng.");
+  }
+});
+
+router.put("/confirm-guess/:orderId", async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const updated = await orderModel.findByIdAndUpdate(
+      orderId,
+      {
+        confirmed: true,
+        $push: {
+          status_history: {
+            status: "confirmed",
+            updatedAt: new Date(),
+            note: "Khách xác nhận đơn hàng",
+          },
+        },
+      },
+      { new: true } // Trả về bản ghi đã cập nhật
+    );
+
+    if (!updated) {
+      return res.status(404).json({
+        status: false,
+        message: "Không tìm thấy đơn hàng",
+      });
+    }
+
+    return res.json({
+      status: true,
+      message: "Xác nhận đơn hàng thành công",
+      order: updated,
+    });
+  } catch (err) {
+    console.error("Lỗi xác nhận đơn:", err);
+    return res.status(500).json({
+      status: false,
+      message: "Lỗi xác nhận đơn hàng",
+    });
   }
 });
 

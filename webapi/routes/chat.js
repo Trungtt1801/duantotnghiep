@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { chatWithBot } = require('../mongo/controllers/chatController');
+const { chatWithBot, autoCreateOrderFromChat } = require('../mongo/controllers/chatController');
 const Keyword = require('../mongo/models/keywordModel')
 
 
@@ -40,5 +40,36 @@ router.post("/seed-intents", async (req, res) => {
     return res.status(500).json({ message: "Lỗi server", error: err.message });
   }
 });
+// routes/orderRoutes.js hoặc file router của bạn
+router.post("/auto-order", async (req, res) => {
+  try {
+    const {
+      userId,
+      productId,
+      variantId,
+      quantity,
+      paymentMethod,
+      isGuest,
+      guestAddress,
+    } = req.body;
+
+    const result = await autoCreateOrderFromChat({
+      userId,
+      productId,
+      variantId,
+      quantity,
+      paymentMethod,
+      isGuest,
+      guestAddress,
+    });
+
+    if (!result.success) throw new Error(result.message);
+
+    res.status(200).json({ success: true, orderId: result.orderId });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 
 module.exports = router;

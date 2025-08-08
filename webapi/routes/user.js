@@ -75,6 +75,7 @@ router.post("/forgot-password", async (req, res) => {
 });
 
 // Đặt lại mật khẩu
+
 router.post("/reset-password", async (req, res) => {
   try {
     const { token, newPassword } = req.body;
@@ -188,6 +189,7 @@ if (!fbData.email) {
     });
   }
 });
+// localhost:3000/users/1
 router.get("/:id", async (req, res) => {
   try {
     const user = await userController.getUserById(req.params.id); 

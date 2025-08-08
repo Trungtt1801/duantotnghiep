@@ -10,7 +10,7 @@ const config = {
 };
 
 async function createZaloPayOrder(amount, userId, orderId) {
-  const transID = Math.floor(Math.random() * 1000000);
+  const transID = Date.now();
   const embed_data = {};
   const items = [{}];
 
@@ -24,8 +24,9 @@ async function createZaloPayOrder(amount, userId, orderId) {
     amount,
     description: `Thanh toán đơn hàng #${transID}`,
     bank_code: "zalopayapp",
-  return_url: `http://localhost:3000/order/${orderId}`
+    return_url: `http://localhost:3001/orders/${orderId}`,
   };
+  // console.log("return_url:", `http://localhost:3000/order/${orderId}`);
 
   const data = [
     order.app_id,
@@ -40,9 +41,10 @@ async function createZaloPayOrder(amount, userId, orderId) {
   order.mac = CryptoJS.HmacSHA256(data, config.key1).toString();
 
   const response = await axios.post(config.endpoint, null, { params: order });
+
   return {
     ...response.data,
-    app_trans_id: order.app_trans_id, // để lưu vào transaction_code
+    app_trans_id: order.app_trans_id,
   };
 }
 

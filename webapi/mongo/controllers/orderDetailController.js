@@ -22,6 +22,92 @@ async function addOrderDetail(data) {
   }
 }
 
+
+// async function getDetailsByOrderId(orderId) {
+//   try {
+//     const BASE_URL = "http://localhost:3000/images/";
+
+//     const details = await OrderDetailModel.aggregate([
+//       {
+//         $match: {
+//           order_id: new mongoose.Types.ObjectId(orderId),
+//         },
+//       },
+//       // Join product
+//       {
+//         $lookup: {
+//           from: "products",
+//           localField: "product_id",
+//           foreignField: "_id",
+//           as: "product",
+//         },
+//       },
+//       { $unwind: "$product" },
+
+//       // Join variant
+//       {
+//         $lookup: {
+//           from: "productvariant",
+//           localField: "variant_id",
+//           foreignField: "_id",
+//           as: "variant",
+//         },
+//       },
+//       { $unwind: { path: "$variant", preserveNullAndEmptyArrays: true } },
+
+//       // Join size
+//       {
+//         $lookup: {
+//           from: "size",
+//           localField: "size_id",
+//           foreignField: "_id",
+//           as: "size",
+//         },
+//       },
+//       { $unwind: { path: "$size", preserveNullAndEmptyArrays: true } },
+
+//       // Xử lý ảnh thành link đầy đủ
+//       {
+//         $addFields: {
+//           "product.images": {
+//             $map: {
+//               input: "$product.images",
+//               as: "img",
+//               in: {
+//                 $cond: [
+//                   { $regexMatch: { input: "$$img", regex: /^http/ } },
+//                   "$$img",
+//                   { $concat: [BASE_URL, "$$img"] },
+//                 ],
+//               },
+//             },
+//           },
+//         },
+//       },
+
+//       // Format dữ liệu trả về
+//       {
+//         $project: {
+//           _id: 0,
+//           order_id: "$order_id",
+//           product_id: "$product._id",
+//           name: "$product.name",
+//           images: "$product.images",
+//           price: "$product.price",
+//           quantity: "$quantity",
+//           variant: "$variant",
+//           size: "$size",
+//         },
+//       },
+//     ]);
+
+//     return details;
+//   } catch (error) {
+//     console.error("Lỗi lấy chi tiết đơn hàng theo ID:", error.message);
+//     throw new Error("Lỗi lấy chi tiết đơn hàng");
+//   }
+// }
+
 async function getOrderDetailByOrderId(orderId) {
   try {
     // 1. Lấy chi tiết đơn hàng
@@ -34,7 +120,7 @@ async function getOrderDetailByOrderId(orderId) {
     }
 
     // 2. Lấy đơn hàng chính
-    const order = await OrderModel.findById(orderId);
+    const order = await OrderModel.findById(orderId).lean();
     if (!order) {
       return {
         status: false,
@@ -43,28 +129,29 @@ async function getOrderDetailByOrderId(orderId) {
     }
 
     // 3. Lấy thông tin user
-const user = await User.findById(order.user_id).lean();
+    const user = await User.findById(order.user_id).lean();
 
-// ✅ Sửa lại: lấy đúng địa chỉ đã chọn khi đặt hàng (không phải mặc định)
-const address = await AddressModel.findById(order.address_id).lean();
+    // ✅ Lấy đúng địa chỉ được chọn khi đặt hàng
+    const address = await AddressModel.findById(order.address_id).lean();
 
-const userInfo = user
-  ? {
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      address: address
-        ? {
+    const userInfo = user
+      ? {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        address: address
+          ? {
+            _id: address._id,
             name: address.name,
             phone: address.phone,
             address: address.address,
             detail: address.detail,
             type: address.type,
           }
-        : null,
-    }
-  : null;
-
+          : null,
+      }
+      : null;
 
     // 4. Xử lý chi tiết sản phẩm
     const result = [];
@@ -97,9 +184,9 @@ const userInfo = user
         if (matchedSize) {
           sizeData = {
             _id: matchedSize._id,
-            size: matchedSize.size,
             sku: matchedSize.sku,
             quantity: matchedSize.quantity,
+            size: matchedSize.size,
           };
         }
       }
@@ -122,11 +209,19 @@ const userInfo = user
       });
     }
 
-    // 5. Trả kết quả
+    // 5. Trả kết quả, thêm status_history
     return {
       status: true,
       result,
       user: userInfo,
+      order: {
+        payment_method: order.payment_method,
+        status_order: order.status_order,
+        transaction_status: order.transaction_status || null,
+        total_price: order.total_price || 0,
+        createdAt: order.createdAt,
+        status_history: order.status_history || [],
+      },
     };
   } catch (error) {
     console.error("❌ Lỗi khi lấy chi tiết đơn hàng:", error);
@@ -137,7 +232,6 @@ const userInfo = user
   }
 }
 
-
 async function deleteDetailsByOrderId(orderId) {
   try {
     return await OrderDetailModel.deleteMany({ order_id: orderId });
@@ -147,8 +241,11 @@ async function deleteDetailsByOrderId(orderId) {
   }
 }
 
+
+
 module.exports = {
   addOrderDetail,
   getOrderDetailByOrderId,
   deleteDetailsByOrderId,
+  
 };

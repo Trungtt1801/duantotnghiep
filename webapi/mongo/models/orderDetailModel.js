@@ -19,11 +19,6 @@ const OrderDetailSchema = new Schema(
       ref: 'productvariants', // hoặc tên model đúng là gì, bạn kiểm tra nhé
       required: true,
     },
-    size_id: {
-      type: Schema.Types.ObjectId,
-      required: true,
-      ref:'Size'
-    },
     quantity: {
       type: Number,
       required: true,
@@ -34,8 +29,7 @@ const OrderDetailSchema = new Schema(
 
 OrderDetailSchema.methods.toJSON = function () {
   const obj = this.toObject();
-  if (obj.createdAt) obj.createdAt = formatDateVN(obj.createdAt);
-  if (obj.updatedAt) obj.updatedAt = formatDateVN(obj.updatedAt);
+  if (obj.delivery_date) obj.delivery_date = formatDateVN(obj.delivery_date);
   return obj;
 };
 

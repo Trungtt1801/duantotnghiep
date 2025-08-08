@@ -53,7 +53,9 @@ async function addProduct(data) {
       shop_id,
       description,
       sale_count,
+      isHidden,
     } = data;
+
 
     if (!mongoose.Types.ObjectId.isValid(category_id)) {
       throw new Error("ID danh mục không hợp lệ!");
@@ -74,15 +76,16 @@ async function addProduct(data) {
       price,
       sale,
       material,
-      isHidden: false,
-      shop_id: data.shop_id || 1, // ✅ giá trị mặc định
+      isHidden: isHidden ?? false,
+      shop_id: shop_id || 1,
       description,
-      sale_count: sale_count,
+      sale_count,
       category_id: {
         categoryName: category.name,
         categoryId: category._id,
       },
     });
+
 
     if (variants && variants.length > 0) {
       await productVariantModel.create({
@@ -101,28 +104,68 @@ async function addProduct(data) {
   }
 }
 
+// async function searchProductsByName(nameKeyword) {
+//   try {
+//     // Tách từ khóa tìm kiếm và tạo regex
+//     const keywordRegex = nameKeyword.trim().split(/\s+/).join(".*");
+//     const regex = new RegExp(keywordRegex, "i");
+
+//     const products = await productsModel.find({
+//       name: { $regex: regex },
+//     });
+
+//     const baseUrl = "http://localhost:3000/images/";
+
+//     const updatedProducts = products.map((product) => {
+//       const productObj = product.toObject();
+
+//       if (Array.isArray(productObj.images)) {
+//         productObj.images = productObj.images.map((img) =>
+//           img.startsWith("http") ? img : baseUrl + img
+//         );
+//       }
+
+//       return productObj;
+//     });
+
+//     return updatedProducts;
+//   } catch (error) {
+//     console.error("Lỗi khi tìm kiếm sản phẩm theo tên:", error);
+//     throw error;
+//   }
+// }
+
 async function searchProductsByName(nameKeyword) {
   try {
-    // Tách từ khóa tìm kiếm và tạo regex
-    const keywordRegex = nameKeyword.trim().split(/\s+/).join(".*");
+    const keywordRegex = ".*" + nameKeyword.trim().split(/\s+/).join(".*") + ".*";
     const regex = new RegExp(keywordRegex, "i");
 
     const products = await productsModel.find({
       name: { $regex: regex },
-    });
+    }).lean();
 
     const baseUrl = "http://localhost:3000/images/";
 
-    const updatedProducts = products.map((product) => {
-      const productObj = product.toObject();
+    // Lấy danh sách product_id để fetch variant
+    const productIds = products.map((p) => p._id);
+    const variantsDocs = await productVariantModel.find({
+      product_id: { $in: productIds },
+    }).lean();
 
-      if (Array.isArray(productObj.images)) {
-        productObj.images = productObj.images.map((img) =>
+    const updatedProducts = products.map((product) => {
+      // Chuẩn hóa ảnh
+      if (Array.isArray(product.images)) {
+        product.images = product.images.map((img) =>
           img.startsWith("http") ? img : baseUrl + img
         );
       }
+      // Tìm document chứa variants tương ứng
+      const match = variantsDocs.find(
+        (v) => v.product_id.toString() === product._id.toString()
+      );
+      product.variants = match?.variants || [];
 
-      return productObj;
+      return product;
     });
 
     return updatedProducts;
@@ -131,6 +174,7 @@ async function searchProductsByName(nameKeyword) {
     throw error;
   }
 }
+
 
 async function updateProduct(id, data) {
   try {
@@ -273,29 +317,23 @@ async function getRelatedProducts(productId) {
   }
 }
 
-async function filterFromList(productList, query) {
+function removeVietnameseTones(str) {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
+}
+
+async function filterFromList(productList, filters) {
   try {
-    const {
-      sort,       // price_asc | price_desc | newest
-      minPrice,
-      maxPrice,
-      price,      // Giá cụ thể muốn tìm gần đúng
-      size,
-      color,
-    } = query;
+    const { sort, size, color, minPrice, maxPrice } = filters;
 
-    let products = [...productList]; // clone để không ảnh hưởng list gốc
+    // Bước 1: Lọc sản phẩm hợp lệ
+    let products = [...productList].filter(p => p && typeof p.price === "number");
 
-    // Lọc theo khoảng ±100k nếu có 'price'
-    if (price && !minPrice && !maxPrice) {
-      const target = parseFloat(price);
-      const range = 100000;
-      products = products.filter(
-        (p) => p.price >= target - range && p.price <= target + range
-      );
-    }
-
-    // Lọc theo khoảng giá min/max
+    // Bước 2: Lọc theo khoảng giá
     if (minPrice || maxPrice) {
       products = products.filter((p) => {
         if (minPrice && p.price < parseFloat(minPrice)) return false;
@@ -304,39 +342,52 @@ async function filterFromList(productList, query) {
       });
     }
 
-    // Lọc theo size / color trong biến thể (variants)
-    if (size || color) {
-      products = products.filter((product) => {
-        if (!product.variants) return false;
-        return product.variants.some((variant) => {
-          const matchColor = !color || variant.color === color;
-          const matchSize = !size || variant.sizes?.some((s) => s.size === size);
-          return matchColor && matchSize;
-        });
-      });
+    // Bước 3: Lọc theo color và size trong variants
+    if (color || size) {
+      products = products
+        .map((product) => {
+          if (!Array.isArray(product.variants)) return null;
+
+          // Lọc variants phù hợp
+          const filteredVariants = product.variants.filter((variant) => {
+            const matchColor = !color || removeVietnameseTones(variant.color || "").includes(removeVietnameseTones(color));
+            const matchSize = !size || (variant.sizes?.some((s) => s.size === size));
+            return matchColor && matchSize;
+          });
+
+          if (filteredVariants.length === 0) return null;
+
+          return {
+            ...product,
+            variants: filteredVariants.map((variant) => {
+              const newSizes = size
+                ? variant.sizes?.filter((s) => s.size === size)
+                : variant.sizes;
+
+              return {
+                ...variant,
+                sizes: newSizes,
+              };
+            }),
+          };
+        })
+        .filter(Boolean); // Loại bỏ null
     }
 
-    // Sắp xếp
-    if (price) {
-      const target = parseFloat(price);
-      products.sort(
-        (a, b) => Math.abs(a.price - target) - Math.abs(b.price - target)
-      );
-    } else {
-      switch (sort) {
-        case "newest":
-          products.sort((a, b) => new Date(b.create_at) - new Date(a.create_at));
-          break;
-        case "price_asc":
-          products.sort((a, b) => a.price - b.price);
-          break;
-        case "price_desc":
-          products.sort((a, b) => b.price - a.price);
-          break;
-      }
+    // Bước 4: Sắp xếp
+    switch (sort) {
+      case "price_asc":
+        products.sort((a, b) => a.price - b.price);
+        break;
+      case "price_desc":
+        products.sort((a, b) => b.price - a.price);
+        break;
+      case "newest":
+        products.sort((a, b) => new Date(b.create_at) - new Date(a.create_at));
+        break;
     }
 
-    // Gắn base URL cho ảnh
+    // Bước 5: Thêm base URL vào hình ảnh nếu chưa có
     const baseUrl = "http://localhost:3000/images/";
     products = products.map((product) => {
       const updated = { ...product };
@@ -348,14 +399,87 @@ async function filterFromList(productList, query) {
       return updated;
     });
 
+    // ✅ Trả về mảng sản phẩm trực tiếp
     return products;
+
   } catch (error) {
-    console.error("Lỗi filterFromList:", error);
-    throw error;
+    console.error("Lỗi trong filterFromList:", error);
+    throw error; // giữ nguyên để bên ngoài xử lý
   }
 }
 
+// loc sản phẩm dựa vào salecount bán ít nhất trong khoảng thời gian nhất định
+// loc sản phẩm dựa vào salecount bán ít nhất trong khoảng thời gian nhất định
+async function getLeastSoldProducts(timePeriod) {
+  try {
+    const timeMap = {
+      week: 7,
+      month: 30,
+      year: 365
+    };
 
+    const days = timeMap[timePeriod];
+    if (!days) throw new Error("Invalid time period. Must be 'week', 'month', or 'year'.");
+
+    const dateCondition = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const result = await productVariantModel.aggregate([
+      {
+        $lookup: {
+          from: "products",
+          localField: "product_id",
+          foreignField: "_id",
+          as: "product"
+        }
+      },
+      { $unwind: "$product" },
+      {
+        $match: {
+          "product.create_at": { $gte: dateCondition }
+        }
+      },
+      {
+        $addFields: {
+          total_quantity: {
+            $sum: {
+              $map: {
+                input: "$variants",
+                as: "v",
+                in: {
+                  $sum: "$$v.sizes.quantity"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        $sort: {
+          "product.sale_count": 1
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          product_id: "$product._id",
+          total_quantity: 1,
+          sale_count: "$product.sale_count",
+          name: "$product.name",
+          images: "$product.images",
+          price: "$product.price",
+
+        }
+      }
+    ]);
+    return result.map(item => ({
+      ...item,
+      images: item.images.map(img => img.startsWith("http") ? img : `http://localhost:3000/images/${img}`)
+    }));
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm bán ít nhất:", error);
+    throw error;
+  }
+}
 
 module.exports = {
   getProducts,
@@ -366,4 +490,6 @@ module.exports = {
   getProductsByCategoryTree,
   getRelatedProducts,
   filterFromList,
+  getLeastSoldProducts,
+
 };
