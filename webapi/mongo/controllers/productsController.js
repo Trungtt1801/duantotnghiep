@@ -395,7 +395,6 @@ const updateProductVisibility = async (id, isHidden) => {
   return { message: "Cập nhật trạng thái hiển thị thành công" };
 };
 // loc sản phẩm dựa vào salecount bán ít nhất trong khoảng thời gian nhất định
-// loc sản phẩm dựa vào salecount bán ít nhất trong khoảng thời gian nhất định
 async function getLeastSoldProducts(timePeriod) {
   try {
     const timeMap = {
