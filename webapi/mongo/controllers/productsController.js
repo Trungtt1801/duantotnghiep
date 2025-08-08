@@ -458,7 +458,6 @@ async function getLeastSoldProducts(timePeriod) {
           "product.sale_count": 1
         }
       },
-      { $limit: 50 },
       {
         $project: {
           _id: 0,
@@ -468,7 +467,7 @@ async function getLeastSoldProducts(timePeriod) {
           name: "$product.name",
           images: "$product.images",
           price: "$product.price",
-          create_at: "$product.create_at"
+
         }
       }
     ]);
