@@ -94,5 +94,16 @@ router.patch('/status/:id', async (req, res) => {
     res.status(400).json({ status: false, message: error.message });
   }
 });
+// localhost:3000/voucher/user/:userId
+router.get("/user/:userId", async (req, res) => {
+  try {
+    await voucherController.getVouchersByUserRank(req, res);
+  } catch (error) {
+    console.error("Lỗi router getVouchersByUserRank:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+});
+
+
 
 module.exports = router;
