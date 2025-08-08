@@ -337,13 +337,10 @@ async function confirmOrder(id) {
     const orderDetails = await orderDetailModel.find({ order_id: id });
 
     for (const detail of orderDetails) {
-   
-
       const variantDoc = await productvariantModel.findOne({
         "variants._id": detail.variant_id,
       });
       if (!variantDoc) {
-       
         throw new Error("Không tìm thấy variant sản phẩm");
       }
 
@@ -354,8 +351,6 @@ async function confirmOrder(id) {
         );
 
         if (sizeItem) {
-         
-
           if (sizeItem.quantity < detail.quantity) {
             throw new Error(
               `Sản phẩm màu ${variant.color}, size ${sizeItem.size} không đủ hàng`
@@ -369,7 +364,6 @@ async function confirmOrder(id) {
       }
 
       if (!found) {
-        
         throw new Error("Không tìm thấy size tương ứng để cập nhật số lượng");
       }
 
@@ -405,20 +399,52 @@ async function updateOrderStatus(id, status) {
       "cancelled",
       "refund",
     ];
+
+    // Kiểm tra trạng thái hợp lệ
     if (!allowed.includes(status)) throw new Error("Trạng thái không hợp lệ");
 
+    // Tìm đơn hàng
     const order = await orderModel.findById(id);
+    console.log("✅ Model:", order.constructor.modelName);
     if (!order) throw new Error("Không tìm thấy đơn hàng");
 
+    // Cập nhật trạng thái
     order.status_order = status;
-    order.status_history.push({
-      status,
-      updatedAt: new Date(),
-      note: "Admin cập nhật trạng thái",
-    });
-    return await order.save();
+
+    console.log(`📝 Đơn hàng ${order._id} cập nhật trạng thái -> ${status}`);
+
+    // ✅ Nếu là COD, trạng thái mới là "delivered" và chưa paid → cập nhật
+    if (
+      order.payment_method === "COD" &&
+      status === "delivered" &&
+      order.transaction_status !== "paid"
+    ) {
+      order.transaction_status = "paid";
+      console.log("✅ Đã cập nhật translate_status = paid");
+
+      const user = await userModels.findById(order.user_id);
+      if (!user) {
+        console.warn("⚠️ Không tìm thấy user để cộng điểm");
+      } else {
+        const rewardPoints = Math.floor(order.total_price / 1000);
+        user.point = (user.point || 0) + rewardPoints;
+
+        // Cập nhật user và order cùng lúc
+        await user.save({ validateBeforeSave: false });
+        await order.save(); // đảm bảo lưu chính xác
+
+        console.log(
+          `🎁 Cộng ${rewardPoints} điểm cho user ${user._id} (hiện tại: ${user.point })`
+        );
+        return order;
+      }
+    }
+
+    // Trường hợp không vào luồng COD/delivered, vẫn lưu order
+    await order.save();
+    return order;
   } catch (error) {
-    console.error("Lỗi cập nhật trạng thái đơn hàng:", error.message);
+    console.error("❌ Lỗi cập nhật trạng thái đơn hàng:", error.message);
     throw new Error(error.message || "Lỗi khi cập nhật trạng thái đơn hàng");
   }
 }
