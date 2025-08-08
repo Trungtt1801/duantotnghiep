@@ -4,6 +4,7 @@ const formatDateVN = require("../untils/formDate");
 
 const userSchema = new Schema(
   {
+    avatar: { type: String, default: "" },
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: false, select: false },
@@ -12,17 +13,14 @@ const userSchema = new Schema(
       required: false,
       match: /^[0-9]{10,15}$/,
     },
-    role: { type: Number, required: true, default: 1 },
+    gender: { type: String, enum: ["Nam", "Nữ", "Khác"], default: "Khác" },
+
+   role: {type: Number, required: true, enum: [0, 1, 2], default: 1,},
+// 0: Admin, 1: User, 2: Shipper
     authType: {
       type: String,
       enum: ["local", "google", "facebook"],
       default: "local",
-    },
-
-    gender: {
-      type: String,
-      enum: ['male', 'female', 'other'],
-      default: 'other',
     },
 
     // Trường phục vụ reset mật khẩu
@@ -47,11 +45,17 @@ const userSchema = new Schema(
 
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
-
   if (obj.createdAt) obj.createdAt = formatDateVN(obj.createdAt);
   if (obj.updatedAt) obj.updatedAt = formatDateVN(obj.updatedAt);
-
   return obj;
 };
+userSchema.virtual("addresses", {
+  ref: "Address",
+  localField: "_id",
+  foreignField: "user_id",
+  justOne: false,
+});
+userSchema.set("toObject", { virtuals: true });
+userSchema.set("toJSON", { virtuals: true });
 
 module.exports = mongoose.models.User || mongoose.model("User", userSchema);

@@ -22,33 +22,54 @@ async function getVoucherById(id) {
 
 // Tạo voucher mới
 async function addVoucher(data) {
-    try {
-        console.log('DỮ LIỆU NHẬN VỀ:', data);
+  try {
+    console.log('DỮ LIỆU NHẬN VỀ:', data);
 
-        const { value, voucher_code, min_total, max_total, quantity, is_active, expired_at } = data;
+    const {
+      value,
+      voucher_code,
+      min_total,
+      max_total,
+      quantity,
+      is_active,
+      expired_at,
+      description,
+      target_rank, // ✅ rank thêm vào từ client
+    } = data;
 
-       if (value === undefined || voucher_code === undefined || voucher_code === '') {
-    throw new Error('Thiếu thông tin bắt buộc');
-}
-
-        const existing = await voucherModel.findOne({ voucher_code });
-        if (existing) throw new Error('Mã voucher đã tồn tại');
-
-        const newVoucher = new voucherModel({
-            value,
-            voucher_code,
-            min_total,
-            max_total,
-            quantity,
-            is_active,
-            expired_at: expired_at ? new Date(expired_at) : null,
-        });
-
-        return await newVoucher.save();
-    } catch (error) {
-        throw new Error(error.message || 'Lỗi thêm voucher');
+    // Kiểm tra bắt buộc
+    if (value === undefined || voucher_code === undefined || voucher_code === '') {
+      throw new Error('Thiếu thông tin bắt buộc');
     }
+
+    // Kiểm tra rank nếu có
+    const validRanks = [null, 'bronze', 'silver', 'gold', 'platinum'];
+    if (target_rank && !validRanks.includes(target_rank)) {
+      throw new Error('Rank không hợp lệ');
+    }
+
+    // Check trùng mã
+    const existing = await voucherModel.findOne({ voucher_code });
+    if (existing) throw new Error('Mã voucher đã tồn tại');
+
+    const newVoucher = new voucherModel({
+      value,
+      voucher_code,
+      min_total,
+      max_total,
+      quantity,
+      is_active,
+      description,
+      expired_at: expired_at ? new Date(expired_at) : null,
+      target_rank: target_rank || null, // ✅ lưu vào DB
+    });
+
+    return await newVoucher.save();
+  } catch (error) {
+    throw new Error(error.message || 'Lỗi thêm voucher');
+  }
 }
+
 
 // Cập nhật voucher
 async function updateVoucher(id, data) {
@@ -124,6 +145,19 @@ async function updateStatusVoucher(id, is_active) {
         throw new Error(error.message || 'Lỗi cập nhật trạng thái voucher');
     }
 }
+async function searchVouchers(keywordRegex) {
+  try {
+    return await voucherModel.find({
+      $or: [
+        { voucher_code: keywordRegex },
+        { value: { $regex: keywordRegex } }
+      ]
+    }).sort({ createdAt: -1 });
+  } catch (error) {
+    throw new Error('Lỗi tìm kiếm voucher');
+  }
+}
+
 module.exports = {
     getAllVouchers,
     getVoucherById,
@@ -131,5 +165,6 @@ module.exports = {
     updateVoucher,
     deleteVoucher,
     useVoucher,
-    updateStatusVoucher
+    updateStatusVoucher,
+    searchVouchers
 };

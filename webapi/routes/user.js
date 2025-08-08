@@ -27,8 +27,11 @@ router.post("/register", async (req, res) => {
     const result = await userController.register(data);
     return res.status(200).json({ status: true, result });
   } catch (error) {
-    console.error("Lỗi đăng ký:", error);
-    return res.status(500).json({ status: false, message: "Lỗi đăng ký người dùng", error: error.message });
+    console.error("Lỗi đăng ký:", error.message);
+    return res.status(400).json({ //  đổi 500 thành 400 để báo lỗi hợp lệ từ client
+      status: false,
+      message: error.message 
+    });
   }
 });
 
@@ -37,10 +40,10 @@ router.post("/login", async (req, res) => {
   console.log("===> VÀO LOGIN THƯỜNG");
   try {
     const { email, password } = req.body;
+
     const user = await userController.login({ email, password });
 
     const jwtSecret = process.env.PRIVATE_KEY || "defaultSecretKey";
-
     const token = jwt.sign(
       { email: user.email, role: user.role },
       jwtSecret,
@@ -53,7 +56,20 @@ router.post("/login", async (req, res) => {
       token,
       user
     });
+
   } catch (error) {
+    // Xử lý lỗi logic người dùng
+    if (
+      error.message === "Email chưa được đăng ký!" ||
+      error.message === "Sai mật khẩu!"
+    ) {
+      return res.status(401).json({
+        status: false,
+        message: error.message
+      });
+    }
+
+    // Lỗi máy chủ
     return res.status(500).json({
       status: false,
       message: "Lỗi đăng nhập",
@@ -75,6 +91,7 @@ router.post("/forgot-password", async (req, res) => {
 });
 
 // Đặt lại mật khẩu
+
 router.post("/reset-password", async (req, res) => {
   try {
     const { token, newPassword } = req.body;
@@ -162,7 +179,6 @@ if (!fbData.email) {
   });
 }
 
-
     const { id: name, email } = fbData;
     const user = await userController.findOrCreateFacebookUser({ name, email });
 
@@ -186,6 +202,22 @@ if (!fbData.email) {
       message: "Lỗi đăng nhập bằng Facebook",
       error: error.message,
     });
+  }
+});
+// localhost:3000/users/1
+router.get("/:id", async (req, res) => {
+  try {
+    const user = await userController.getUserById(req.params.id); 
+
+    res.status(200).json({ status: true, data: user });
+  } catch (err) {
+    console.error("Lỗi khi gọi API /user/:id:", err.message);
+
+    const statusCode = err.message.includes("Không tìm thấy") || err.message.includes("ID không hợp lệ")
+      ? 404
+      : 500;
+
+    res.status(statusCode).json({ status: false, message: err.message });
   }
 });
 

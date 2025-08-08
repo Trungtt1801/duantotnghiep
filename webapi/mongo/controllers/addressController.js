@@ -1,4 +1,5 @@
 const addressModel = require("../models/addressModel");
+
 // [GET] Lấy tất cả địa chỉ
 async function getAllAddresses() {
   try {
@@ -7,6 +8,19 @@ async function getAllAddresses() {
     console.error("Lỗi lấy danh sách địa chỉ:", error.message);
     throw new Error("Lỗi lấy danh sách địa chỉ");
   }
+
+  return await addressModel.find({ user_id: userId }).sort({ updatedAt: -1 });
+}
+// Thêm địa chỉ mới
+async function createAddress(data) {
+  if (data.isDefault) {
+    // Nếu là mặc định, reset tất cả địa chỉ khác của user về false
+    await addressModel.updateMany(
+      { user_id: data.user_id },
+      { $set: { status: false } }
+    );
+  }
+  return await addressModel.create(data);
 }
 
 // [GET] Lấy địa chỉ theo ID
@@ -65,7 +79,7 @@ async function updateAddress(id, data) {
   return updated;
 }
 
-// [DELETE] Xoá địa chỉ
+// Xoá địa chỉ
 async function deleteAddress(id) {
   try {
     const address = await addressModel.findById(id);
@@ -76,22 +90,24 @@ async function deleteAddress(id) {
     throw new Error("Lỗi xoá địa chỉ");
   }
 }
+async function findAddressesByUserId(user_id) {
+  if (!mongoose.Types.ObjectId.isValid(user_id)) {
+    throw new Error("ID không hợp lệ");
+  }
 
-// [GET] Lấy tất cả địa chỉ theo user_id
-async function getAddressesByUserId(userId) {
+  const addresses = await addressModel.find({ user_id }).sort({ updatedAt: -1 });
+  return addresses;
+}
+
+const getAddressesByUserId = async (user_id) => {
   try {
-    if (!userId) throw new Error("Thiếu user_id");
-
-    const addresses = await addressModel
-      .find({ user_id: userId })
-      .populate("user_id", "name");
-
+    const addresses = await addressModel.find({ user_id });
     return addresses;
   } catch (error) {
-    console.error("Lỗi lấy địa chỉ theo user_id:", error.message);
-    throw new Error(error.message || "Lỗi lấy địa chỉ theo user");
+    console.error("Lỗi khi lấy danh sách địa chỉ:", error);
+    throw new Error("Lỗi server");
   }
-}
+};
 
 module.exports = {
   getAllAddresses,
@@ -99,5 +115,6 @@ module.exports = {
   createAddress,
   updateAddress,
   deleteAddress,
+  findAddressesByUserId,
   getAddressesByUserId,
 };
