@@ -240,10 +240,8 @@ async function getUserById(userId) {
       throw new Error("Không tìm thấy người dùng");
     }
 
-    // ✅ Lưu ý: phải truyền { virtuals: true } để lấy virtual field addresses
     const userObj = user.toObject({ virtuals: true });
 
-    // Nếu bạn vẫn muốn gán riêng địa chỉ mặc định ra một trường:
     userObj.defaultAddress = userObj.addresses?.find(a => a.is_default) || null;
 
     return userObj;
