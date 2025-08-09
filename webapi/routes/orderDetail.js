@@ -3,7 +3,7 @@ const router = express.Router();
 const orderDetailController = require('../mongo/controllers/orderDetailController');
 
 // [GET] Lấy chi tiết đơn hàng theo order_id
-// GET http://localhost:3000/orderDetail/:orderId
+// GET http://fiyo.click/api/orderDetail/:orderId
 router.get("/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -28,7 +28,7 @@ router.get("/:orderId", async (req, res) => {
 });
 
 // [POST] Thêm chi tiết đơn hàng
-// POST http://localhost:3000/orderDetail/
+// POST http://fiyo.click/api/orderDetail/
 router.post('/', async (req, res) => {
   try {
     const result = await orderDetailController.addOrderDetail(req.body);
@@ -40,7 +40,7 @@ router.post('/', async (req, res) => {
 });
 
 // [DELETE] Xoá toàn bộ chi tiết theo order_id
-// DELETE http://localhost:3000/orderDetail/:orderId
+// DELETE http://fiyo.click/api/orderDetail/:orderId
 router.delete('/:orderId', async (req, res) => {
   try {
     const result = await orderDetailController.deleteDetailsByOrderId(req.params.orderId);
@@ -51,7 +51,7 @@ router.delete('/:orderId', async (req, res) => {
   }
 });
 // [GET] Lấy sản phẩm bán ít nhất trong khoảng thời gian nhất định
-// GET http://localhost:3000/orderDetail/reports/least-sold?timePeriod
+// GET http://fiyo.click/api/orderDetail/reports/least-sold?timePeriod
 router.get('/reports/least-sold', async (req, res) => {
   try {
     const { timePeriod } = req.query;

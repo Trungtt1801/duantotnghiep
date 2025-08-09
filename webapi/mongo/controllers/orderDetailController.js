@@ -25,7 +25,7 @@ async function addOrderDetail(data) {
 
 // async function getDetailsByOrderId(orderId) {
 //   try {
-//     const BASE_URL = "http://localhost:3000/images/";
+//     const BASE_URL = "http://fiyo.click/api/images/";
 
 //     const details = await OrderDetailModel.aggregate([
 //       {
@@ -218,7 +218,7 @@ async function getOrderDetailByOrderId(orderId) {
           description: product.description,
           price: product.price,
           images: product.images.map(
-            (img) => `http://localhost:3000/images/${img}`
+            (img) => `http://fiyo.click/api/images/${img}`
           ),
           variant: variantData,
           size: sizeData,

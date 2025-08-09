@@ -114,7 +114,7 @@ async function searchProductsByName(nameKeyword) {
       })
       .lean();
 
-    const baseUrl = "http://localhost:3000/images/";
+    const baseUrl = "http://fiyo.click/api/images/";
 
     // Lấy danh sách product_id để fetch variant
     const productIds = products.map((p) => p._id);
@@ -267,7 +267,7 @@ async function getRelatedProducts(productId) {
       .limit(12);
 
     // ✅ Gắn URL ảnh
-    const baseUrl = "http://localhost:3000/images/";
+    const baseUrl = "http://fiyo.click/api/images/";
 
     const updatedProducts = relatedProducts.map((product) => {
       const productObj = product.toObject();
@@ -366,7 +366,7 @@ async function filterFromList(productList, filters) {
     }
 
     // Bước 5: Thêm base URL vào hình ảnh nếu chưa có
-    const baseUrl = "http://localhost:3000/images/";
+    const baseUrl = "http://fiyo.click/api/images/";
     products = products.map((product) => {
       const updated = { ...product };
       if (Array.isArray(updated.images)) {
@@ -459,7 +459,7 @@ async function getLeastSoldProducts(timePeriod) {
     ]);
     return result.map(item => ({
       ...item,
-      images: item.images.map(img => img.startsWith("http") ? img : `http://localhost:3000/images/${img}`)
+      images: item.images.map(img => img.startsWith("http") ? img : `http://fiyo.click/api/images/${img}`)
     }));
   } catch (error) {
     console.error("Lỗi khi lấy sản phẩm bán ít nhất:", error);
