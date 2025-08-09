@@ -437,7 +437,7 @@ async function zaloCallback(data) {
 
     if (status == 1) {
       order.transaction_status = "paid";
-      order.status_order = "confirmed";
+      order.status_order = "pending";
 
       const userId =
         typeof order.user_id === "object" && order.user_id !== null

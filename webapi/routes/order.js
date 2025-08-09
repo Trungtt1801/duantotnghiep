@@ -50,9 +50,9 @@ router.get("/confirm-order/:id", async (req, res) => {
       return res.send("✅ Đơn hàng đã được xác nhận hoặc xử lý trước đó");
     }
 
-    order.status_order = "confirmed";
+    order.status_order = "pending";
     order.status_history.push({
-      status: "confirmed",
+      status: "pending",
       updatedAt: new Date(),
       note: "Khách vãng lai xác nhận đơn qua email",
     });
@@ -361,7 +361,7 @@ router.get("/confirm-guess/:orderId", async (req, res) => {
         confirmed: true,
         $push: {
           status_history: {
-            status: "confirmed",
+            status: "pending",
             updatedAt: new Date(),
             note: "Khách xác nhận đơn hàng qua email",
           },
@@ -395,7 +395,7 @@ router.put("/confirm-guess/:orderId", async (req, res) => {
         confirmed: true,
         $push: {
           status_history: {
-            status: "confirmed",
+            status: "pending",
             updatedAt: new Date(),
             note: "Khách xác nhận đơn hàng",
           },

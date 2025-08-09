@@ -585,7 +585,7 @@ async function zaloCallback(data) {
 
     if (status == 1) {
       order.transaction_status = "paid";
-      order.status_order = "confirmed";
+      order.status_order = "pending";
 
       const userId =
         typeof order.user_id === "object" && order.user_id !== null
@@ -659,7 +659,7 @@ async function vnpayCallback(query) {
     vnp_Params["vnp_ResponseCode"] === "00" ? "paid" : "failed";
 
   if (vnp_Params["vnp_ResponseCode"] === "00") {
-    order.status_order = "confirmed";
+    order.status_order = "pending";
 
     const userId =
       typeof order.user_id === "object" && order.user_id !== null
@@ -722,10 +722,10 @@ async function vnpayCallbackForGuest(query) {
     vnp_Params["vnp_ResponseCode"] === "00" ? "paid" : "failed";
 
   if (vnp_Params["vnp_ResponseCode"] === "00") {
-    order.status_order = "confirmed";
+    order.status_order = "pending";
 
     order.status_history.push({
-      status: "confirmed",
+      status: "pending",
       updatedAt: new Date(),
       note: "Thanh toán thành công (vãng lai)",
     });
