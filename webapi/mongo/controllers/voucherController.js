@@ -105,7 +105,7 @@ async function updateVoucher(id, data) {
         const voucher = await voucherModel.findById(id);
         if (!voucher) throw new Error('Không tìm thấy voucher');
 
-        const { value, voucher_code, min_total, max_total, quantity, is_active, expired_at } = data;
+        const { value, voucher_code, min_total, max_total, quantity, is_active, expired_at, target_rank } = data;
 
         if (voucher_code && voucher_code !== voucher.voucher_code) {
             const exists = await voucherModel.findOne({ voucher_code });
@@ -119,12 +119,13 @@ async function updateVoucher(id, data) {
         voucher.quantity = quantity ?? voucher.quantity;
         voucher.is_active = is_active ?? voucher.is_active;
         voucher.expired_at = expired_at ? new Date(expired_at) : voucher.expired_at;
-
+        voucher.target_rank = target_rank || null; 
         return await voucher.save();
     } catch (error) {
         throw new Error(error.message || 'Lỗi cập nhật voucher');
     }
 }
+
 
 // Xóa voucher
 async function deleteVoucher(id) {
