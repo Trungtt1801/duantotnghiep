@@ -414,6 +414,16 @@ async function updateOrderStatus(id, status) {
 
     console.log(`📝 Đơn hàng ${order._id} cập nhật trạng thái -> ${status}`);
 
+    // Thêm lịch sử trạng thái mới vào mảng
+    order.status_history.push({
+      status,
+      updatedAt: new Date(),
+      note: `Cập nhật trạng thái sang ${status}`,
+    });
+
+    // Save lại order
+    await order.save();
+
     // ✅ Nếu là COD, trạng thái mới là "delivered" và chưa paid → cập nhật
     if (
       order.payment_method === "COD" &&
