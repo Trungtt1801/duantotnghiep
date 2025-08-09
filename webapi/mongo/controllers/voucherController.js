@@ -225,7 +225,7 @@ async function getVouchersByUserRank(req, res) {
     });
   } catch (error) {
     console.error("Lỗi getVouchersByUserRank:", error);
-    return res.status(500).json({ message: "Lỗi server", error: error.message });
+    return res.status(500). json({ message: "Lỗi server", error: error.message });
   }
 }
 
