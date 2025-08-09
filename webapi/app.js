@@ -52,7 +52,7 @@ app.use(function (req, res, next) {
   next(createError(404));
 });
 // kết nối database mogoose
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect("mongodb+srv://DuyPhuong:Phuong2910@cluster0.ksincau.mongodb.net/myapp?retryWrites=true&w=majority&appName=Cluster0")
   .then(() => console.log("✅ Kết nối Database thành công"))
   .catch((err) => console.error("❌ Lỗi kết nối Database:", err));
 
