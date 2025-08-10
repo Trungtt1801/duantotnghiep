@@ -3,7 +3,7 @@ var router = express.Router();
 const productVariantController = require('../mongo/controllers/productVariantController');
 // localhost:3000/variant
 // GET all variants
-// http://fiyo.click/api/variant
+// http://localhost:3000/variant
 router.get('/', async (req, res) => {
     try {
         const variants = await productVariantController.getAllProductVariants();
@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET variant by variant _id
-// http://fiyo.click/api/variant/:variant_id
+// http://localhost:3000/variant/:variant_id
 router.get('/:variant_id', async (req, res) => {
     try {
         const variantId = req.params.variant_id;
@@ -29,7 +29,7 @@ router.get('/:variant_id', async (req, res) => {
 });
 
 // GET variants by product_id
-// http://fiyo.click/api/variant/products/:product_id
+// http://localhost:3000/variant/products/:product_id
 router.get('/products/:product_id', async (req, res) => {
     try {
         const productId = req.params.product_id;

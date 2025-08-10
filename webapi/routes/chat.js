@@ -4,10 +4,10 @@ const { chatWithBot, autoCreateOrderFromChat } = require('../mongo/controllers/c
 const Keyword = require('../mongo/models/keywordModel')
 
 
-  // http://fiyo.click/api/chat
+  // http://localhost:3000/chat
   router.post('/', chatWithBot);
   router.post('/welcome', chatWithBot);
-//  http://fiyo.click/api/chat/seed-intents
+//  http://localhost:3000/chat/seed-intents
 router.post("/seed-intents", async (req, res) => {
   try {
     const data = req.body.data; // [{ word, intent }, ...]
