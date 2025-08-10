@@ -89,21 +89,6 @@ router.get("/children/:parentId", async (req, res) => {
   }
 });
 
-// [GET] Lấy danh mục con qua slug cha & slug con
-router.get("/:parentSlug/:childSlug", async (req, res) => {
-  const { parentSlug, childSlug } = req.params;
-  try {
-    const category = await categoryController.getCategoryByParentAndChildSlug(
-      parentSlug,
-      childSlug
-    );
-    res.status(200).json(category);
-  } catch (err) {
-    res.status(404).json({ message: err.message });
-  }
-});
-
-// [GET] Lấy danh mục theo slug cha
 router.get("/slug/:slug", async (req, res) => {
   try {
     const { slug } = req.params;
@@ -125,6 +110,22 @@ router.get("/slug/:slug", async (req, res) => {
     });
   }
 });
+// [GET] Lấy danh mục con qua slug cha & slug con
+router.get("/:parentSlug/:childSlug", async (req, res) => {
+  const { parentSlug, childSlug } = req.params;
+  try {
+    const category = await categoryController.getCategoryByParentAndChildSlug(
+      parentSlug,
+      childSlug
+    );
+    res.status(200).json(category);
+  } catch (err) {
+    res.status(404).json({ message: err.message });
+  }
+});
+
+// [GET] Lấy danh mục theo slug cha
+
 
 // [GET] Lấy chi tiết danh mục theo ID
 router.get("/:id", async (req, res) => {

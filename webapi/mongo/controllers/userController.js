@@ -250,14 +250,24 @@ async function getUserById(userId) {
     throw new Error("Lỗi server");
   }
 }
+const updateUserInfo = async (id, data) => {
+  const user = await usersModel.findById(id);
+  if (!user) throw new Error("Không tìm thấy người dùng");
 
+  // Không cho sửa các trường không hợp lệ
+  delete data.createdAt;
+  delete data.password;
+  delete data.resetPasswordToken;
+  delete data.resetPasswordExpires;
 
-
-
-
-
+  // Gán và lưu lại
+  Object.assign(user, data);
+  await user.save();
+  return user;
+};
 module.exports = {
   register,
+  updateUserInfo,
   getAllUsers,
   login,
   sendResetPasswordEmail,

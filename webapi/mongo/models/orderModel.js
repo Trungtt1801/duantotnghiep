@@ -7,14 +7,35 @@ const OrderSchema = new Schema(
 
     status_order: {
       type: String,
-      enum: ["unpending","pending", "confirmed", "preparing", "awaiting_shipment", "shipping", "delivered","failed", "cancelled", "refund"],
+      enum: [
+        "unpending",
+        "pending",
+        "confirmed",  
+        "preparing",
+        "awaiting_shipment",
+        "shipping",
+        "delivered",
+        "failed",
+        "cancelled",
+        "refund",
+      ],
       required: true,
     },
     status_history: [
       {
         status: {
           type: String,
-          enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered","failed", "cancelled", "refund"],
+          enum: [
+            "pending",
+            "preparing",
+            "awaiting_shipment",
+  "confirmed",
+            "shipping",
+            "delivered",
+            "failed",
+            "cancelled",
+            "refund",
+          ],
           required: true,
         },
         updatedAt: { type: Date, default: Date.now },
@@ -23,7 +44,11 @@ const OrderSchema = new Schema(
     ],
 
     // ✅ Địa chỉ nếu là người dùng đăng nhập
-    address_id: { type: Schema.Types.ObjectId, ref: "Address", required: false },
+    address_id: {
+      type: Schema.Types.ObjectId,
+      ref: "Address",
+      required: false,
+    },
 
     // ✅ Địa chỉ của khách vãng lai (guest)
     address_guess: {
@@ -31,12 +56,16 @@ const OrderSchema = new Schema(
       phone: { type: String },
       email: { type: String },
       address: { type: String },
-      type: { type: String },      // ví dụ: Nhà riêng, Cơ quan
-      detail: { type: String },    // chi tiết giao hàng nếu có
+      type: { type: String }, // ví dụ: Nhà riêng, Cơ quan
+      detail: { type: String }, // chi tiết giao hàng nếu có
     },
 
     // Mã giảm giá nếu có
-    voucher_id: { type: Schema.Types.ObjectId, ref: "Voucher", required: false },
+    voucher_id: {
+      type: Schema.Types.ObjectId,
+      ref: "Voucher",
+      required: false,
+    },
 
     // ✅ Người dùng nếu đã đăng nhập
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: false },

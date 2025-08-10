@@ -1,5 +1,6 @@
+const mongoose = require('mongoose');
 const voucherModel = require('../models/voucherModel');
-
+const userModels = require('../models/userModels');
 // Lấy tất cả voucher
 async function getAllVouchers() {
     try {
@@ -19,6 +20,33 @@ async function getVoucherById(id) {
         throw new Error(error.message || 'Lỗi lấy chi tiết voucher');
     }
 }
+
+async function getVoucherByUserId(id, userId) {
+    try {
+        const voucher = await voucherModel.findById(id);
+        if (!voucher) throw new Error('Không tìm thấy voucher');
+
+        // Lấy user để check rank
+        const user = await userModel.findById(userId).select('rank');
+        if (!user) throw new Error('Không tìm thấy user');
+
+        // Thứ tự rank
+        const rankOrder = ['bronze', 'silver', 'gold', 'platinum'];
+
+        // Nếu rank user nhỏ hơn rank voucher -> không cho xem
+        const userRankIndex = rankOrder.indexOf(user.rank);
+        const voucherRankIndex = rankOrder.indexOf(voucher.target_rank);
+
+        if (voucherRankIndex > userRankIndex) {
+            throw new Error('Bạn không đủ rank để sử dụng voucher này');
+        }
+
+        return voucher;
+    } catch (error) {
+        throw new Error(error.message || 'Lỗi lấy chi tiết voucher');
+    }
+}
+
 
 // Tạo voucher mới
 async function addVoucher(data) {
@@ -91,8 +119,7 @@ async function updateVoucher(id, data) {
         voucher.quantity = quantity ?? voucher.quantity;
         voucher.is_active = is_active ?? voucher.is_active;
         voucher.expired_at = expired_at ? new Date(expired_at) : voucher.expired_at;
-        voucher.target_rank = target_rank || null; // ✅ Thêm dòng này để lưu rank mới
-
+        voucher.target_rank = target_rank || null; 
         return await voucher.save();
     } catch (error) {
         throw new Error(error.message || 'Lỗi cập nhật voucher');
@@ -160,13 +187,58 @@ async function searchVouchers(keywordRegex) {
   }
 }
 
+async function getVouchersByUserRank(req, res) {
+  try {
+    // Lấy userId một cách an toàn: từ params hoặc từ req.user (nếu dùng auth)
+    const userId =
+      (req && req.params && (req.params.userId ?? req.params.id)) ||
+      (req && req.user && (req.user._id ?? req.user.id));
+
+    // Nếu không có userId -> trả lỗi 400
+    if (!userId) {
+      return res.status(400).json({ message: "userId không được cung cấp" });
+    }
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "userId không hợp lệ" });
+    }
+
+    // Lấy user (chỉ select field cần thiết)
+    const user = await userModels.findById(userId).select("rank");
+    if (!user) {
+      return res.status(404).json({ message: "User không tồn tại" });
+    }
+
+    // Lấy voucher theo rank user
+    const vouchers = await voucherModel.find({
+      is_active: true,
+      $or: [{ target_rank: null }, { target_rank: user.rank }],
+      // thêm điều kiện expired/quantity nếu cần:
+      // expired_at: { $gt: new Date() } // nếu muốn loại voucher đã hết hạn
+    });
+
+    // Trả mảng rỗng nếu không có voucher (200 OK)
+    return res.status(200).json({
+      message: "Lấy voucher thành công",
+      userRank: user.rank,
+      vouchers: vouchers || [],
+    });
+  } catch (error) {
+    console.error("Lỗi getVouchersByUserRank:", error);
+    return res.status(500). json({ message: "Lỗi server", error: error.message });
+  }
+}
+
 module.exports = {
     getAllVouchers,
     getVoucherById,
+    getVoucherByUserId,
     addVoucher,
     updateVoucher,
     deleteVoucher,
     useVoucher,
     updateStatusVoucher,
-    searchVouchers
+    searchVouchers,
+    getVouchersByUserRank
 };

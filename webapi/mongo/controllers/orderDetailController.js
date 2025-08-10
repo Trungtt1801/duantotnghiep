@@ -258,8 +258,11 @@ async function deleteDetailsByOrderId(orderId) {
   }
 }
 
+
+
 module.exports = {
   addOrderDetail,
   getOrderDetailByOrderId,
   deleteDetailsByOrderId,
+  
 };
