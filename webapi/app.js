@@ -37,7 +37,8 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
-app.use("/images", express.static(path.join(__dirname, "public/images")));
+// app.use("/images", express.static(path.join(__dirname, "public/images")));
+app.use("/api/images", express.static(path.join(__dirname, "public/images")));
 
 // Prefix /api cho tất cả router
 app.use("/api", indexRouter);
@@ -60,7 +61,7 @@ app.use(function (req, res, next) {
 
 // Kết nối database mongoose
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGODB_URI)
   .then(() => console.log("✅ Kết nối Database thành công"))
   .catch((err) => console.error("❌ Lỗi kết nối Database:", err));
 

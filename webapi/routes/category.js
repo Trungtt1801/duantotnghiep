@@ -19,7 +19,7 @@ const upload = multer({ storage });
 // === ROUTES ===
 
 // [GET] Lấy tất cả danh mục
-router.get("/api/", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const categories = await categoryController.getAllCate();
     const updatedCategories = categories.map((category) => ({

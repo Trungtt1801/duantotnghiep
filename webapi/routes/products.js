@@ -25,9 +25,8 @@ const upload = multer({ storage: storage });
 router.get("/", async (req, res) => {
   try {
     const result = await productController.getProducts();
-    const baseUrl = "http://localhost:3000/images/";
-
-    // Lặp qua từng sản phẩm để lấy variant tương ứng
+    const baseUrl = "https://fiyo.click/api/images/";
+   
     const updatedProducts = await Promise.all(
       result.map(async (product) => {
         const variantsDoc = await productVariantModel.findOne({
@@ -66,7 +65,7 @@ router.get("/", async (req, res) => {
 // http://localhost:3000/products?page=1&limit=10
 router.get("/pro", async (req, res) => {
   try {
-    const baseUrl = "http://localhost:3000/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
 
     // Lấy page & limit từ query, mặc định page=1, limit=10
     const page = parseInt(req.query.page) || 1;
@@ -169,7 +168,7 @@ router.post("/filter", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const productId = req.params.id;
-    const baseUrl = "http://localhost:3000/images/";
+  const baseUrl = "https://fiyo.click/api/images/";
 
     const { product, variants } = await productController.getProductById(
       productId
@@ -338,7 +337,7 @@ router.put("/update/:id", upload.array("images", 10), async (req, res) => {
 router.get("/category/:categoryId", async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
-    const baseUrl = "http://localhost:3000/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
 
     const products = await productController.getProductsByCategoryTree(
       categoryId
