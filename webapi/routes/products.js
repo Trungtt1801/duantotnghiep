@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// http://localhost:3000/products/
+// https://fiyo.click/api/products/
 
 router.get("/", async (req, res) => {
   try {
@@ -62,7 +62,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// http://localhost:3000/products?page=1&limit=10
+// https://fiyo.click/api/products?page=1&limit=10
 router.get("/pro", async (req, res) => {
   try {
     const baseUrl = "https://fiyo.click/api/images/";
@@ -121,7 +121,7 @@ router.get("/pro", async (req, res) => {
 });
 
 
-// http://localhost:3000/products/search?name=Áo
+// https://fiyo.click/api/products/search?name=Áo
 router.get("/search", async (req, res) => {
   const nameKeyword = req.query.name;
 
@@ -132,8 +132,8 @@ router.get("/search", async (req, res) => {
     res.status(500).json({ message: "Lỗi server khi tìm kiếm sản phẩm." });
   }
 });
-// http://localhost:3000/filter
-// vidu http://localhost:3000/products/filter?size=M
+// https://fiyo.click/api/filter
+// vidu https://fiyo.click/api/products/filter?size=M
 router.post("/filter", async (req, res) => {
   try {
     const { products, filters } = req.body;
@@ -163,7 +163,7 @@ router.post("/filter", async (req, res) => {
 });
 
 
-//http://localhost:3000/products/:id
+//https://fiyo.click/api/products/:id
 
 router.get("/:id", async (req, res) => {
   try {
@@ -209,7 +209,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// http://localhost:3000/products/create
+// https://fiyo.click/api/products/create
 router.post("/create", upload.array("images", 10), async (req, res) => {
   try {
     const data = req.body;
@@ -280,7 +280,7 @@ router.post("/create", upload.array("images", 10), async (req, res) => {
     });
   }
 });
-// http://localhost:3000/products/update/:id
+// https://fiyo.click/api/products/update/:id
 router.put("/update/:id", upload.array("images", 10), async (req, res) => {
   try {
     const productId = req.params.id;
@@ -333,7 +333,7 @@ router.put("/update/:id", upload.array("images", 10), async (req, res) => {
     });
   }
 });
-// http://localhost:3000/products/category/:categoryId
+// https://fiyo.click/api/products/category/:categoryId
 router.get("/category/:categoryId", async (req, res) => {
   try {
     const categoryId = req.params.categoryId;

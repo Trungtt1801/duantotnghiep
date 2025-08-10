@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Review = require("../models/reviewModel");
-const baseUrl = "http://localhost:3000/images/";
+const baseUrl = "https://fiyo.click/api/images/";
 const Product = require("../models/productsModel");
 const User = require("../models/userModels");
 const OrderDetail = require("../models/orderDetailModel");
