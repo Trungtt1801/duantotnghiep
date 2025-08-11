@@ -96,6 +96,15 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+router.patch("/:id", async (req, res) => {
+  try {
+    const result = await addressController.updateAddress(req.params.id, req.body);
+    return res.status(200).json({ status: true, result });
+  } catch (err) {
+    return res.status(500).json({ status: false, message: err.message });
+  }
+});
+
 // [DELETE] Xoá địa chỉ
 // URL: http://localhost:3000/address/:id
 router.delete('/:id', async (req, res) => {

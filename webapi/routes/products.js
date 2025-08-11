@@ -5,6 +5,8 @@ const productController = require("../mongo/controllers/productsController");
 const productVariantModel = require("../mongo/models/productVariantModel");
 const productsModel = require("../mongo/models/productsModel");
 
+
+
 const multer = require("multer");
 
 // Cấu hình multer
@@ -389,5 +391,19 @@ router.put("/:id/visibility", async (req, res) => {
   }
 });
 
+
+
+// [GET] Lấy sản phẩm bán ít theo salecount nhất trong khoảng thời gian nhất định
+router.get("/reports/least-sold", async (req, res) => {
+  try {
+    const { timePeriod } = req.query;
+   const result = await productController.getLeastSoldProducts(timePeriod);
+
+    res.status(200).json({ status: true, result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ status: false, error: err.message });
+  }
+});
 
 module.exports = router;

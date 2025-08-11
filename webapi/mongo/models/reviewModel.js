@@ -4,9 +4,11 @@ const Schema = mongoose.Schema;
 const reviewSchema = new Schema({
 user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 product_id: { type: mongoose.Schema.Types.ObjectId, ref: "products", required: true },
+orderDetail_id: { type: mongoose.Schema.Types.ObjectId, ref: "orderDetail"},
   rating: { type: Number, required: true },
   content: { type: String },
   images: [String],
+
 }, {
   timestamps: true,
 });

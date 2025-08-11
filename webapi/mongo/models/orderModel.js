@@ -10,7 +10,7 @@ const OrderSchema = new Schema(
       enum: [
         "unpending",
         "pending",
-        "confirmed",
+        "confirmed",  
         "preparing",
         "awaiting_shipment",
         "shipping",
@@ -29,6 +29,7 @@ const OrderSchema = new Schema(
             "pending",
             "preparing",
             "awaiting_shipment",
+  "confirmed",
             "shipping",
             "delivered",
             "failed",
@@ -93,6 +94,19 @@ const OrderSchema = new Schema(
       type: Boolean,
       default: false,
     },
+
+    // ✅ Lịch sử trạng thái đơn hàng
+    status_history: [
+      {
+        status: {
+          type: String,
+          enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered","failed", "cancelled", "refund"],
+          required: true,
+        },
+        updatedAt: { type: Date, default: Date.now },
+        note: { type: String },
+      },
+    ],
   },
   {
     timestamps: true, // Tự động thêm createdAt và updatedAt
