@@ -4,26 +4,38 @@ const Category = require("../models/categoryModel");
 const Keyword = require("../models/keywordModel");
 const ProductVariant = require("../models/productVariantModel");
 const ChatHistory = require("../models/historychatModel");
-const AddressModel = require('../models/addressModel');
+const AddressModel = require("../models/addressModel");
 require("dotenv").config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-const knownIntents = ["product", "shipping", "return", "general", "order",  "order_confirm"];
+const knownIntents = [
+  "product",
+  "shipping",
+  "return",
+  "general",
+  "order",
+  "order_confirm",
+  "greeting",
+];
 
 const detectIntentByAI = async (message) => {
-  const prompt = `
+const prompt = `
 Người dùng hỏi: "${message}"
 Phân loại câu này vào một trong các nhóm sau:
 - "product": hỏi về sản phẩm, đồ, quần áo, tìm đồ mua
 - "shipping": hỏi về giao hàng, phí ship, vận chuyển
 - "return": hỏi về đổi trả, hoàn hàng
 - "general": hỏi shop bán gì, có gì
+- "order": đặt mua hàng
+- "order_confirm": xác nhận đặt hàng
+- "greeting": chào hỏi như xin chào, chào, hello, hi
 - "other": nếu không thuộc nhóm nào
 
-Chỉ trả lời đúng 1 từ: product / shipping / return / general / other.
-  `;
+Chỉ trả lời đúng 1 từ: product / shipping / return / general / order / order_confirm / greeting / other.
+`;
+
 
   const result = await model.generateContent({
     contents: [{ parts: [{ text: prompt }] }],
@@ -52,6 +64,7 @@ const chatWithBot = async (req, res) => {
     const isGeneral = matchedIntent.includes("general");
     const isOrder = matchedIntent.includes("order");
     const isOrderConfirm = matchedIntent.includes("order_confirm");
+    const isGreeting = matchedIntent.includes("greeting");
 
     let prompt = "";
     let reply = "";
@@ -113,6 +126,21 @@ Viết câu trả lời thân thiện, dễ hiểu, không dùng dấu ** hoặc
 
       return res.status(200).json({ reply });
     }
+    if (isGreeting) {
+      const prompt = `
+Người dùng vừa chào: "${message}".
+Bạn là trợ lý bán hàng thân thiện. Hãy chào lại khách và hỏi xem khách muốn tìm sản phẩm gì.
+Không dùng dấu ** hoặc *.
+  `;
+      const result = await model.generateContent({
+        contents: [{ parts: [{ text: prompt }] }],
+      });
+      reply = result.response.text().trim();
+      if (userId) {
+        await saveChatHistory(userId, message, reply);
+      }
+      return res.status(200).json({ reply });
+    }
 
     // === 4. Hỏi về sản phẩm
     if (isProduct) {
@@ -170,9 +198,9 @@ Hãy viết lại câu trả lời thân thiện, tự nhiên như đang nhắn 
       return res.status(200).json({ reply });
     }
     // === 5. Đặt hàng tự động
-   if (isOrder) {
-  // 1. Hỏi Gemini trích xuất thông tin đặt hàng
-  prompt = `
+    if (isOrder) {
+      // 1. Hỏi Gemini trích xuất thông tin đặt hàng
+      prompt = `
 Người dùng: "${message}"
 
 Trích xuất dưới dạng JSON với các trường:
@@ -184,87 +212,114 @@ Trích xuất dưới dạng JSON với các trường:
 Nếu thiếu thông tin, để trống chuỗi. KHÔNG trả lời văn bản, chỉ trả JSON.
 `;
 
-  const result = await model.generateContent({
-    contents: [{ parts: [{ text: prompt }] }],
-  });
+      const result = await model.generateContent({
+        contents: [{ parts: [{ text: prompt }] }],
+      });
 
-  let extracted = {};
-  try {
-    extracted = JSON.parse(result.response.text());
-  } catch (e) {
-    return res.status(200).json({ reply: "Tui chưa hiểu rõ bạn muốn đặt gì, bạn có thể nói rõ hơn không?" });
-  }
+      let extracted = {};
+      try {
+        extracted = JSON.parse(result.response.text());
+      } catch (e) {
+        return res
+          .status(200)
+          .json({
+            reply:
+              "Tui chưa hiểu rõ bạn muốn đặt gì, bạn có thể nói rõ hơn không?",
+          });
+      }
 
-  const { product, quantity, color, size } = extracted;
+      const { product, quantity, color, size } = extracted;
 
-  if (!product || !quantity || !color || !size) {
-    return res.status(200).json({
-      reply: `Bạn vui lòng cung cấp đầy đủ thông tin: tên sản phẩm, số lượng, màu sắc, và size nhé.`,
-    });
-  }
+      if (!product || !quantity || !color || !size) {
+        return res.status(200).json({
+          reply: `Bạn vui lòng cung cấp đầy đủ thông tin: tên sản phẩm, số lượng, màu sắc, và size nhé.`,
+        });
+      }
 
-  // 2. Tìm sản phẩm và variant phù hợp
-  const foundProduct = await Product.findOne({ name: new RegExp(product, "i") });
-  if (!foundProduct) {
-    return res.status(200).json({ reply: `Tui không tìm thấy sản phẩm "${product}" rồi 🥲` });
-  }
+      // 2. Tìm sản phẩm và variant phù hợp
+      const foundProduct = await Product.findOne({
+        name: new RegExp(product, "i"),
+      });
+      if (!foundProduct) {
+        return res
+          .status(200)
+          .json({ reply: `Tui không tìm thấy sản phẩm "${product}" rồi 🥲` });
+      }
 
-  const variant = await ProductVariant.findOne({
-    product_id: foundProduct._id,
-    "variants.color": { $regex: color, $options: "i" },
-    "variants.sizes.size": size,
-  });
+      const variant = await ProductVariant.findOne({
+        product_id: foundProduct._id,
+        "variants.color": { $regex: color, $options: "i" },
+        "variants.sizes.size": size,
+      });
 
-  if (!variant) {
-    return res.status(200).json({ reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".` });
-  }
+      if (!variant) {
+        return res
+          .status(200)
+          .json({
+            reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".`,
+          });
+      }
 
-  // 3. Lấy variantId & tạo đơn
-  const matchedVariant = variant.variants.find(
-    (v) => v.color.toLowerCase() === color.toLowerCase()
-  );
+      // 3. Lấy variantId & tạo đơn
+      const matchedVariant = variant.variants.find(
+        (v) => v.color.toLowerCase() === color.toLowerCase()
+      );
 
-  const sizeObj = matchedVariant.sizes.find((s) => s.size === size);
-  if (!sizeObj || sizeObj.quantity < quantity) {
-    return res.status(200).json({ reply: `Số lượng sản phẩm không đủ trong kho 😢` });
-  }
+      const sizeObj = matchedVariant.sizes.find((s) => s.size === size);
+      if (!sizeObj || sizeObj.quantity < quantity) {
+        return res
+          .status(200)
+          .json({ reply: `Số lượng sản phẩm không đủ trong kho 😢` });
+      }
 
-  const variantId = variant._id;
-  const resultOrder = await autoCreateOrderFromChat({
-    userId,
-    productId: foundProduct._id,
-    variantId,
-    quantity,
-    paymentMethod: "cod", // Hoặc lấy từ user nếu có chọn
-    isGuest: !userId,
-  });
+      const variantId = variant._id;
+      const resultOrder = await autoCreateOrderFromChat({
+        userId,
+        productId: foundProduct._id,
+        variantId,
+        quantity,
+        paymentMethod: "cod", // Hoặc lấy từ user nếu có chọn
+        isGuest: !userId,
+      });
 
-  if (!resultOrder.success) {
-    return res.status(200).json({ reply: `Tạo đơn hàng thất bại: ${resultOrder.message}` });
-  }
+      if (!resultOrder.success) {
+        return res
+          .status(200)
+          .json({ reply: `Tạo đơn hàng thất bại: ${resultOrder.message}` });
+      }
 
-  const finalReply = `Tui đã tạo đơn hàng cho bạn: ${quantity} x ${product} (màu ${color}, size ${size}). Cảm ơn bạn nhiều lắm! 😘`;
+      const finalReply = `Tui đã tạo đơn hàng cho bạn: ${quantity} x ${product} (màu ${color}, size ${size}). Cảm ơn bạn nhiều lắm! 😘`;
 
-  if (userId) {
-    await saveChatHistory(userId, message, finalReply);
-  }
+      if (userId) {
+        await saveChatHistory(userId, message, finalReply);
+      }
 
-  return res.status(200).json({ reply: finalReply });
-}
-if (isOrderConfirm) {
-  const chat = await ChatHistory.findOne({ userId }).sort({ updatedAt: -1 });
-  if (!chat || !chat.messages || chat.messages.length < 2) {
-    return res.status(200).json({ reply: "Hiện tại không có đơn hàng nào để xác nhận." });
-  }
+      return res.status(200).json({ reply: finalReply });
+    }
+    if (isOrderConfirm) {
+      const chat = await ChatHistory.findOne({ userId }).sort({
+        updatedAt: -1,
+      });
+      if (!chat || !chat.messages || chat.messages.length < 2) {
+        return res
+          .status(200)
+          .json({ reply: "Hiện tại không có đơn hàng nào để xác nhận." });
+      }
 
-  // Giả định tin nhắn gần nhất từ bot có chứa gợi ý đặt hàng (tùy cấu trúc bạn muốn)
-  const lastBotMsg = [...chat.messages].reverse().find(m => m.role === "bot" && m.content.includes("Tổng cộng"));
-  if (!lastBotMsg) {
-    return res.status(200).json({ reply: "Tui không thấy thông tin đơn hàng để xác nhận nha 😅" });
-  }
+      // Giả định tin nhắn gần nhất từ bot có chứa gợi ý đặt hàng (tùy cấu trúc bạn muốn)
+      const lastBotMsg = [...chat.messages]
+        .reverse()
+        .find((m) => m.role === "bot" && m.content.includes("Tổng cộng"));
+      if (!lastBotMsg) {
+        return res
+          .status(200)
+          .json({
+            reply: "Tui không thấy thông tin đơn hàng để xác nhận nha 😅",
+          });
+      }
 
-  // Tạm thời bạn có thể phân tích lại từ nội dung bot gửi trước (nếu muốn lưu đơn tạm thì chuẩn hơn)
-  const prompt = `
+      // Tạm thời bạn có thể phân tích lại từ nội dung bot gửi trước (nếu muốn lưu đơn tạm thì chuẩn hơn)
+      const prompt = `
 Đoạn văn sau là phản hồi của bot khi khách đặt hàng: "${lastBotMsg.content}"
 
 Hãy trích xuất thông tin đặt hàng dạng JSON với các trường sau:
@@ -276,71 +331,85 @@ Hãy trích xuất thông tin đặt hàng dạng JSON với các trường sau:
 Chỉ trả về JSON, không thêm văn bản.
 `;
 
-  const result = await model.generateContent({
-    contents: [{ parts: [{ text: prompt }] }],
-  });
+      const result = await model.generateContent({
+        contents: [{ parts: [{ text: prompt }] }],
+      });
 
-  let extracted = {};
-  try {
-    extracted = JSON.parse(result.response.text());
-  } catch (e) {
-    return res.status(200).json({ reply: "Tui không hiểu rõ đơn hàng bạn muốn xác nhận 😥" });
-  }
+      let extracted = {};
+      try {
+        extracted = JSON.parse(result.response.text());
+      } catch (e) {
+        return res
+          .status(200)
+          .json({ reply: "Tui không hiểu rõ đơn hàng bạn muốn xác nhận 😥" });
+      }
 
-  const { product, quantity, color, size } = extracted;
+      const { product, quantity, color, size } = extracted;
 
-  if (!product || !quantity || !color || !size) {
-    return res.status(200).json({
-      reply: `Thiếu thông tin rồi, tui chưa xác nhận được đơn 😓`,
-    });
-  }
+      if (!product || !quantity || !color || !size) {
+        return res.status(200).json({
+          reply: `Thiếu thông tin rồi, tui chưa xác nhận được đơn 😓`,
+        });
+      }
 
-  // Tìm và tạo đơn như phần xử lý trong isOrder
-  const foundProduct = await Product.findOne({ name: new RegExp(product, "i") });
-  if (!foundProduct) {
-    return res.status(200).json({ reply: `Tui không tìm thấy sản phẩm "${product}" rồi 🥲` });
-  }
+      // Tìm và tạo đơn như phần xử lý trong isOrder
+      const foundProduct = await Product.findOne({
+        name: new RegExp(product, "i"),
+      });
+      if (!foundProduct) {
+        return res
+          .status(200)
+          .json({ reply: `Tui không tìm thấy sản phẩm "${product}" rồi 🥲` });
+      }
 
-  const variant = await ProductVariant.findOne({
-    product_id: foundProduct._id,
-    "variants.color": { $regex: color, $options: "i" },
-    "variants.sizes.size": size,
-  });
+      const variant = await ProductVariant.findOne({
+        product_id: foundProduct._id,
+        "variants.color": { $regex: color, $options: "i" },
+        "variants.sizes.size": size,
+      });
 
-  if (!variant) {
-    return res.status(200).json({ reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".` });
-  }
+      if (!variant) {
+        return res
+          .status(200)
+          .json({
+            reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".`,
+          });
+      }
 
-  const matchedVariant = variant.variants.find(
-    (v) => v.color.toLowerCase() === color.toLowerCase()
-  );
+      const matchedVariant = variant.variants.find(
+        (v) => v.color.toLowerCase() === color.toLowerCase()
+      );
 
-  const sizeObj = matchedVariant.sizes.find((s) => s.size === size);
-  if (!sizeObj || sizeObj.quantity < quantity) {
-    return res.status(200).json({ reply: `Số lượng không đủ trong kho để đặt hàng.` });
-  }
+      const sizeObj = matchedVariant.sizes.find((s) => s.size === size);
+      if (!sizeObj || sizeObj.quantity < quantity) {
+        return res
+          .status(200)
+          .json({ reply: `Số lượng không đủ trong kho để đặt hàng.` });
+      }
 
-  const variantId = variant._id;
+      const variantId = variant._id;
 
-  const resultOrder = await autoCreateOrderFromChat({
-    userId,
-    productId: foundProduct._id,
-    variantId,
-    quantity,
-    paymentMethod: "cod",
-    isGuest: !userId,
-  });
+      const resultOrder = await autoCreateOrderFromChat({
+        userId,
+        productId: foundProduct._id,
+        variantId,
+        quantity,
+        paymentMethod: "cod",
+        isGuest: !userId,
+      });
 
-  if (!resultOrder.success) {
-    return res.status(200).json({ reply: `Tạo đơn hàng thất bại: ${resultOrder.message}` });
-  }
+      if (!resultOrder.success) {
+        return res
+          .status(200)
+          .json({ reply: `Tạo đơn hàng thất bại: ${resultOrder.message}` });
+      }
 
-  const replyConfirm = `Tui đã xác nhận và tạo đơn hàng cho bạn: ${quantity} x ${product} (màu ${color}, size ${size}). Cảm ơn bạn nhiều nha! 🛍️`;
+      const replyConfirm = `Tui đã xác nhận và tạo đơn hàng cho bạn: ${quantity} x ${product} (màu ${color}, size ${size}). Cảm ơn bạn nhiều nha! 🛍️`;
 
-  await saveChatHistory(userId, message, replyConfirm);
+      await saveChatHistory(userId, message, replyConfirm);
 
-  return res.status(200).json({ reply: replyConfirm });
-}
+      return res.status(200).json({ reply: replyConfirm });
+    }
 
     // === 5. Không xác định => học từ mới
     const existing = await Keyword.findOne({ word: messageLower });
@@ -390,7 +459,15 @@ async function saveChatHistory(userId, userMsg, botReply) {
     console.error("❌ Lỗi khi lưu chat history:", error);
   }
 }
-async function autoCreateOrderFromChat({ userId, productId, variantId, quantity = 1, paymentMethod = "cod", isGuest = false, guestAddress }) {
+async function autoCreateOrderFromChat({
+  userId,
+  productId,
+  variantId,
+  quantity = 1,
+  paymentMethod = "cod",
+  isGuest = false,
+  guestAddress,
+}) {
   try {
     const variant = await ProductVariant.findById(variantId);
     if (!variant) throw new Error("Không tìm thấy phiên bản sản phẩm");
@@ -405,7 +482,10 @@ async function autoCreateOrderFromChat({ userId, productId, variantId, quantity 
       address_guess = guestAddress;
     } else {
       // Lấy địa chỉ mặc định của user (nếu cần)
-      const userAddress = await AddressModel.findOne({ user_id: userId, is_default: true });
+      const userAddress = await AddressModel.findOne({
+        user_id: userId,
+        is_default: true,
+      });
       if (!userAddress) throw new Error("Không tìm thấy địa chỉ người dùng");
       address_id = userAddress._id;
     }
@@ -419,7 +499,7 @@ async function autoCreateOrderFromChat({ userId, productId, variantId, quantity 
       user_id: isGuest ? null : userId,
       address_id,
       address_guess,
-      status_history: [{ status: "pending" }]
+      status_history: [{ status: "pending" }],
     });
 
     // Tạo chi tiết đơn hàng
