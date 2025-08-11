@@ -465,6 +465,7 @@ async function createOrderWithZaloPay(data) {
     const orderDetails = products.map((product) => ({
       order_id: newOrder._id,
       product_id: product.product_id,
+      size_id: product.size_id, // nếu bạn có sử dụng size
       variant_id: product.variant_id, // nếu bạn có sử dụng variant
       quantity: product.quantity,
       price: product.price,
