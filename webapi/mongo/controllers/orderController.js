@@ -318,12 +318,10 @@ async function deleteOrder(id) {
 }
 
 //Xác nhận đơn hàng
-
 async function confirmOrder(id) {
   try {
     const order = await orderModel.findById(id);
     if (!order) throw new Error("Không tìm thấy đơn hàng");
-
     if (order.status_order !== "pending") {
       throw new Error("Chỉ đơn hàng ở trạng thái pending mới được xác nhận");
     }
@@ -493,11 +491,6 @@ async function cancelOrder(id, isAdmin = false) {
     }
 
     order.status_order = "cancelled";
-    order.status_history.push({
-      status: "cancelled",
-      updatedAt: new Date(),
-      note: isAdmin ? "Admin huỷ đơn hàng" : "Người dùng huỷ đơn hàng",
-    });
     return await order.save();
   } catch (error) {
     console.error("Lỗi hủy đơn hàng:", error.message);

@@ -249,6 +249,7 @@ async function getOrderDetailByOrderId(orderId) {
   }
 }
 
+
 async function deleteDetailsByOrderId(orderId) {
   try {
     return await OrderDetailModel.deleteMany({ order_id: orderId });
