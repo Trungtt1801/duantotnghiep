@@ -424,7 +424,7 @@ async function updateOrderStatus(id, status) {
 
     // ✅ Nếu là COD, trạng thái mới là "delivered" và chưa paid → cập nhật
     if (
-      order.payment_method === "COD" &&
+      order.payment_method === "cod" &&
       status === "delivered" &&
       order.transaction_status !== "paid"
     ) {
