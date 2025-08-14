@@ -9,6 +9,7 @@ const config = {
   endpoint: "https://sb-openapi.zalopay.vn/v2/create",
 };
 
+
 async function createZaloPayOrder(amount, userId, orderId) {
   const transID = Date.now();
   const embed_data = {};
