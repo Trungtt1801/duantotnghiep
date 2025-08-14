@@ -467,6 +467,40 @@ async function getLeastSoldProducts(timePeriod) {
   }
 }
 
+async function updateProductVariants(productId, variants) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      throw new Error("ID sản phẩm không hợp lệ");
+    }
+
+    if (!Array.isArray(variants)) {
+      throw new Error("Variants phải là một mảng");
+    }
+
+    // Kiểm tra sản phẩm tồn tại
+    const product = await productsModel.findById(productId);
+    if (!product) {
+      throw new Error("Không tìm thấy sản phẩm");
+    }
+
+    // Cập nhật hoặc tạo mới biến thể
+    const updatedVariants = await productVariantModel.findOneAndUpdate(
+      { product_id: productId },
+      { variants },
+      { upsert: true, new: true } // new để trả về dữ liệu mới nhất
+    );
+
+    return {
+      message: "Cập nhật biến thể thành công!",
+      variants: updatedVariants.variants,
+    };
+  } catch (error) {
+    console.error("Lỗi khi cập nhật biến thể:", error);
+    throw error;
+  }
+}
+
+
 module.exports = {
   getProducts,
   getProductById,
@@ -478,5 +512,5 @@ module.exports = {
   filterFromList,
   updateProductVisibility,
   getLeastSoldProducts,
-
+  updateProductVariants,
 };

@@ -391,6 +391,19 @@ router.put("/:id/visibility", async (req, res) => {
   }
 });
 
+router.put("/variants/:productId", async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { variants } = req.body;
+
+    const result = await productController.updateProductVariants(productId, variants);
+
+    res.status(200).json({ status: true, result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ status: false, error: err.message });
+  }
+});
 
 
 // [GET] Lấy sản phẩm bán ít theo salecount nhất trong khoảng thời gian nhất định
