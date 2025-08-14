@@ -156,7 +156,7 @@ async function forgotPassword(email) {
       expiresIn: "15m",
     });
 
-    const resetLink = `http://localhost:3001/page/reset/${token}`;
+    const resetLink = `https://fiyo.click/page/reset/${token}`;
 
     await sendResetPasswordEmail(email, resetLink);
 

@@ -9,6 +9,19 @@ require("dotenv").config();
 
 require("../models/addressModel");
 
+
+const statusTranslations = {
+  unpending: "Chưa xác nhận",
+  pending: "Đang chờ xử lý",
+  confirmed: "Đã xác nhận",
+  preparing: "Đang chuẩn bị hàng",
+  awaiting_shipment: "Chờ giao hàng",
+  shipping: "Đang vận chuyển",
+  delivered: "Đã giao hàng",
+  failed: "Thất bại",
+  cancelled: "Đã hủy",
+  refund: "Hoàn tiền",
+};
 //Lấy tất cả đơn hàng (dành cho admin)
 async function getAllOrders() {
   try {
@@ -418,8 +431,7 @@ async function updateOrderStatus(id, status) {
     order.status_history.push({
       status,
       updatedAt: new Date(),
-      note: `Cập nhật trạng thái sang ${status}`,
-    });
+  note: `Cập nhật trạng thái sang "${statusTranslations[status]}"`,    });
 
     // Save lại order
     await order.save();
