@@ -21,7 +21,7 @@ const knownIntents = [
 ];
 
 const detectIntentByAI = async (message) => {
-const prompt = `
+  const prompt = `
 Người dùng hỏi: "${message}"
 Phân loại câu này vào một trong các nhóm sau:
 - "product": hỏi về sản phẩm, đồ, quần áo, tìm đồ mua
@@ -36,13 +36,13 @@ Phân loại câu này vào một trong các nhóm sau:
 Chỉ trả lời đúng 1 từ: product / shipping / return / general / order / order_confirm / greeting / other.
 `;
 
-
   const result = await model.generateContent({
     contents: [{ parts: [{ text: prompt }] }],
   });
 
   return result.response.text().trim().toLowerCase();
 };
+
 
 const chatWithBot = async (req, res) => {
   // Lưu ý: yêu cầu FE gửi cả userId và message
@@ -144,59 +144,88 @@ Không dùng dấu ** hoặc *.
 
     // === 4. Hỏi về sản phẩm
     if (isProduct) {
-      const orConditions = matched
-        .filter((k) => k.intent === "product")
-        .map((kw) => ({ name: { $regex: kw.word, $options: "i" } }));
+  let chatHistory = [];
+  if (userId) {
+    const existingChat = await ChatHistory.findOne({ userId });
+    if (existingChat) {
+      chatHistory = existingChat.messages
+        .slice(-6) 
+        .map(m => `${m.role === "user" ? "Khách" : "Bot"}: ${m.content}`)
+        .join("\n");
+    }
+  }
 
-      const products = await Product.find({ $or: orConditions }).limit(3);
-      let productInfo = "";
+  const orConditions = matched
+    .filter((k) => k.intent === "product")
+    .map((kw) => ({ name: { $regex: kw.word, $options: "i" } }));
 
-      for (const product of products) {
-        const productVariants = await ProductVariant.findOne({
-          product_id: product._id,
-        });
-        let variantInfo = "";
+  const products = await Product.find({ $or: orConditions }).limit(3);
+  let productInfo = "";
 
-        if (productVariants) {
-          for (const v of productVariants.variants) {
-            const sizes = v.sizes
-              .map((s) => `${s.size} (${s.quantity} cái)`)
-              .join(", ");
-            variantInfo += `- Màu: ${v.color}, Size: ${sizes}\n`;
-          }
-        }
+  for (const product of products) {
+    const productVariants = await ProductVariant.findOne({
+      product_id: product._id,
+    });
+    let variantInfo = "";
 
-        productInfo += `
+    if (productVariants) {
+      for (const v of productVariants.variants) {
+        const sizes = v.sizes
+          .map((s) => `${s.size} (${s.quantity} cái)`)
+          .join(", ");
+        variantInfo += `- Màu: ${v.color}, Size: ${sizes}\n`;
+      }
+    }
+
+    productInfo += `
 ${product.name}
 Giá: ${product.price.toLocaleString()} VNĐ
 ${product.description || ""}
 ${variantInfo}
 `;
-      }
+  }
 
-      const prompt = `
+  let prompt = `
+Lịch sử trò chuyện gần đây:
+${chatHistory}
+
 Khách hàng vừa hỏi: "${message}"
-
-Danh sách sản phẩm gợi ý:
-${productInfo || "Hiện tại không tìm thấy sản phẩm phù hợp."}
-
-Hãy viết lại câu trả lời thân thiện, tự nhiên như đang nhắn tin cho khách. Câu trả lời cần:
-- Rõ ràng, dễ hiểu.
-- Ngắn gọn, tránh dài dòng.
-- Không sử dụng định dạng Markdown (không dùng dấu * hay **).
-- Nếu không có sản phẩm, hãy xin lỗi khách và gợi ý giúp đỡ thêm.
 `;
 
-      const result = await model.generateContent({
-        contents: [{ parts: [{ text: prompt }] }],
-      });
-      reply = result.response.text().trim();
-      if (userId) {
-        await saveChatHistory(userId, message, reply);
-      }
+  if (products.length > 0) {
+    prompt += `
+Danh sách sản phẩm phù hợp:
+${productInfo}
 
-      return res.status(200).json({ reply });
-    }
+Hãy viết câu trả lời thân thiện, tự nhiên như đang nhắn tin cho khách.
+- Nếu khách đã cung cấp chiều cao và cân nặng trước đó, hãy tư vấn size luôn.
+- Nếu chưa có thông tin chiều cao và cân nặng, hãy hỏi thêm.
+- Tránh dài dòng, không dùng định dạng Markdown.
+`;
+  } else {
+    prompt += `
+Hiện tại không tìm thấy sản phẩm phù hợp.
+
+Hãy viết câu trả lời thân thiện, tự nhiên:
+- Xin lỗi khách.
+- Gợi ý họ mô tả rõ hơn để shop có thể tìm sản phẩm phù hợp.
+- Không dùng định dạng Markdown.
+`;
+  }
+
+  const result = await model.generateContent({
+    contents: [{ parts: [{ text: prompt }] }],
+  });
+
+  reply = result.response.text().trim();
+
+  if (userId) {
+    await saveChatHistory(userId, message, reply);
+  }
+
+  return res.status(200).json({ reply });
+}
+
     // === 5. Đặt hàng tự động
     if (isOrder) {
       // 1. Hỏi Gemini trích xuất thông tin đặt hàng
@@ -220,12 +249,10 @@ Nếu thiếu thông tin, để trống chuỗi. KHÔNG trả lời văn bản, 
       try {
         extracted = JSON.parse(result.response.text());
       } catch (e) {
-        return res
-          .status(200)
-          .json({
-            reply:
-              "Tui chưa hiểu rõ bạn muốn đặt gì, bạn có thể nói rõ hơn không?",
-          });
+        return res.status(200).json({
+          reply:
+            "Tui chưa hiểu rõ bạn muốn đặt gì, bạn có thể nói rõ hơn không?",
+        });
       }
 
       const { product, quantity, color, size } = extracted;
@@ -253,11 +280,9 @@ Nếu thiếu thông tin, để trống chuỗi. KHÔNG trả lời văn bản, 
       });
 
       if (!variant) {
-        return res
-          .status(200)
-          .json({
-            reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".`,
-          });
+        return res.status(200).json({
+          reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".`,
+        });
       }
 
       // 3. Lấy variantId & tạo đơn
@@ -311,11 +336,9 @@ Nếu thiếu thông tin, để trống chuỗi. KHÔNG trả lời văn bản, 
         .reverse()
         .find((m) => m.role === "bot" && m.content.includes("Tổng cộng"));
       if (!lastBotMsg) {
-        return res
-          .status(200)
-          .json({
-            reply: "Tui không thấy thông tin đơn hàng để xác nhận nha 😅",
-          });
+        return res.status(200).json({
+          reply: "Tui không thấy thông tin đơn hàng để xác nhận nha 😅",
+        });
       }
 
       // Tạm thời bạn có thể phân tích lại từ nội dung bot gửi trước (nếu muốn lưu đơn tạm thì chuẩn hơn)
@@ -369,11 +392,9 @@ Chỉ trả về JSON, không thêm văn bản.
       });
 
       if (!variant) {
-        return res
-          .status(200)
-          .json({
-            reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".`,
-          });
+        return res.status(200).json({
+          reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".`,
+        });
       }
 
       const matchedVariant = variant.variants.find(
@@ -424,7 +445,7 @@ Chỉ trả về JSON, không thêm văn bản.
     }
 
     reply =
-      "Bạn vui lòng cho biết rõ loại sản phẩm hoặc thông tin bạn cần nhé!";
+      "Hiện tại shop mình chưa có sản phẩm bạn cần tìm chỉ có các danh mục như: Áo phông, Áo sơ mi, Áo thun, Áo polo,... cho Nam, Nữ và Trẻ em. Bạn có thể tham khảo các mặt hàng như trên để mình tư vấn rõ cho bạn nhé!";
     await saveChatHistory(userId, message, reply);
     return res.status(200).json({ reply });
   } catch (err) {
@@ -459,6 +480,7 @@ async function saveChatHistory(userId, userMsg, botReply) {
     console.error("❌ Lỗi khi lưu chat history:", error);
   }
 }
+
 async function autoCreateOrderFromChat({
   userId,
   productId,
