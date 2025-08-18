@@ -112,7 +112,9 @@ router.patch("/:id/payment", async (req, res) => {
 router.patch("/:id/cancel", async (req, res) => {
   try {
     const isAdmin = req.query.admin === "true";
-    const result = await orderController.cancelOrder(req.params.id, isAdmin);
+    const { reason } = req.body; // có thể undefined
+
+    const result = await orderController.cancelOrder(req.params.id, isAdmin, reason || "");
     return res.status(200).json({ status: true, result });
   } catch (err) {
     return res.status(400).json({ status: false, message: err.message });

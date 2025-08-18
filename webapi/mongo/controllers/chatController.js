@@ -18,6 +18,7 @@ const knownIntents = [
   "order",
   "order_confirm",
   "greeting",
+  "add_to_cart",
 ];
 
 const detectIntentByAI = async (message) => {
@@ -32,8 +33,10 @@ Phân loại câu này vào một trong các nhóm sau:
 - "order_confirm": xác nhận đặt hàng
 - "greeting": chào hỏi như xin chào, chào, hello, hi
 - "other": nếu không thuộc nhóm nào
+- "add_to_cart": người dùng yêu cầu thêm sản phẩm vào giỏ hàng, lưu sản phẩm để mua sau
 
-Chỉ trả lời đúng 1 từ: product / shipping / return / general / order / order_confirm / greeting / other.
+
+Chỉ trả lời đúng 1 từ: product / shipping / return / general / order / order_confirm / greeting / other / add_to_cart.
 `;
 
   const result = await model.generateContent({
@@ -65,6 +68,8 @@ const chatWithBot = async (req, res) => {
     const isOrder = matchedIntent.includes("order");
     const isOrderConfirm = matchedIntent.includes("order_confirm");
     const isGreeting = matchedIntent.includes("greeting");
+    const isAddToCart = matchedIntent.includes("add_to_cart");
+
 
     let prompt = "";
     let reply = "";
@@ -431,6 +436,32 @@ Chỉ trả về JSON, không thêm văn bản.
 
       return res.status(200).json({ reply: replyConfirm });
     }
+if (isAddToCart) {
+  const product = await Product.findOne({ name: { $regex: message, $options: "i" } });
+
+  if (!product) {
+    return res.status(200).json({
+      type: "message",
+      reply: "Xin lỗi, mình không tìm thấy sản phẩm bạn muốn thêm vào giỏ hàng."
+    });
+  }
+
+  return res.status(200).json({
+    type: "add_to_cart",
+    products: [
+      {
+        id: product._id,
+        name: product.name,
+        image: product.image || "", // Thêm ảnh để FE render
+        price: product.price,
+        quantity: 1
+      }
+    ],
+    reply: `Mình đã thêm ${product.name} vào giỏ hàng giúp bạn!`
+  });
+}
+
+
 
     // === 5. Không xác định => học từ mới
     const existing = await Keyword.findOne({ word: messageLower });

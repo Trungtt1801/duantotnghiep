@@ -6,6 +6,7 @@ const OrderSchema = new Schema(
   {
     total_price: { type: Number, required: true },
 
+    cancel_reason: { type: String, default: "" }, 
     status_order: {
       type: String,
       enum: [
@@ -22,6 +23,7 @@ const OrderSchema = new Schema(
       ],
       required: true,
     },
+    
     status_history: [
       {
         status: {

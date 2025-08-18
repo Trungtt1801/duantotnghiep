@@ -494,28 +494,32 @@ async function updatePayment(id, { transaction_status, transaction_code }) {
   }
 }
 
-//Hủy đơn hàng (người dùng hoặc admin)
-async function cancelOrder(id, isAdmin = false) {
-  try {
-    const order = await orderModel.findById(id);
-    if (!order) throw new Error("Không tìm thấy đơn hàng");
+async function cancelOrder(orderId, isAdmin, reason = "") {
+  const order = await orderModel.findById(orderId);
+  if (!order) throw new Error("Không tìm thấy đơn hàng");
 
-    if (order.status_order !== "pending" && !isAdmin) {
-      throw new Error("Không thể hủy đơn hàng này");
-    }
-
-    order.status_order = "cancelled";
-    order.status_history.push({
-      status: "cancelled",
-      updatedAt: new Date(),
-      note: isAdmin ? "Admin huỷ đơn hàng" : "Người dùng huỷ đơn hàng",
-    });
-    return await order.save();
-  } catch (error) {
-    console.error("Lỗi hủy đơn hàng:", error.message);
-    throw new Error(error.message || "Lỗi khi hủy đơn hàng");
+  // Người dùng chỉ được hủy khi pending
+  if (!isAdmin && order.status_order !== "pending") {
+    throw new Error("Không thể hủy đơn ở trạng thái này");
   }
+
+  // Cập nhật trạng thái & lý do (nếu có)
+  order.status_order = "cancelled";
+  if (reason.trim() !== "") {
+    order.cancel_reason = reason.trim();
+  }
+
+  // Lưu lịch sử
+  order.status_history.push({
+    status: "cancelled",
+    updatedAt: new Date(),
+    note: `${isAdmin ? "Admin" : "Người dùng"} hủy đơn${reason ? ` - Lý do: ${reason}` : ""}`
+  });
+
+  await order.save();
+  return order;
 }
+
 
 //Lọc đơn hàng theo user, trạng thái, ngày
 async function filterOrders(query) {
