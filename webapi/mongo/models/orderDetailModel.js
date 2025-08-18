@@ -6,20 +6,30 @@ const OrderDetailSchema = new Schema(
   {
     order_id: {
       type: Schema.Types.ObjectId,
-      ref: 'order',
+      ref: "order",
+      required: true,
+    },
+    order_shop_id: {
+      type: Schema.Types.ObjectId,
+      ref: "orderShop", // <- gắn vào orderShop
+      required: true,
+    },
+    shop_id: {
+      type: Schema.Types.ObjectId,
+      ref: "Shop",
       required: true,
     },
     product_id: {
       type: Schema.Types.ObjectId,
-      ref: 'products',
+      ref: "products",
       required: true,
     },
     variant_id: {
       type: Schema.Types.ObjectId,
-      ref: 'ProductVariant', 
+      ref: "ProductVariant",
       required: true,
     },
-       size_id: {
+    size_id: {
       type: Schema.Types.ObjectId,
       required: true,
     },
