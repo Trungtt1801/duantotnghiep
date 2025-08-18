@@ -259,7 +259,7 @@ router.post("/create", upload.array("images", 10), async (req, res) => {
       variants,
       category_id: data.category_id,
       isHidden,
-      shop_id: Number(data.shop_id || 1),
+      shop_id: data.shop_id, // Lấy shop_id từ body
       description: data.description,
       sale_count: Number(data.sale_count || 0),
     };

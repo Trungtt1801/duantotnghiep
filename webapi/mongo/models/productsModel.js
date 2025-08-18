@@ -8,7 +8,7 @@ const productSchema = new Schema({
   price: { type: Number, required: true },
   sale: { type: Number, required: true },
   material: { type: String, required: false },
-  shop_id: { type: ObjectId, ref:"Shop", required :true },
+  shop_id: { type: ObjectId, ref: "Shop", required: true },
   create_at: { type: Date, default: Date.now },
   description: { type: String, required: true },
   sale_count: { type: Number },
