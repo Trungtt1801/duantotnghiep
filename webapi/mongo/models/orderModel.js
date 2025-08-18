@@ -22,28 +22,6 @@ const OrderSchema = new Schema(
       ],
       required: true,
     },
-    status_history: [
-      {
-        status: {
-          type: String,
-          enum: [
-            "pending",
-            "preparing",
-            "awaiting_shipment",
-            "confirmed",
-            "shipping",
-            "delivered",
-            "failed",
-            "cancelled",
-            "refund",
-          ],
-          required: true,
-        },
-        updatedAt: { type: Date, default: Date.now },
-        note: { type: String },
-      },
-    ],
-
     // ✅ Địa chỉ nếu là người dùng đăng nhập
     address_id: {
       type: Schema.Types.ObjectId,

@@ -11,7 +11,7 @@ const OrderDetailSchema = new Schema(
     },
     order_shop_id: {
       type: Schema.Types.ObjectId,
-      ref: "orderShop", // <- gắn vào orderShop
+      ref: "orderShop", 
       required: true,
     },
     shop_id: {
