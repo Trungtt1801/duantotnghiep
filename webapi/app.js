@@ -10,21 +10,20 @@ const cookieParser = require("cookie-parser");
 const logger = require("morgan");
 const mongoose = require("mongoose");
 
-// Import các router
-const indexRouter = require("./routes/index");
-const usersRouter = require("./routes/user");
-const productRouter = require("./routes/products");
-const categoryRouter = require("./routes/category");
-const cartRouter = require("./routes/cart");
-const productvariantRouter = require("./routes/productVariant");
-const orderRouter = require("./routes/order");
-const voucherRouter = require("./routes/voucher");
-const addressRouter = require("./routes/address");
-const reviewRouter = require("./routes/review");
-const orderDetailRouter = require("./routes/orderDetail");
-const chatRouter = require("./routes/chat");
-
-const app = express();
+var indexRouter = require("./routes/index");
+var usersRouter = require("./routes/user");
+var productRouter = require("./routes/products");
+var categoryRouter = require("./routes/category");
+var cartRouter = require("./routes/cart");
+var productvariantRouter = require("./routes/productVariant");
+var orderRouter = require("./routes/order");
+var voucherRouter = require("./routes/voucher");
+var addressRouter = require("./routes/address");
+var reviewRouter = require("./routes/review");
+var orderDetailRouter = require("./routes/orderDetail");
+var chatRouter = require("./routes/chat");
+var shopRouter = require("./routes/shop");
+var app = express();
 app.use(cors());
 
 // view engine setup
