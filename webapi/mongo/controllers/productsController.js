@@ -76,7 +76,7 @@ async function addProduct(data) {
       sale,
       material,
       isHidden: isHidden ?? false,
-      shop_id: shop_id || 1,
+      shop_id,
       description,
       sale_count,
       category_id: {

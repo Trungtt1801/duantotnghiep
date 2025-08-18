@@ -21,6 +21,7 @@ var addressRouter = require("./routes/address");
 var reviewRouter = require("./routes/review");
 var orderDetailRouter = require("./routes/orderDetail");
 var chatRouter = require("./routes/chat");
+var shopRouter = require("./routes/shop");
 var app = express();
 app.use(cors());
 // view engine setup
@@ -47,6 +48,7 @@ app.use("/voucher", voucherRouter);
 app.use("/review", reviewRouter);
 app.use("/orderDetail", orderDetailRouter);
 app.use("/chat", chatRouter);
+app.use("/shop", shopRouter);
 
 app.use(function (req, res, next) {
   next(createError(404));
