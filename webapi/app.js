@@ -53,6 +53,7 @@ app.use("/api/voucher", voucherRouter);
 app.use("/api/review", reviewRouter);
 app.use("/api/orderDetail", orderDetailRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/shop", shopRouter);
 
 // 404 handler
 app.use(function (req, res, next) {
