@@ -62,6 +62,7 @@ router.get("/", async (req, res) => {
   }
 });
 
+
 // https://fiyo.click/api/products?page=1&limit=10
 router.get("/pro", async (req, res) => {
   try {
