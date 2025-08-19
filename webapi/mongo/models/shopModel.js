@@ -37,11 +37,18 @@ const shopSchema = new mongoose.Schema(
     description: {
       type: String,
       default: "",
-      trim: true,
+    },
+    avatar: {
+      type: String,
+      default: "", // URL ảnh đại diện shop
+    },
+    banner: {
+      type: String,
+      default: "", // URL ảnh banner shop
     },
   },
   {
-    timestamps: { createdAt: "created_at", updatedAt: "updated_at" }, 
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
   }
 );
 

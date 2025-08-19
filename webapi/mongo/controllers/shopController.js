@@ -1,9 +1,10 @@
 const Shop = require("../models/shopModel");
 
 // 🟢 Tạo shop mới
+// 🟢 Tạo shop mới
 async function createShop(data) {
   try {
-    const { user_id, name, address, phone, email, status, description } = data;
+    const { user_id, name, address, phone, email, status, description, avatar } = data;
 
     const shop = new Shop({
       user_id,
@@ -13,6 +14,7 @@ async function createShop(data) {
       email,
       status,
       description,
+      avatar: avatar || "", // có thể nhận avatar nếu frontend gửi kèm
     });
 
     await shop.save();
@@ -23,7 +25,7 @@ async function createShop(data) {
   }
 }
 
-// 🟢 Lấy tất cả shop
+
 async function getAllShops() {
   try {
     const shops = await Shop.find().populate("user_id", "name email phone");
@@ -34,7 +36,6 @@ async function getAllShops() {
   }
 }
 
-// 🟢 Lấy shop theo ID
 async function getShopById(id) {
   try {
     const shop = await Shop.findById(id).populate("user_id", "name email phone");
@@ -48,7 +49,6 @@ async function getShopById(id) {
   }
 }
 
-// 🟢 Cập nhật shop
 async function updateShop(id, data) {
   try {
     const { name, address, phone, email, status, description } = data;
@@ -70,7 +70,6 @@ async function updateShop(id, data) {
   }
 }
 
-// 🟢 Xóa shop
 async function deleteShop(id) {
   try {
     const shop = await Shop.findByIdAndDelete(id);
@@ -108,7 +107,6 @@ async function toggleShopStatus(id) {
       throw new Error("Không tìm thấy shop");
     }
 
-    // Nếu đang active thì chuyển sang inactive, ngược lại mở khóa
     shop.status = shop.status === "active" ? "inactive" : "active";
     await shop.save();
 
