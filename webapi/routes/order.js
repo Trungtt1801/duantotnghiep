@@ -141,14 +141,8 @@ router.get("/test-point", async (req, res) => {
   }
 });
 
-router.post("/zalopay-callback", async (req, res) => {
-  try {
-    const result = await orderController.zaloCallback(req.body);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+
+
 // localhost:3000/orders/zalopay
 router.post("/zalopay", async (req, res) => {
   try {
@@ -167,6 +161,14 @@ router.get("/zalopay_return", async (req, res) => {
     res.redirect(returnUrl);
   } catch (err) {
     res.redirect("/thanh-toan-that-bai");
+  }
+});
+router.post("/zalopay-callback", async (req, res) => {
+  try {
+    const result = await orderController.zaloCallback(req.body);
+    res.json({ return_code: 1, return_message: "success" });
+  } catch (error) {
+    res.json({ return_code: 0, return_message: "error" });
   }
 });
 
