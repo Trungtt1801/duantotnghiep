@@ -51,11 +51,11 @@ async function getShopById(id) {
 
 async function updateShop(id, data) {
   try {
-    const { name, address, phone, email, status, description } = data;
+    const { name, address, phone, email, status, description, avatar } = data;
 
     const shop = await Shop.findByIdAndUpdate(
       id,
-      { name, address, phone, email, status, description },
+      { name, address, phone, email, status, description, avatar },
       { new: true, runValidators: true }
     );
 

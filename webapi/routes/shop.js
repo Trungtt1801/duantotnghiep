@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 function mapImagePath(file) {
-  return file ? `/images/${file.filename}` : "";
+  return file ? `http://localhost:3000//images/${file.filename}` : "";
 }
 
 
@@ -44,7 +44,7 @@ router.post(
       }
 
       const shop = await shopController.createShop(req.body);
-      return res.status(201).json(shop);
+      return res.status(200).json(shop);
     } catch (error) {
       console.error("POST /shops lỗi:", error);
       return res.status(400).json({ message: error.message || "Lỗi tạo shop" });
