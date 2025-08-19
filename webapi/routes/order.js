@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const orderController = require("../mongo/controllers/orderController");
-const { createVnpayPayment } = require("../mongo/untils/vnpay");
+// ❌ BỎ import createVnpayPayment để tránh tạo 2 mã giao dịch
+// const { createVnpayPayment } = require("../mongo/untils/vnpay");
 const orderModel = require("../mongo/models/orderModel");
 
 // [GET] Lấy tất cả đơn hàng
-// URL: https://fiyo.click/api/orders
 router.get("/", async (req, res) => {
   try {
     const result = await orderController.getAllOrders();
@@ -19,7 +19,6 @@ router.get("/", async (req, res) => {
 });
 
 // [POST] Tạo đơn hàng
-// URL: https://fiyo.click/api/orders
 router.post("/", async (req, res) => {
   try {
     const result = await orderController.addOrder(req.body);
@@ -29,6 +28,8 @@ router.post("/", async (req, res) => {
     return res.status(500).json({ status: false, message: "Lỗi tạo đơn hàng" });
   }
 });
+
+// [POST] Tạo đơn hàng guest
 router.post("/guess", async (req, res) => {
   try {
     const result = await orderController.addOrderForGuest(req.body);
@@ -39,6 +40,7 @@ router.post("/guess", async (req, res) => {
   }
 });
 
+// [GET] Xác nhận đơn hàng guest qua link email
 router.get("/confirm-order/:id", async (req, res) => {
   try {
     const orderId = req.params.id;
@@ -46,11 +48,13 @@ router.get("/confirm-order/:id", async (req, res) => {
 
     if (!order) return res.status(404).send("Không tìm thấy đơn hàng");
 
-    if (order.status_order !== "pending") {
+    // ✅ Đã sửa logic: nếu đã pending thì báo đã xác nhận; nếu chưa thì chuyển sang pending
+    if (order.status_order === "pending") {
       return res.send("✅ Đơn hàng đã được xác nhận hoặc xử lý trước đó");
     }
 
     order.status_order = "pending";
+    if (!Array.isArray(order.status_history)) order.status_history = [];
     order.status_history.push({
       status: "pending",
       updatedAt: new Date(),
@@ -66,8 +70,7 @@ router.get("/confirm-order/:id", async (req, res) => {
   }
 });
 
-// [patch] Xác nhận đơn hàng
-// URL: https://fiyo.click/api/orders/:id/confirm
+// [PATCH] Xác nhận đơn hàng (admin)
 router.patch("/:id/confirm", async (req, res) => {
   try {
     const { id } = req.params;
@@ -81,8 +84,7 @@ router.patch("/:id/confirm", async (req, res) => {
   }
 });
 
-// [patch] Cập nhật trạng thái đơn hàng
-// URL: https://fiyo.click/api/orders/:id/status
+// [PATCH] Cập nhật trạng thái đơn hàng
 router.patch("/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
@@ -96,8 +98,7 @@ router.patch("/:id/status", async (req, res) => {
   }
 });
 
-// [patch] Cập nhật thanh toán
-// URL: https://fiyo.click/api/orders/:id/payment
+// [PATCH] Cập nhật thanh toán
 router.patch("/:id/payment", async (req, res) => {
   try {
     const result = await orderController.updatePayment(req.params.id, req.body);
@@ -107,8 +108,7 @@ router.patch("/:id/payment", async (req, res) => {
   }
 });
 
-// [patch] Hủy đơn hàng
-// URL: https://fiyo.click/api/orders/:id/cancel?admin=true
+// [PATCH] Hủy đơn hàng
 router.patch("/:id/cancel", async (req, res) => {
   try {
     const isAdmin = req.query.admin === "true";
@@ -120,7 +120,6 @@ router.patch("/:id/cancel", async (req, res) => {
 });
 
 // [GET] Lọc đơn hàng
-// URL: https://fiyo.click/api/orders/filter?status=delivered&customerId=abc123
 router.get("/filter", async (req, res) => {
   try {
     const result = await orderController.filterOrders(req.query);
@@ -129,9 +128,10 @@ router.get("/filter", async (req, res) => {
     return res.status(500).json({ status: false, message: "Lỗi lọc đơn hàng" });
   }
 });
+
+// Test cộng điểm
 router.get("/test-point", async (req, res) => {
   try {
-    // Thay userId và số điểm tùy bạn
     await orderController.updateUserPoint("686f6d68be04b218525ff55f", 200000);
     res.json({ status: true, message: "Cộng điểm thành công" });
   } catch (err) {
@@ -139,9 +139,7 @@ router.get("/test-point", async (req, res) => {
   }
 });
 
-
-
-// localhost:3000/orders/zalopay
+// [POST] ZaloPay
 router.post("/zalopay", async (req, res) => {
   try {
     const result = await orderController.createOrderWithZaloPay(req.body);
@@ -149,27 +147,30 @@ router.post("/zalopay", async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-}); 
-// ZaloPay return sau khi thanh toán thành công
-// Controller xử lý khi ZaloPay redirect về
+});
+
+// [GET] ZaloPay return
 router.get("/zalopay_return", async (req, res) => {
   try {
     await orderController.zaloCallback(req.query);
-    const returnUrl = req.query.return_url || "/order"; // fallback
+    const returnUrl = req.query.return_url || "/order";
     res.redirect(returnUrl);
   } catch (err) {
     res.redirect("/thanh-toan-that-bai");
   }
 });
+
+// [POST] ZaloPay callback (server to server)
 router.post("/zalopay-callback", async (req, res) => {
   try {
-    const result = await orderController.zaloCallback(req.body);
+    await orderController.zaloCallback(req.body);
     res.json({ return_code: 1, return_message: "success" });
   } catch (error) {
     res.json({ return_code: 0, return_message: "error" });
   }
 });
 
+// [POST] VNPAY guest
 router.post("/vnpay-guest", async (req, res) => {
   try {
     const {
@@ -193,7 +194,7 @@ router.post("/vnpay-guest", async (req, res) => {
       email: customer_info.email,
       address: customer_info.address,
       type: customer_info.type,
-      detail: "", // có thể lấy thêm nếu có
+      detail: "",
     };
 
     const newOrder = await orderController.addOrderForGuest({
@@ -220,15 +221,14 @@ router.post("/vnpay-guest", async (req, res) => {
   }
 });
 
-
-// localhost:3000/orders/vnpay
+// [POST] VNPAY — gọi thẳng controller để tránh tạo 2 mã giao dịch
 router.post("/vnpay", async (req, res) => {
   try {
     const {
       user_id,
       total_price,
       products,
-      locale,
+      locale,     // FE có thể gửi, controller không dùng
       address_id,
       voucher_id
     } = req.body;
@@ -240,35 +240,25 @@ router.post("/vnpay", async (req, res) => {
       req.connection?.socket?.remoteAddress ||
       "127.0.0.1";
 
-    // ✅ Gọi hàm thanh toán VNPAY với 4 tham số như cũ
-    const vnpayRes = await createVnpayPayment(
-      total_price,
-      user_id,
-      ipAddr,
-      locale
-    );
-
-    // ✅ Gọi tạo đơn hàng sau khi có URL thanh toán
-    const newOrder = await orderController.addOrder({
+    const result = await orderController.addOrder({
       user_id,
       total_price,
       payment_method: "vnpay",
       products,
-      transaction_code: vnpayRes.transaction_code,
       ip: ipAddr,
-      address_id,   // ✅ Optional – thêm nếu BE chấp nhận
-      voucher_id,   // ✅ Optional – thêm nếu BE chấp nhận
+      address_id,
+      voucher_id,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       status: true,
       message: "Tạo đơn hàng thành công",
-      payment_url: vnpayRes.payment_url,
-      order: newOrder.order,
+      payment_url: result.payment_url,
+      order: result.order,
     });
   } catch (err) {
-    console.error("🔥 Lỗi chi tiết khi tạo đơn hàng VNPAY:", err);
-    res.status(500).json({
+    console.error("🔥 Lỗi tạo đơn hàng VNPAY:", err);
+    return res.status(500).json({
       status: false,
       message: "Lỗi tạo đơn hàng VNPAY",
       error: err.message,
@@ -276,30 +266,31 @@ router.post("/vnpay", async (req, res) => {
   }
 });
 
-
+// [GET] VNPAY return
 router.get("/vnpay_return", async (req, res) => {
   try {
-    console.log("📥 VNPay return query:", req.query); // ✅ Log query
+    console.log("📥 VNPay return query:", req.query);
     await orderController.vnpayCallback(req.query);
     return res.redirect(`${process.env.CLIENT_URL}/page/payment/success/${req.query.vnp_TxnRef}`);
   } catch (err) {
-    console.error("❌ VNPay Callback Lỗi:", err.message); // ✅ Log lỗi rõ hơn
+    console.error("❌ VNPay Callback Lỗi:", err.message);
     return res.redirect("/page/payment/fail");
   }
 });
+
+// [GET] VNPAY return (guest)
 router.get("/vnpay_return_guess", async (req, res) => {
   try {
-    console.log("📥 VNPay return query:", req.query); // ✅ Log query
+    console.log("📥 VNPay return query:", req.query);
     await orderController.vnpayCallbackForGuest(req.query);
     return res.redirect(`${process.env.CLIENT_URL}/page/payment_guess/success/${req.query.vnp_TxnRef}`);
   } catch (err) {
-    console.error("❌ VNPay Callback Lỗi:", err.message); // ✅ Log lỗi rõ hơn
+    console.error("❌ VNPay Callback Lỗi:", err.message);
     return res.redirect("/page/payment/fail");
   }
 });
 
-
-// IPN từ VNPAY
+// [GET] VNPAY IPN
 router.get("/vnpay_ipn", async (req, res) => {
   try {
     await orderController.vnpayCallback(req.query);
@@ -311,7 +302,8 @@ router.get("/vnpay_ipn", async (req, res) => {
     });
   }
 });
-// localhost:3000/orders/user/:userId
+
+// [GET] Lấy đơn hàng theo user
 router.get("/user/:userId", async (req, res) => {
   try {
     const orders = await orderController.getOrdersByUserId(req.params.userId);
@@ -320,8 +312,8 @@ router.get("/user/:userId", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
 // [GET] Lấy đơn hàng theo ID
-// URL: https://fiyo.click/api/orders/:id
 router.get("/:id", async (req, res) => {
   try {
     const result = await orderController.getOrderById(req.params.id);
@@ -338,7 +330,6 @@ router.get("/:id", async (req, res) => {
 });
 
 // [DELETE] Xóa đơn hàng
-// URL: https://fiyo.click/api/orders/:id
 router.delete("/:id", async (req, res) => {
   try {
     const result = await orderController.deleteOrder(req.params.id);
@@ -351,8 +342,7 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-
-// Route GET cho link xác nhận qua email
+// [GET] Confirm guest (GUI)
 router.get("/confirm-guess/:orderId", async (req, res) => {
   const { orderId } = req.params;
 
@@ -376,7 +366,6 @@ router.get("/confirm-guess/:orderId", async (req, res) => {
       return res.status(404).send("Không tìm thấy đơn hàng");
     }
 
-    // Gửi giao diện xác nhận đơn hàng thành công
     return res.send(`
       <h2>✅ Đơn hàng đã được xác nhận thành công!</h2>
       <p>Cảm ơn bạn đã xác nhận đơn hàng. Chúng tôi sẽ tiến hành xử lý sớm nhất.</p>
@@ -387,6 +376,7 @@ router.get("/confirm-guess/:orderId", async (req, res) => {
   }
 });
 
+// [PUT] Confirm guest (API)
 router.put("/confirm-guess/:orderId", async (req, res) => {
   const { orderId } = req.params;
 
@@ -403,7 +393,7 @@ router.put("/confirm-guess/:orderId", async (req, res) => {
           },
         },
       },
-      { new: true } // Trả về bản ghi đã cập nhật
+      { new: true }
     );
 
     if (!updated) {

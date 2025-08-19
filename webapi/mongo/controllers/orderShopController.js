@@ -1,79 +1,249 @@
 const mongoose = require("mongoose");
-const OrderModel = require("../models/orderModel");
-const OrderShopModel = require("../models/orderShopModel"); 
-const OrderDetailModel = require("../models/orderDetailModel");
-const userModels = require("../models/userModels");
+const OrderShop = require("../models/orderShopModel");
+const Order = require("../models/orderModel");
+const OrderDetail = require("../models/orderDetailModel");
+// const Product = require("../models/productsModel"); // ❌ Không dùng, bỏ
 
-const STATUS = [
-  "pending",
-  "confirmed",
-  "preparing",
-  "awaiting_shipment",
-  "shipping",
-  "delivered",
-  "failed",
-  "cancelled",
-  "refund",
-];
+const statusTranslations = {
+  pending: "Đang chờ xử lý",
+  confirmed: "Đã xác nhận",
+  preparing: "Đang chuẩn bị hàng",
+  awaiting_shipment: "Chờ giao hàng",
+  shipping: "Đang vận chuyển",
+  delivered: "Đã giao hàng",
+  failed: "Thất bại",
+  cancelled: "Đã hủy",
+  refund: "Hoàn tiền",
+};
 
-// Lấy tất cả OrderShop theo order cha
-async function getOrderShopsByOrderId(orderId) {
-  return await OrderShopModel.find({ order_id: orderId }).sort({ createdAt: -1 });
+const ALLOWED_STATUS = Object.keys(statusTranslations);
+
+function parsePaging(query) {
+  const page = Math.max(parseInt(query.page || "1", 10), 1);
+  const limit = Math.min(Math.max(parseInt(query.limit || "20", 10), 1), 100);
+  const skip = (page - 1) * limit;
+  return { page, limit, skip };
 }
 
-// Lấy OrderShop theo shop (dành cho seller dashboard)
-async function getOrderShopsByShop(shop_id, { status, fromDate, toDate } = {}) {
-  const filter = { shop_id };
+// Đồng bộ trạng thái đơn cha dựa trên trạng thái các OrderShop con
+async function syncParentOrderStatus(orderId) {
+  const shops = await OrderShop.find({ order_id: orderId }).lean();
+  if (!shops.length) return;
+
+  const statuses = shops.map((s) => s.status_order);
+
+  const allDelivered = statuses.every((s) => s === "delivered");
+  const allCancelledLike = statuses.every((s) =>
+    ["cancelled", "failed", "refund"].includes(s)
+  );
+
+  let next = null;
+  if (allDelivered) next = "delivered";
+  else if (allCancelledLike) next = "cancelled";
+  else if (statuses.includes("shipping")) next = "shipping";
+  else if (statuses.includes("awaiting_shipment")) next = "awaiting_shipment";
+  else if (statuses.includes("preparing")) next = "preparing";
+  else if (statuses.includes("confirmed")) next = "confirmed";
+  else next = "pending";
+
+  const order = await Order.findById(orderId);
+  if (!order) return;
+
+  if (order.status_order !== next) {
+    order.status_order = next;
+    if (!Array.isArray(order.status_history)) order.status_history = [];
+    order.status_history.push({
+      status: next,
+      updatedAt: new Date(),
+      note: `Đồng bộ từ OrderShop → "${statusTranslations[next]}"`,
+    });
+    await order.save();
+  }
+}
+
+/* ------------------ Controllers ------------------ */
+
+// [GET] Lấy tất cả OrderShop (admin)
+async function getAllOrderShops() {
+  return await OrderShop.find()
+    .sort({ createdAt: -1 })
+    .populate("order_id shop_id");
+}
+
+// [GET] Lọc OrderShop theo query
+async function filterOrderShops(query) {
+  const { shop_id, status, fromDate, toDate } = query;
+  const { skip, limit, page } = parsePaging(query);
+
+  const filter = {};
+  if (shop_id) filter.shop_id = shop_id;
   if (status) filter.status_order = status;
   if (fromDate || toDate) {
     filter.createdAt = {};
     if (fromDate) filter.createdAt.$gte = new Date(fromDate);
     if (toDate) filter.createdAt.$lte = new Date(toDate);
   }
-  return await OrderShopModel.find(filter).sort({ createdAt: -1 });
+
+  const [items, total] = await Promise.all([
+    OrderShop.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("order_id shop_id"),
+    OrderShop.countDocuments(filter),
+  ]);
+
+  return {
+    items,
+    page,
+    limit,
+    total,
+    total_pages: Math.ceil(total / limit),
+  };
 }
 
-// Cập nhật trạng thái đơn con theo shop
-async function updateOrderShopStatus(orderShopId, newStatus, note = "") {
-  if (!STATUS.includes(newStatus)) throw new Error("Trạng thái không hợp lệ");
+// [GET] Lấy OrderShop theo shop (seller)
+async function getOrderShopsByShopId(shopId, query = {}) {
+  const { skip, limit, page } = parsePaging(query);
+  const filter = { shop_id: shopId };
+  if (query.status) filter.status_order = query.status;
+
+  const [items, total] = await Promise.all([
+    OrderShop.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("order_id shop_id"),
+    OrderShop.countDocuments(filter),
+  ]);
+
+  return {
+    items,
+    page,
+    limit,
+    total,
+    total_pages: Math.ceil(total / limit),
+  };
+}
+
+// ✅ [GET] Lấy OrderShop theo order cha (hay dùng ở trang chi tiết đơn)
+async function getOrderShopsByOrderId(orderId, query = {}) {
+  const { skip, limit, page } = parsePaging(query);
+  const filter = { order_id: orderId };
+  if (query.status) filter.status_order = query.status;
+
+  const [items, total] = await Promise.all([
+    OrderShop.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("order_id shop_id"),
+    OrderShop.countDocuments(filter),
+  ]);
+
+  return {
+    items,
+    page,
+    limit,
+    total,
+    total_pages: Math.ceil(total / limit),
+  };
+}
+
+// [GET] Lấy 1 OrderShop theo ID
+async function getOrderShopById(id) {
+  return await OrderShop.findById(id).populate("order_id shop_id");
+}
+
+// [GET] Lấy các OrderDetail thuộc một OrderShop
+async function getDetailsByOrderShopId(orderShopId) {
+  const BASE_URL = "https://fiyo.click/api/images/";
+
+  const details = await OrderDetail.find({ order_shop_id: orderShopId })
+    .populate({
+      path: "product_id",
+      select: "name images price",
+    })
+    .lean();
+
+  return details.map((d) => ({
+    _id: d._id,
+    order_id: d.order_id,
+    order_shop_id: d.order_shop_id,
+    shop_id: d.shop_id,
+    quantity: d.quantity,
+    variant_id: d.variant_id,
+    size_id: d.size_id,
+    product: d.product_id
+      ? {
+          _id: d.product_id._id,
+          name: d.product_id.name,
+          price: d.product_id.price,
+          images: Array.isArray(d.product_id.images)
+            ? d.product_id.images.map((img) =>
+                /^http/.test(img) ? img : `${BASE_URL}${img}`
+              )
+            : [],
+        }
+      : null,
+    createdAt: d.createdAt,
+    updatedAt: d.updatedAt,
+  }));
+}
+
+// [PATCH] Cập nhật trạng thái OrderShop
+async function updateOrderShopStatus(id, status, note = "") {
+  if (!ALLOWED_STATUS.includes(status)) {
+    throw new Error("Trạng thái không hợp lệ");
+  }
+
+  const os = await OrderShop.findById(id);
+  if (!os) throw new Error("Không tìm thấy OrderShop");
+
+  os.status_order = status;
+  if (!Array.isArray(os.status_history)) os.status_history = [];
+  os.status_history.push({
+    status,
+    updatedAt: new Date(),
+    note: note || `Cập nhật trạng thái sang "${statusTranslations[status]}"`,
+  });
+
+  await os.save();
+
+  // Đồng bộ trạng thái đơn cha
+  await syncParentOrderStatus(os.order_id);
+
+  return os;
+}
+
+// [PATCH] Hủy một OrderShop
+async function cancelOrderShop(id, note = "") {
+  return await updateOrderShopStatus(id, "cancelled", note || "Seller hủy đơn");
+}
+
+// [PATCH] Hoàn tiền một OrderShop
+async function refundOrderShop(id, note = "") {
+  return await updateOrderShopStatus(id, "refund", note || "Hoàn tiền đơn");
+}
+
+// [DELETE] Xoá một OrderShop + chi tiết của nó (transaction an toàn)
+async function deleteOrderShop(id) {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const orderShop = await OrderShopModel.findById(orderShopId).session(session);
-    if (!orderShop) throw new Error("Không tìm thấy OrderShop");
+    const os = await OrderShop.findById(id).session(session);
+    if (!os) throw new Error("Không tìm thấy OrderShop");
 
-    orderShop.status_order = newStatus;
-    orderShop.status_history.push({ status: newStatus, updatedAt: new Date(), note });
-    await orderShop.save({ session });
-
-    // Nếu tất cả OrderShop đã delivered → cập nhật Order cha là delivered
-    const others = await OrderShopModel.find({ order_id: orderShop.order_id }).session(session);
-    const allDelivered = others.length > 0 && others.every(os => os.status_order === "delivered");
-    if (allDelivered) {
-      const order = await OrderModel.findById(orderShop.order_id).session(session);
-      if (order) {
-        order.status_order = "delivered";
-        order.status_history.push({ status: "delivered", updatedAt: new Date(), note: "Tất cả shop đã giao" });
-        // Nếu COD và chưa paid → set paid
-        if (order.payment_method === "cod" && order.transaction_status !== "paid") {
-          order.transaction_status = "paid";
-          // Cộng điểm (nếu muốn giữ như controller cũ)
-          if (order.user_id) {
-            const reward = Math.floor((order.total_price || 0) / 1000);
-            const user = await userModels.findById(order.user_id).session(session);
-            if (user) {
-              user.point = (user.point || 0) + reward;
-              await user.save({ session, validateBeforeSave: false });
-            }
-          }
-        }
-        await order.save({ session });
-      }
-    }
+    await OrderDetail.deleteMany({ order_shop_id: id }, { session });
+    await OrderShop.findByIdAndDelete(id, { session });
 
     await session.commitTransaction();
     session.endSession();
-    return orderShop;
+
+    // Đồng bộ trạng thái đơn cha
+    await syncParentOrderStatus(os.order_id);
+
+    return true;
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
@@ -81,34 +251,15 @@ async function updateOrderShopStatus(orderShopId, newStatus, note = "") {
   }
 }
 
-// Cập nhật thông tin vận chuyển cho đơn con (seller nhập mã vận đơn, phí ship…)
-async function updateOrderShopShipping(orderShopId, { carrier, service_code, tracking_code, fee, eta }) {
-  const orderShop = await OrderShopModel.findById(orderShopId);
-  if (!orderShop) throw new Error("Không tìm thấy OrderShop");
-  orderShop.shipping = orderShop.shipping || {};
-  if (carrier !== undefined) orderShop.shipping.carrier = carrier;
-  if (service_code !== undefined) orderShop.shipping.service_code = service_code;
-  if (tracking_code !== undefined) orderShop.shipping.tracking_code = tracking_code;
-  if (fee !== undefined) orderShop.shipping.fee = fee;
-  if (eta !== undefined) orderShop.shipping.eta = eta;
-  await orderShop.save();
-  return orderShop;
-}
-
-// Hủy đơn con theo shop (không ảnh hưởng trực tiếp các shop khác)
-async function cancelOrderShop(orderShopId, note = "") {
-  const orderShop = await OrderShopModel.findById(orderShopId);
-  if (!orderShop) throw new Error("Không tìm thấy OrderShop");
-  orderShop.status_order = "cancelled";
-  orderShop.status_history.push({ status: "cancelled", updatedAt: new Date(), note });
-  await orderShop.save();
-  return orderShop;
-}
-
 module.exports = {
-  getOrderShopsByOrderId,
-  getOrderShopsByShop,
+  getAllOrderShops,
+  filterOrderShops,
+  getOrderShopsByShopId,
+  getOrderShopsByOrderId, // ✅ export mới
+  getOrderShopById,
+  getDetailsByOrderShopId,
   updateOrderShopStatus,
-  updateOrderShopShipping,
   cancelOrderShop,
+  refundOrderShop,
+  deleteOrderShop,
 };

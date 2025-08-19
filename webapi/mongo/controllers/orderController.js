@@ -49,27 +49,45 @@ async function getOrderById(id) {
   }
 }
 
-// Nhóm items theo shop_id + tính subtotal
+
 async function groupItemsByShop(items) {
   // items: [{ product_id, variant_id, size_id, quantity, image, price? }]
+  // -> tránh N+1: fetch tất cả product 1 lần
+  const ids = [...new Set(items.map(i => i.product_id?.toString()))];
+
+  const products = await Product.find({ _id: { $in: ids } })
+    .select("shop_id name price")
+    .lean();
+
+  const prodMap = new Map(products.map(p => [p._id.toString(), p]));
+
   const byShop = {}; // { shopId: { items: [], subtotal: number } }
+
   for (const item of items) {
-    const prod = await Product.findById(item.product_id).select("shop_id name price").lean();
+    const pid = item.product_id?.toString();
+    const prod = prodMap.get(pid);
+
     if (!prod || !prod.shop_id) {
-      throw new Error("Sản phẩm không có shop_id");
+      throw new Error(`Sản phẩm ${pid} không có shop_id`);
     }
+
     const shopId = prod.shop_id.toString();
     if (!byShop[shopId]) byShop[shopId] = { items: [], subtotal: 0 };
+
     const linePrice = item.price ?? prod.price ?? 0;
+
     byShop[shopId].items.push({
       ...item,
       _product_name: prod.name,
       _line_price: linePrice,
     });
+
     byShop[shopId].subtotal += linePrice * (item.quantity || 0);
   }
+
   return byShop;
 }
+
 
 async function addOrder(data) {
   const {
@@ -78,16 +96,13 @@ async function addOrder(data) {
     voucher_id,
     total_price,
     payment_method,
-    products, // [{ product_id, quantity, image, variant_id, size_id, price? }]
+    products,
     ip,
   } = data;
 
   if (!user_id || !total_price || !payment_method || !products || products.length === 0) {
     throw new Error("Thiếu thông tin bắt buộc hoặc thiếu sản phẩm");
   }
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
 
   try {
     let transaction_code = null;
@@ -106,31 +121,31 @@ async function addOrder(data) {
       status_history: [{ status: "pending", updatedAt: new Date(), note: "Khởi tạo đơn" }],
     });
 
-    const savedOrder = await newOrder.save({ session });
+    const savedOrder = await newOrder.save();
 
     // 2) Nhóm sản phẩm theo shop
     const grouped = await groupItemsByShop(products);
 
-    // 3) Tạo OrderShop cho từng shop (chỉ truyền field có trong schema)
-    const orderShopMap = {}; // shopId -> OrderShop doc
+    // 3) Tạo OrderShop cho từng shop
+    const orderShopMap = {};
     for (const [shopId, pack] of Object.entries(grouped)) {
       const subtotal = pack.subtotal;
-      const shippingFee = 0; // tuỳ bạn tính sau
-      const discount = 0;    // nếu có voucher theo shop
+      const shippingFee = 0;
+      const discount = 0;
       const total = subtotal + shippingFee - discount;
 
-      const os = await OrderShopModel.create([{
+      const os = await OrderShopModel.create({
         order_id: savedOrder._id,
         shop_id: shopId,
-        total_price: total, // ✅ chỉ field có trong schema
+        total_price: total,
         status_order: "pending",
         status_history: [{ status: "pending", updatedAt: new Date(), note: "Đơn con khởi tạo" }],
-      }], { session });
+      });
 
-      orderShopMap[shopId] = os[0];
+      orderShopMap[shopId] = os;
     }
 
-    // 4) Lưu OrderDetail, gắn order_shop_id + shop_id
+    // 4) Lưu OrderDetail
     const detailsPayload = [];
     for (const [shopId, pack] of Object.entries(grouped)) {
       const osId = orderShopMap[shopId]._id;
@@ -144,16 +159,14 @@ async function addOrder(data) {
           quantity: item.quantity,
           variant_id: item.variant_id,
           size_id: item.size_id,
-          // price: item._line_price,
-          // product_name: item._product_name,
         });
       }
     }
     if (detailsPayload.length) {
-      await orderDetailModel.insertMany(detailsPayload, { session });
+      await orderDetailModel.insertMany(detailsPayload);
     }
 
-    // 5) Gọi thanh toán sau khi có order_id
+    // 5) Thanh toán
     if (payment_method.toLowerCase() === "zalopay") {
       const zaloRes = await createZaloPayOrder(
         total_price,
@@ -179,13 +192,9 @@ async function addOrder(data) {
     if (transaction_code) {
       await orderModel.updateOne(
         { _id: savedOrder._id },
-        { $set: { transaction_code } },
-        { session }
+        { $set: { transaction_code } }
       );
     }
-
-    await session.commitTransaction();
-    session.endSession();
 
     console.log("➡️ Final payment URL:", payment_url);
     return {
@@ -195,8 +204,6 @@ async function addOrder(data) {
       payment_url,
     };
   } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
     console.error("❌ addOrder error:", err.message);
     throw err;
   }
