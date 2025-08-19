@@ -9,19 +9,6 @@ require("dotenv").config();
 
 require("../models/addressModel");
 
-
-const statusTranslations = {
-  unpending: "Chưa xác nhận",
-  pending: "Đang chờ xử lý",
-  confirmed: "Đã xác nhận",
-  preparing: "Đang chuẩn bị hàng",
-  awaiting_shipment: "Chờ giao hàng",
-  shipping: "Đang vận chuyển",
-  delivered: "Đã giao hàng",
-  failed: "Thất bại",
-  cancelled: "Đã hủy",
-  refund: "Hoàn tiền",
-};
 //Lấy tất cả đơn hàng (dành cho admin)
 async function getAllOrders() {
   try {
@@ -431,7 +418,8 @@ async function updateOrderStatus(id, status) {
     order.status_history.push({
       status,
       updatedAt: new Date(),
-  note: `Cập nhật trạng thái sang "${statusTranslations[status]}"`,    });
+      note: `Cập nhật trạng thái sang ${status}`,
+    });
 
     // Save lại order
     await order.save();
@@ -480,7 +468,7 @@ async function updatePayment(id, { transaction_status, transaction_code }) {
       throw new Error("Trạng thái thanh toán không hợp lệ");
 
     const order = await orderModel.findById(id);
-    if (!order) throw new Error("Không tìm thấy đơn hàng");
+    if (!order) throw new Error("Không tìm thấy đơn hàng"); 
 
     order.transaction_status = transaction_status;
     if (transaction_code !== undefined) {
@@ -494,32 +482,28 @@ async function updatePayment(id, { transaction_status, transaction_code }) {
   }
 }
 
-async function cancelOrder(orderId, isAdmin, reason = "") {
-  const order = await orderModel.findById(orderId);
-  if (!order) throw new Error("Không tìm thấy đơn hàng");
+//Hủy đơn hàng (người dùng hoặc admin)
+async function cancelOrder(id, isAdmin = false) {
+  try {
+    const order = await orderModel.findById(id);
+    if (!order) throw new Error("Không tìm thấy đơn hàng");
 
-  // Người dùng chỉ được hủy khi pending
-  if (!isAdmin && order.status_order !== "pending") {
-    throw new Error("Không thể hủy đơn ở trạng thái này");
+    if (order.status_order !== "pending" && !isAdmin) {
+      throw new Error("Không thể hủy đơn hàng này");
+    }
+
+    order.status_order = "cancelled";
+    order.status_history.push({
+      status: "cancelled",
+      updatedAt: new Date(),
+      note: isAdmin ? "Admin huỷ đơn hàng" : "Người dùng huỷ đơn hàng",
+    });
+    return await order.save();
+  } catch (error) {
+    console.error("Lỗi hủy đơn hàng:", error.message);
+    throw new Error(error.message || "Lỗi khi hủy đơn hàng");
   }
-
-  // Cập nhật trạng thái & lý do (nếu có)
-  order.status_order = "cancelled";
-  if (reason.trim() !== "") {
-    order.cancel_reason = reason.trim();
-  }
-
-  // Lưu lịch sử
-  order.status_history.push({
-    status: "cancelled",
-    updatedAt: new Date(),
-    note: `${isAdmin ? "Admin" : "Người dùng"} hủy đơn${reason ? ` - Lý do: ${reason}` : ""}`
-  });
-
-  await order.save();
-  return order;
 }
-
 
 //Lọc đơn hàng theo user, trạng thái, ngày
 async function filterOrders(query) {
@@ -544,6 +528,7 @@ async function filterOrders(query) {
     throw new Error("Lỗi khi lọc đơn hàng");
   }
 }
+
 async function createOrderWithZaloPay(data) {
   try {
     const { user_id, address_id, voucher_id, total_price, products } = data;
@@ -577,7 +562,8 @@ async function createOrderWithZaloPay(data) {
       product_id: product.product_id,
       variant_id: product.variant_id, // nếu bạn có sử dụng variant
       quantity: product.quantity,
-      price: product.price,
+      size_id: product.size_id,
+      price: product.price, 
     }));
 
     await orderDetailModel.insertMany(orderDetails);
