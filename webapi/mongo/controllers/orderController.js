@@ -318,12 +318,10 @@ async function deleteOrder(id) {
 }
 
 //Xác nhận đơn hàng
-
 async function confirmOrder(id) {
   try {
     const order = await orderModel.findById(id);
     if (!order) throw new Error("Không tìm thấy đơn hàng");
-
     if (order.status_order !== "pending") {
       throw new Error("Chỉ đơn hàng ở trạng thái pending mới được xác nhận");
     }
@@ -426,7 +424,7 @@ async function updateOrderStatus(id, status) {
 
     // ✅ Nếu là COD, trạng thái mới là "delivered" và chưa paid → cập nhật
     if (
-      order.payment_method === "COD" &&
+      order.payment_method === "cod" &&
       status === "delivered" &&
       order.transaction_status !== "paid"
     ) {
@@ -493,11 +491,6 @@ async function cancelOrder(id, isAdmin = false) {
     }
 
     order.status_order = "cancelled";
-    order.status_history.push({
-      status: "cancelled",
-      updatedAt: new Date(),
-      note: isAdmin ? "Admin huỷ đơn hàng" : "Người dùng huỷ đơn hàng",
-    });
     return await order.save();
   } catch (error) {
     console.error("Lỗi hủy đơn hàng:", error.message);
@@ -560,6 +553,7 @@ async function createOrderWithZaloPay(data) {
     const orderDetails = products.map((product) => ({
       order_id: newOrder._id,
       product_id: product.product_id,
+      size_id: product.size_id, // nếu bạn có sử dụng size
       variant_id: product.variant_id, // nếu bạn có sử dụng variant
       quantity: product.quantity,
       size_id: product.size_id,
