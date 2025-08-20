@@ -3,7 +3,7 @@ const router = express.Router();
 
 const orderShopController = require("../mongo/controllers/orderShopController");
 
-// [GET] Lấy tất cả OrderShop (admin)
+// [GET] Lấy tất cả OrderShop 
 router.get("/", async (req, res) => {
   try {
     const result = await orderShopController.getAllOrderShops();

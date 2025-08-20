@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 const OrderShop = require("../models/orderShopModel");
 const Order = require("../models/orderModel");
 const OrderDetail = require("../models/orderDetailModel");
-// const Product = require("../models/productsModel"); // ❌ Không dùng, bỏ
 
 const statusTranslations = {
   pending: "Đang chờ xử lý",
@@ -61,9 +60,7 @@ async function syncParentOrderStatus(orderId) {
   }
 }
 
-/* ------------------ Controllers ------------------ */
-
-// [GET] Lấy tất cả OrderShop (admin)
+// [GET] Lấy tất cả OrderShop 
 async function getAllOrderShops() {
   return await OrderShop.find()
     .sort({ createdAt: -1 })
@@ -255,7 +252,7 @@ module.exports = {
   getAllOrderShops,
   filterOrderShops,
   getOrderShopsByShopId,
-  getOrderShopsByOrderId, // ✅ export mới
+  getOrderShopsByOrderId,
   getOrderShopById,
   getDetailsByOrderShopId,
   updateOrderShopStatus,
