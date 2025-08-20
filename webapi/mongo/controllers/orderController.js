@@ -9,6 +9,16 @@ const Product = require("../models/productsModel");
 const userModels = require("../models/userModels");
 const { createVnpayPaymentForGuest } = require("../untils/vnpayForGuest");
 require("dotenv").config();
+// --- Helpers ---
+function toIPv4(ip) {
+  if (!ip) return "127.0.0.1";
+  const first = String(ip).split(",")[0].trim();
+  return first.includes(":") ? "127.0.0.1" : first; // IPv6 -> IPv4
+}
+function normalizeLocale(loc) {
+  const l = String(loc || "vn").toLowerCase();
+  return l === "en" ? "en" : "vn";
+}
 
 require("../models/addressModel");
 
@@ -98,6 +108,7 @@ async function addOrder(data) {
     payment_method,
     products,
     ip,
+    locale,
   } = data;
 
   if (!user_id || !total_price || !payment_method || !products || products.length === 0) {
@@ -177,17 +188,19 @@ async function addOrder(data) {
       payment_url = zaloRes.order_url;
     }
 
-    if (payment_method.toLowerCase() === "vnpay") {
-      const ipAddr = ip || "127.0.0.1";
-      const vnpayRes = await createVnpayPayment(
-        total_price,
-        user_id,
-        ipAddr,
-        savedOrder._id.toString()
-      );
-      transaction_code = vnpayRes.transaction_code;
-      payment_url = vnpayRes.payment_url;
-    }
+   if (payment_method.toLowerCase() === "vnpay") {
+  const ipAddr = toIPv4(ip || "127.0.0.1");
+  const vnpLocale = normalizeLocale(locale);       
+  const vnpayRes = await createVnpayPayment(
+    total_price,
+    user_id,
+    ipAddr,
+    savedOrder._id.toString(),
+    vnpLocale                               
+  );
+  transaction_code = vnpayRes.transaction_code;
+  payment_url = vnpayRes.payment_url;
+}
 
     if (transaction_code) {
       await orderModel.updateOne(
@@ -217,6 +230,7 @@ async function addOrderForGuest(data) {
     payment_method,
     products, // [{ product_id, quantity, image, variant_id, size_id, price? }]
     ip,
+    locale,
   } = data;
 
   if (
@@ -309,16 +323,19 @@ async function addOrderForGuest(data) {
       payment_url = zaloRes.order_url;
     }
 
-    if (payment_method.toLowerCase() === "vnpay") {
-      const clientIP = ip || "127.0.0.1";
-      const vnpayRes = await createVnpayPaymentForGuest(
-        total_price,
-        clientIP,
-        savedOrder._id.toString()
-      );
-      transaction_code = vnpayRes.transaction_code;
-      payment_url = vnpayRes.payment_url;
-    }
+   if (payment_method.toLowerCase() === "vnpay") {
+  const clientIP = toIPv4(ip || "127.0.0.1");
+  const vnpLocale = normalizeLocale(locale);        // 'vn' | 'en'
+  const vnpayRes = await createVnpayPaymentForGuest(
+    total_price,
+    clientIP,
+    savedOrder._id.toString(),
+    vnpLocale                                   // <--- truyền locale
+  );
+  transaction_code = vnpayRes.transaction_code;
+  payment_url = vnpayRes.payment_url;
+}
+
 
     if (transaction_code) {
       await orderModel.updateOne(
