@@ -121,6 +121,16 @@ router.get("/pro", async (req, res) => {
   }
 });
 
+router.get("/shop/:shopId", async (req, res) => {
+  try {
+    const { shopId } = req.params;
+    const products = await productController.getProductsByShop(shopId);
+    res.status(200).json({ status: true, products });
+  } catch (error) {
+    res.status(400).json({ status: false, message: error.message });
+  }
+});
+
 
 // https://fiyo.click/api/products/search?name=Áo
 router.get("/search", async (req, res) => {

@@ -1,4 +1,5 @@
 const Shop = require("../models/shopModel");
+const Product = require("../models/productsModel");
 
 // 🟢 Tạo shop mới
 // 🟢 Tạo shop mới
@@ -116,6 +117,81 @@ async function toggleShopStatus(id) {
     throw new Error("Lỗi toggle trạng thái shop");
   }
 }
+// shop theo userid
+// shop theo userid
+async function getShopByUserId(userId) {
+  try {
+    const shop = await Shop.findOne({ user_id: userId })
+      .populate("user_id", "name email phone avatar")
+      .populate("followers", "name email avatar");
+
+    if (!shop) {
+      throw new Error("Người dùng này chưa có shop");
+    }
+
+    return {
+      _id: shop._id,
+      name: shop.name,
+      address: shop.address,
+      phone: shop.phone,
+      email: shop.email,
+      description: shop.description,
+      avatar: shop.avatar,
+      banner: shop.banner,
+      status: shop.status,
+      created_at: shop.created_at,
+      updated_at: shop.updated_at,
+
+      // 🟢 các trường mới
+      sale_count: shop.sale_count || 0,
+      rating: {
+        average: shop.rating?.average || 0,
+        count: shop.rating?.count || 0,
+      },
+      followers_count: shop.followers?.length || 0,
+      followers: shop.followers,
+
+      // chủ shop
+      owner: shop.user_id,
+    };
+  } catch (error) {
+    console.error("Lỗi lấy shop theo user_id:", error.message);
+    throw new Error("Lỗi lấy shop theo user_id");
+  }
+}
+
+async function getCategoriesByShop(shopId) {
+  try {
+    // lấy tất cả sản phẩm theo shopId
+    const products = await Product.find({ shop_id: shopId })
+      .populate("category_id.categoryId", "name"); // populate Category
+
+    if (!products || products.length === 0) {
+      return [];
+    }
+
+    // gom nhóm danh mục
+    const categoriesMap = new Map();
+
+    products.forEach((p) => {
+      if (p.category_id && p.category_id.categoryId) {
+        const id = String(p.category_id.categoryId._id);
+        if (!categoriesMap.has(id)) {
+          categoriesMap.set(id, {
+            _id: id,
+            name: p.category_id.categoryName,
+          });
+        }
+      }
+    });
+
+    return Array.from(categoriesMap.values());
+  } catch (err) {
+    console.error("Lỗi lấy danh mục theo shop:", err.message);
+    throw new Error("Lỗi lấy danh mục theo shop");
+  }
+}
+
 module.exports = {
   createShop,
   getAllShops,
@@ -123,5 +199,7 @@ module.exports = {
   updateShop,
   deleteShop,
   activateShop,
-  toggleShopStatus
+  toggleShopStatus,
+  getShopByUserId,
+  getCategoriesByShop
 };

@@ -144,4 +144,36 @@ router.patch("/:id/toggle-status", async (req, res) => {
   }
 });
 
+router.get("/user/:userId", async (req, res) => {
+  try {
+    const shop = await shopController.getShopByUserId(req.params.userId);
+    return res.status(200).json({
+      message: "Lấy shop theo user_id thành công",
+      shop,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      message: error.message || "Lỗi lấy shop theo user_id",
+    });
+  }
+});
+
+// Lấy danh mục theo shopId
+router.get("/:shopId/categories", async (req, res) => {
+  try {
+    const categories = await getCategoriesByShop(req.params.shopId);
+    return res.status(200).json({
+      message: "Lấy danh mục theo shop thành công",
+      categories,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      message: error.message || "Lỗi lấy danh mục theo shop",
+    });
+  }
+});
+
+// shop theo user id
+
+
 module.exports = router;

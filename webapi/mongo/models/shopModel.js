@@ -31,7 +31,7 @@ const shopSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "inactive", "pending"], // bạn có thể thêm trạng thái tùy ý
+      enum: ["active", "inactive", "pending"],
       default: "pending",
     },
     description: {
@@ -46,6 +46,19 @@ const shopSchema = new mongoose.Schema(
       type: String,
       default: "", // URL ảnh banner shop
     },
+
+    // 🟢 Thêm các trường nâng cao
+    sale_count: {
+      type: Number,
+      default: 0, // tổng số sản phẩm đã bán
+    },
+    rating: {
+      average: { type: Number, default: 0 }, // điểm trung bình (1–5)
+      count: { type: Number, default: 0 },   // số lượt đánh giá
+    },
+    followers: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "User" } // danh sách user follow
+    ],
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
