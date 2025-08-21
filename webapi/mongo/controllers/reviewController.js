@@ -1,52 +1,48 @@
 const mongoose = require("mongoose");
 const Review = require("../models/reviewModel");
-const baseUrl = "http://localhost:3000/images/";
+const baseUrl = "https://fiyo.click/api/images/";
 const Product = require("../models/productsModel");
 const User = require("../models/userModels");
 const OrderDetail = require("../models/orderDetailModel");
+  const addReview = async (req, res) => {
+    try {
+      const { product_id, user_id, content, rating } = req.body;
+      const images = req.files?.map((file) => `${baseUrl}/${file.filename}`) || [];
 
-// Thêm đánh giá
-const addReview = async (req, res) => {
-  try {
-    const { product_id, user_id, content, rating, orderDetail_id } = req.body;
-    const images = req.files?.map((file) => `${baseUrl}/${file.filename}`) || [];
+      if (!product_id || !user_id || !content || !rating) {
+        return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
+      }
 
-    if (!product_id || !user_id || !content || !rating || !orderDetail_id) {
-      return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
-    }
+      // ✅ Kiểm tra xem user đã từng đánh giá sản phẩm này chưa
+      const existingReview = await Review.findOne({ product_id, user_id });
 
-    // ✅ Kiểm tra user đã đánh giá sản phẩm này trong đơn hàng này chưa
-    const existingReview = await Review.findOne({ product_id, user_id, orderDetail_id });
-    if (existingReview) {
-      return res.status(400).json({
-        message: "Bạn đã đánh giá sản phẩm này trong đơn hàng này rồi.",
-        review: existingReview,
+      if (existingReview) {
+        return res.status(400).json({
+          message: "Bạn đã đánh giá sản phẩm này rồi.",
+          review: existingReview,
+        });
+      }
+
+      // ✅ Nếu chưa có thì tiếp tục thêm mới
+      const newReview = new Review({
+        product_id,
+        user_id,
+        content,
+        rating,
+        images,
       });
+
+      await newReview.save();
+
+      res.status(201).json({
+        message: "Thêm đánh giá thành công",
+        review: newReview,
+      });
+    } catch (error) {
+      console.log("Lỗi:", error);
+      res.status(500).json({ message: "Lỗi server khi thêm đánh giá", error: error.message });
     }
-
-    const newReview = new Review({
-      product_id,
-      user_id,
-      content,
-      rating,
-      images,
-      orderDetail_id,
-    });
-
-    await newReview.save();
-
-    const bonus = images.length > 0 ? 1500 : 1000;
-    await User.findByIdAndUpdate(user_id, { $inc: { point: bonus } });
-
-    res.status(200).json({
-      message: `Cảm ơn bạn đã đánh giá đơn hàng, bạn đã được cộng ${bonus} điểm`,
-      review: newReview,
-    });
-  } catch (error) {
-    console.error("Lỗi khi thêm đánh giá:", error);
-    res.status(500).json({ message: "Lỗi server", error: error.message });
-  }
-};
+  };
 
 // Kiểm tra đã đánh giá hay chưa
 const checkIfReviewed = async (req, res) => {

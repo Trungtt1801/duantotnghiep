@@ -5,108 +5,43 @@ const OrderModel = require("../models/orderModel");
 const User = require("../models/userModels");
 const AddressModel = require("../models/addressModel");
 
-
 async function addOrderDetail(data) {
   try {
-    const { order_id, product_id, quantity } = data;
+    const required = [
+      "order_id",
+      "order_shop_id",
+      "shop_id",
+      "product_id",
+      "variant_id",
+      "size_id",
+      "quantity",
+    ];
 
-    if (!order_id || !product_id || !quantity) {
-      throw new Error("Thiếu thông tin chi tiết đơn hàng");
+    for (const f of required) {
+      if (
+        data[f] === undefined ||
+        data[f] === null ||
+        (typeof data[f] === "string" && data[f].trim() === "")
+      ) {
+        throw new Error(`Thiếu field bắt buộc: ${f}`);
+      }
     }
 
-    const newDetail = new OrderDetailModel({ order_id, product_id, quantity });
+    const newDetail = new OrderDetailModel({
+      order_id: data.order_id,
+      order_shop_id: data.order_shop_id,
+      shop_id: data.shop_id,
+      product_id: data.product_id,
+      variant_id: data.variant_id,
+      size_id: data.size_id,
+      quantity: data.quantity,
+    });
     return await newDetail.save();
   } catch (error) {
     console.error("Lỗi thêm chi tiết đơn hàng:", error.message);
     throw new Error("Lỗi thêm chi tiết đơn hàng");
   }
 }
-
-
-// async function getDetailsByOrderId(orderId) {
-//   try {
-//     const BASE_URL = "http://localhost:3000/images/";
-
-//     const details = await OrderDetailModel.aggregate([
-//       {
-//         $match: {
-//           order_id: new mongoose.Types.ObjectId(orderId),
-//         },
-//       },
-//       // Join product
-//       {
-//         $lookup: {
-//           from: "products",
-//           localField: "product_id",
-//           foreignField: "_id",
-//           as: "product",
-//         },
-//       },
-//       { $unwind: "$product" },
-
-//       // Join variant
-//       {
-//         $lookup: {
-//           from: "productvariant",
-//           localField: "variant_id",
-//           foreignField: "_id",
-//           as: "variant",
-//         },
-//       },
-//       { $unwind: { path: "$variant", preserveNullAndEmptyArrays: true } },
-
-//       // Join size
-//       {
-//         $lookup: {
-//           from: "size",
-//           localField: "size_id",
-//           foreignField: "_id",
-//           as: "size",
-//         },
-//       },
-//       { $unwind: { path: "$size", preserveNullAndEmptyArrays: true } },
-
-//       // Xử lý ảnh thành link đầy đủ
-//       {
-//         $addFields: {
-//           "product.images": {
-//             $map: {
-//               input: "$product.images",
-//               as: "img",
-//               in: {
-//                 $cond: [
-//                   { $regexMatch: { input: "$$img", regex: /^http/ } },
-//                   "$$img",
-//                   { $concat: [BASE_URL, "$$img"] },
-//                 ],
-//               },
-//             },
-//           },
-//         },
-//       },
-
-//       // Format dữ liệu trả về
-//       {
-//         $project: {
-//           _id: 0,
-//           order_id: "$order_id",
-//           product_id: "$product._id",
-//           name: "$product.name",
-//           images: "$product.images",
-//           price: "$product.price",
-//           quantity: "$quantity",
-//           variant: "$variant",
-//           size: "$size",
-//         },
-//       },
-//     ]);
-
-//     return details;
-//   } catch (error) {
-//     console.error("Lỗi lấy chi tiết đơn hàng theo ID:", error.message);
-//     throw new Error("Lỗi lấy chi tiết đơn hàng");
-//   }
-// }
 
 async function getOrderDetailByOrderId(orderId) {
   try {
@@ -128,7 +63,6 @@ async function getOrderDetailByOrderId(orderId) {
       };
     }
 
-    // 3. Lấy thông tin user
     // 3. Xử lý thông tin user hoặc address_guess
     let userInfo = null;
 
@@ -138,21 +72,21 @@ async function getOrderDetailByOrderId(orderId) {
 
       userInfo = user
         ? {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          address: address
-            ? {
-              _id: address._id,
-              name: address.name,
-              phone: address.phone,
-              address: address.address,
-              detail: address.detail,
-              type: address.type,
-            }
-            : null,
-        }
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            address: address
+              ? {
+                  _id: address._id,
+                  name: address.name,
+                  phone: address.phone,
+                  address: address.address,
+                  detail: address.detail,
+                  type: address.type,
+                }
+              : null,
+          }
         : null;
     } else if (order.address_guess) {
       const guessed = order.address_guess;
@@ -171,12 +105,13 @@ async function getOrderDetailByOrderId(orderId) {
     }
 
     // 4. Xử lý chi tiết sản phẩm
+    const BASE_URL = "https://fiyo.click/api/images/";
     const result = [];
 
     for (const item of orderDetails) {
       const [product, variantDoc] = await Promise.all([
-        Product.findById(item.product_id),
-        ProductVariant.findOne({ product_id: item.product_id }),
+        Product.findById(item.product_id).lean(),
+        ProductVariant.findOne({ product_id: item.product_id }).lean(),
       ]);
 
       if (!product) continue;
@@ -208,6 +143,10 @@ async function getOrderDetailByOrderId(orderId) {
         }
       }
 
+      const images = Array.isArray(product.images)
+        ? product.images.map((img) => (/^http/.test(img) ? img : `${BASE_URL}${img}`))
+        : [];
+
       result.push({
         order_id: item.order_id,
         createdAt: item.createdAt,
@@ -217,9 +156,7 @@ async function getOrderDetailByOrderId(orderId) {
           name: product.name,
           description: product.description,
           price: product.price,
-          images: product.images.map(
-            (img) => `http://localhost:3000/images/${img}`
-          ),
+          images,
           variant: variantData,
           size: sizeData,
         },
@@ -258,11 +195,80 @@ async function deleteDetailsByOrderId(orderId) {
   }
 }
 
+/** Báo cáo: sản phẩm bán ít nhất trong khoảng thời gian */
+function parseTimePeriod(tp) {
+  // hỗ trợ: 7d, 30d, 90d, 180d, 365d, all
+  if (!tp || tp === "30d") return 30;
+  if (tp === "7d") return 7;
+  if (tp === "90d") return 90;
+  if (tp === "180d") return 180;
+  if (tp === "365d") return 365;
+  if (tp === "all") return null; // không filter thời gian
+  return 30;
+}
 
+async function getLeastSoldProducts(timePeriod) {
+  try {
+    const days = parseTimePeriod(timePeriod);
+    const match = {};
+    if (days) {
+      const from = new Date();
+      from.setDate(from.getDate() - days);
+      match.createdAt = { $gte: from };
+    }
+
+    const rows = await OrderDetailModel.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: "$product_id",
+          total_qty: { $sum: "$quantity" },
+        },
+      },
+      { $sort: { total_qty: 1 } }, // ít nhất trước
+      { $limit: 20 },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      { $unwind: "$product" },
+      {
+        $project: {
+          product_id: "$_id",
+          total_qty: 1,
+          name: "$product.name",
+          price: "$product.price",
+          images: "$product.images",
+        },
+      },
+    ]);
+
+    const BASE_URL = "https://fiyo.click/api/images/";
+
+    const result = rows.map((r) => ({
+      product_id: r.product_id,
+      name: r.name,
+      price: r.price,
+      total_qty: r.total_qty,
+      images: Array.isArray(r.images)
+        ? r.images.map((img) => (/^http/.test(img) ? img : `${BASE_URL}${img}`))
+        : [],
+    }));
+
+    return { status: true, result };
+  } catch (error) {
+    console.error("Lỗi lấy sản phẩm bán ít nhất:", error.message);
+    throw new Error("Lỗi lấy sản phẩm bán ít nhất");
+  }
+}
 
 module.exports = {
   addOrderDetail,
   getOrderDetailByOrderId,
   deleteDetailsByOrderId,
-  
+  getLeastSoldProducts, // ✅ thêm export
 };

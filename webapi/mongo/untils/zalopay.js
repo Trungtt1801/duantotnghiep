@@ -9,6 +9,7 @@ const config = {
   endpoint: "https://sb-openapi.zalopay.vn/v2/create",
 };
 
+
 async function createZaloPayOrder(amount, userId, orderId) {
   const transID = Date.now();
   const embed_data = {};
@@ -24,9 +25,10 @@ async function createZaloPayOrder(amount, userId, orderId) {
     amount,
     description: `Thanh toán đơn hàng #${transID}`,
     bank_code: "zalopayapp",
-    return_url: `http://localhost:3001/orders/${orderId}`,
+     callback_url: "https://fiyo.click/orders/zalopay-callback", // API backend của ông
+  return_url: `https://fiyo.click/order/${orderId}`, 
   };
-  // console.log("return_url:", `http://localhost:3000/order/${orderId}`);
+  // console.log("return_url:", `https://fiyo.click/api/order/${orderId}`);
 
   const data = [
     order.app_id,

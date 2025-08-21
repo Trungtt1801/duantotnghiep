@@ -76,7 +76,7 @@ async function addProduct(data) {
       sale,
       material,
       isHidden: isHidden ?? false,
-      shop_id: shop_id || 1,
+      shop_id,
       description,
       sale_count,
       category_id: {
@@ -114,7 +114,8 @@ async function searchProductsByName(nameKeyword) {
       })
       .lean();
 
-    const baseUrl = "http://localhost:3000/images/";
+
+    const baseUrl = "https://fiyo.click/api/images/";
 
     // Lấy danh sách product_id để fetch variant
     const productIds = products.map((p) => p._id);
@@ -267,7 +268,7 @@ async function getRelatedProducts(productId) {
       .limit(12);
 
     // ✅ Gắn URL ảnh
-    const baseUrl = "http://localhost:3000/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
 
     const updatedProducts = relatedProducts.map((product) => {
       const productObj = product.toObject();
@@ -366,7 +367,7 @@ async function filterFromList(productList, filters) {
     }
 
     // Bước 5: Thêm base URL vào hình ảnh nếu chưa có
-    const baseUrl = "http://localhost:3000/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
     products = products.map((product) => {
       const updated = { ...product };
       if (Array.isArray(updated.images)) {
@@ -459,13 +460,66 @@ async function getLeastSoldProducts(timePeriod) {
     ]);
     return result.map(item => ({
       ...item,
-      images: item.images.map(img => img.startsWith("http") ? img : `http://localhost:3000/images/${img}`)
+      images: item.images.map(img => img.startsWith("http") ? img : `https://fiyo.click/api/images/${img}`)
     }));
   } catch (error) {
     console.error("Lỗi khi lấy sản phẩm bán ít nhất:", error);
     throw error;
   }
 }
+
+async function updateProductVariants(productId, incomingVariants) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      throw new Error("ID sản phẩm không hợp lệ");
+    }
+
+    const product = await productsModel.findById(productId);
+    if (!product) {
+      throw new Error("Không tìm thấy sản phẩm");
+    }
+
+    let productVariants = await productVariantModel.findOne({ product_id: productId });
+
+    if (!productVariants) {
+      productVariants = new productVariantModel({
+        product_id: productId,
+        variants: incomingVariants
+      });
+    } else {
+      for (const incoming of incomingVariants) {
+        if (incoming._id) {
+          const existing = productVariants.variants.id(incoming._id);
+          if (existing) {
+            existing.color = incoming.color || existing.color;
+
+            for (const s of incoming.sizes) {
+              const existSize = existing.sizes.find(sz => sz.size === s.size);
+              if (existSize) {
+                existSize.quantity = s.quantity;
+              } else {
+                existing.sizes.push(s);
+              }
+            }
+          }
+        } else {
+          productVariants.variants.push(incoming);
+        }
+      }
+    }
+
+    const updated = await productVariants.save();
+
+    return {
+      message: "Cập nhật biến thể thành công!",
+      variants: updated.variants,
+    };
+  } catch (error) {
+    console.error("Lỗi khi cập nhật biến thể:", error);
+    throw error;
+  }
+}
+
 
 module.exports = {
   getProducts,
@@ -478,5 +532,5 @@ module.exports = {
   filterFromList,
   updateProductVisibility,
   getLeastSoldProducts,
-
+  updateProductVariants,
 };

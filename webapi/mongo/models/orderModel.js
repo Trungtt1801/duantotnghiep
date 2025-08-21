@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
+
 const OrderSchema = new Schema(
   {
     total_price: { type: Number, required: true },
@@ -10,7 +11,7 @@ const OrderSchema = new Schema(
       enum: [
         "unpending",
         "pending",
-        "confirmed",  
+        "confirmed",
         "preparing",
         "awaiting_shipment",
         "shipping",
@@ -21,28 +22,6 @@ const OrderSchema = new Schema(
       ],
       required: true,
     },
-    status_history: [
-      {
-        status: {
-          type: String,
-          enum: [
-            "pending",
-            "preparing",
-            "awaiting_shipment",
-  "confirmed",
-            "shipping",
-            "delivered",
-            "failed",
-            "cancelled",
-            "refund",
-          ],
-          required: true,
-        },
-        updatedAt: { type: Date, default: Date.now },
-        note: { type: String },
-      },
-    ],
-
     // ✅ Địa chỉ nếu là người dùng đăng nhập
     address_id: {
       type: Schema.Types.ObjectId,
@@ -67,7 +46,6 @@ const OrderSchema = new Schema(
       required: false,
     },
 
-    // ✅ Người dùng nếu đã đăng nhập
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: false },
 
     evaluate: { type: String },
@@ -100,7 +78,16 @@ const OrderSchema = new Schema(
       {
         status: {
           type: String,
-          enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered","failed", "cancelled", "refund"],
+          enum: [
+            "pending",
+            "preparing",
+            "awaiting_shipment",
+            "shipping",
+            "delivered",
+            "failed",
+            "cancelled",
+            "refund",
+          ],
           required: true,
         },
         updatedAt: { type: Date, default: Date.now },
