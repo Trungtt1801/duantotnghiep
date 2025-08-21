@@ -8,7 +8,8 @@ const OrderShopModel = require("../models/orderShopModel");
 const Product = require("../models/productsModel");         
 const userModels = require("../models/userModels");
 const { createVnpayPaymentForGuest } = require("../untils/vnpayForGuest");
-require("dotenv").config();
+console.log("[CTRL] orderController loaded:", __filename);
+
 // --- Helpers ---
 function toIPv4(ip) {
   if (!ip) return "127.0.0.1";
@@ -99,7 +100,9 @@ async function groupItemsByShop(items) {
 }
 
 
+
 async function addOrder(data) {
+  console.log("[CTRL] ENTER addOrder NEW");
   const {
     user_id,
     address_id,

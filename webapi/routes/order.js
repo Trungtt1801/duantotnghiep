@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const orderController = require("../mongo/controllers/orderController");
 const orderModel = require("../mongo/models/orderModel");
+console.log("[ROUTER] loaded:", __filename);
+console.log("[ROUTER] controller path:", require.resolve("../mongo/controllers/orderController"));
 
 // ---- helpers: IPv4 + locale ----
 function toIPv4(ip) {
@@ -27,6 +29,7 @@ router.get("/", async (req, res) => {
 
 // [POST] Tạo đơn hàng (tổng quát: COD/ZaloPay/VNPAY tuỳ body)
 router.post("/", async (req, res) => {
+  console.log("[ROUTER] POST /api/orders hit");
   try {
     const ipAddr =
       req.headers["x-forwarded-for"] ||
