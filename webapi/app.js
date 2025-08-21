@@ -24,6 +24,7 @@ var reviewRouter = require("./routes/review");
 var orderDetailRouter = require("./routes/orderDetail");
 var chatRouter = require("./routes/chat");
 var shopRouter = require("./routes/shop");
+var messengerRouter = require("./routes/messenger");
 var app = express();
 app.use(cors());
 
@@ -54,6 +55,7 @@ app.use("/api/review", reviewRouter);
 app.use("/api/orderDetail", orderDetailRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/shop", shopRouter);
+app.use("/api/messeger", messengerRouter);
 
 // 404 handler
 app.use(function (req, res, next) {

@@ -191,6 +191,62 @@ async function getCategoriesByShop(shopId) {
     throw new Error("Lỗi lấy danh mục theo shop");
   }
 }
+// Lấy thông tin shop từ productId
+async function getShopByProductId(productId) {
+  try {
+    // 1) Lấy shop_id từ sản phẩm
+    const product = await Product.findById(productId)
+      .select("shop_id")
+      .lean();
+
+    if (!product) {
+      throw new Error("Không tìm thấy sản phẩm");
+    }
+    if (!product.shop_id) {
+      throw new Error("Sản phẩm chưa gắn shop");
+    }
+
+    // 2) Lấy thông tin shop theo shop_id
+    const shop = await Shop.findById(product.shop_id)
+      .select("name address phone email status description avatar banner rating sale_count followers created_at updated_at user_id")
+      .populate("user_id", "name email phone avatar")         // chủ shop
+      .populate("followers", "name email avatar")             // người theo dõi
+      .lean();
+
+    if (!shop) {
+      throw new Error("Không tìm thấy shop");
+    }
+
+    // 3) Chuẩn hoá dữ liệu trả về (giống getShopByUserId để tái sử dụng frontend)
+    return {
+      _id: shop._id,
+      name: shop.name,
+      address: shop.address,
+      phone: shop.phone,
+      email: shop.email,
+      description: shop.description,
+      avatar: shop.avatar || "",
+      banner: shop.banner || "",
+      status: shop.status,
+      created_at: shop.created_at,
+      updated_at: shop.updated_at,
+
+      sale_count: shop.sale_count || 0,
+      rating: {
+        average: shop?.rating?.average || 0,
+        count: shop?.rating?.count || 0,
+      },
+      followers_count: Array.isArray(shop.followers) ? shop.followers.length : 0,
+      followers: shop.followers || [],
+
+      owner: shop.user_id, // { _id, name, email, phone, avatar }
+    };
+  } catch (err) {
+    console.error("Lỗi lấy shop theo productId:", err.message);
+    throw new Error("Lỗi lấy shop theo productId");
+  }
+}
+
 
 module.exports = {
   createShop,
@@ -201,5 +257,6 @@ module.exports = {
   activateShop,
   toggleShopStatus,
   getShopByUserId,
-  getCategoriesByShop
+  getCategoriesByShop,
+  getShopByProductId
 };
