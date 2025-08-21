@@ -62,6 +62,7 @@ router.get("/", async (req, res) => {
   }
 });
 
+
 // https://fiyo.click/api/products?page=1&limit=10
 router.get("/pro", async (req, res) => {
   try {
@@ -117,6 +118,16 @@ router.get("/pro", async (req, res) => {
     return res
       .status(500)
       .json({ status: false, message: "Lỗi lấy dữ liệu sản phẩm" });
+  }
+});
+
+router.get("/shop/:shopId", async (req, res) => {
+  try {
+    const { shopId } = req.params;
+    const products = await productController.getProductsByShop(shopId);
+    res.status(200).json({ status: true, products });
+  } catch (error) {
+    res.status(400).json({ status: false, message: error.message });
   }
 });
 
@@ -259,7 +270,7 @@ router.post("/create", upload.array("images", 10), async (req, res) => {
       variants,
       category_id: data.category_id,
       isHidden,
-      shop_id: Number(data.shop_id || 1),
+      shop_id: data.shop_id, // Lấy shop_id từ body
       description: data.description,
       sale_count: Number(data.sale_count || 0),
     };

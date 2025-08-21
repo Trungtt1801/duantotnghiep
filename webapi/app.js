@@ -9,22 +9,23 @@ const path = require("path");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
 const mongoose = require("mongoose");
+const helmet = require("helmet");
 
-// Import các router
-const indexRouter = require("./routes/index");
-const usersRouter = require("./routes/user");
-const productRouter = require("./routes/products");
-const categoryRouter = require("./routes/category");
-const cartRouter = require("./routes/cart");
-const productvariantRouter = require("./routes/productVariant");
-const orderRouter = require("./routes/order");
-const voucherRouter = require("./routes/voucher");
-const addressRouter = require("./routes/address");
-const reviewRouter = require("./routes/review");
-const orderDetailRouter = require("./routes/orderDetail");
-const chatRouter = require("./routes/chat");
-
-const app = express();
+var indexRouter = require("./routes/index");
+var usersRouter = require("./routes/user");
+var productRouter = require("./routes/products");
+var categoryRouter = require("./routes/category");
+var cartRouter = require("./routes/cart");
+var productvariantRouter = require("./routes/productVariant");
+var orderRouter = require("./routes/order");
+var voucherRouter = require("./routes/voucher");
+var addressRouter = require("./routes/address");
+var reviewRouter = require("./routes/review");
+var orderDetailRouter = require("./routes/orderDetail");
+var chatRouter = require("./routes/chat");
+var shopRouter = require("./routes/shop");
+var messengerRouter = require("./routes/messenger");
+var app = express();
 app.use(cors());
 
 // view engine setup
@@ -53,6 +54,8 @@ app.use("/api/voucher", voucherRouter);
 app.use("/api/review", reviewRouter);
 app.use("/api/orderDetail", orderDetailRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/shop", shopRouter);
+app.use("/api/messeger", messengerRouter);
 
 // 404 handler
 app.use(function (req, res, next) {
@@ -61,10 +64,10 @@ app.use(function (req, res, next) {
 
 // Kết nối database mongoose
 mongoose
-  .connect("mongodb://localhost:27017/DATN")
-  .then(() => console.log("Kết nối Database thành công"))
-  .catch((err) => console.log(err));
-
+    .connect(process.env.MONGODB_URI)
+  .then(() => console.log("✅ Kết nối Database thành công"))
+  .catch((err) => console.error("❌ Lỗi kết nối Database:", err));
+  
 // Error handler
 app.use(function (err, req, res, next) {
   res.locals.message = err.message;

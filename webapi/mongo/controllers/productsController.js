@@ -76,7 +76,7 @@ async function addProduct(data) {
       sale,
       material,
       isHidden: isHidden ?? false,
-      shop_id: shop_id || 1,
+      shop_id,
       description,
       sale_count,
       category_id: {
@@ -519,7 +519,46 @@ async function updateProductVariants(productId, incomingVariants) {
     throw error;
   }
 }
+async function getProductsByShop(shopId) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(shopId)) {
+      throw new Error("ID shop không hợp lệ");
+    }
 
+    const products = await productsModel
+      .find({ shop_id: shopId, isHidden: { $ne: true } })
+      .lean();
+
+    const baseUrl = "https://fiyo.click/api/images/";
+
+    // lấy tất cả product_id để lấy variants
+    const productIds = products.map((p) => p._id);
+    const variantsDocs = await productVariantModel
+      .find({ product_id: { $in: productIds } })
+      .lean();
+
+    // chuẩn hóa dữ liệu trả về
+    const updatedProducts = products.map((product) => {
+      if (Array.isArray(product.images)) {
+        product.images = product.images.map((img) =>
+          img.startsWith("http") ? img : baseUrl + img
+        );
+      }
+
+      const match = variantsDocs.find(
+        (v) => v.product_id.toString() === product._id.toString()
+      );
+      product.variants = match?.variants || [];
+
+      return product;
+    });
+
+    return updatedProducts;
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm theo shop:", error.message);
+    throw error;
+  }
+}
 
 module.exports = {
   getProducts,
@@ -533,4 +572,5 @@ module.exports = {
   updateProductVisibility,
   getLeastSoldProducts,
   updateProductVariants,
+  getProductsByShop
 };

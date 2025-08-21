@@ -198,6 +198,30 @@ async function filterCategoriesByQuery(query) {
     throw new Error("Lỗi tìm kiếm danh mục");
   }
 }
+// lấy danh mục theo shop id bạn ơi
+
+async function getCategoriesByShopId(shopId) {
+  if (!mongoose.Types.ObjectId.isValid(shopId)) {
+    throw new Error("shopId không hợp lệ");
+  }
+
+  // Lấy ra các categoryId xuất hiện trong sản phẩm của shop (ẩn sản phẩm thì bỏ qua)
+  const categoryIds = await productsModel.distinct("category_id.categoryId", {
+    shop_id: new mongoose.Types.ObjectId(shopId),
+    isHidden: { $ne: true },
+  });
+
+  if (!categoryIds || categoryIds.length === 0) return [];
+
+  // Lấy thông tin category
+  const categories = await categoriesModel.find(
+    { _id: { $in: categoryIds } },
+    { name: 1, slug: 1, _id: 1, parentId: 1, images: 1, type: 1 }
+  ).sort({ name: 1 });
+
+  return categories;
+}
+
 
 module.exports = {
   getAllCate,
@@ -210,4 +234,5 @@ module.exports = {
   getParentCategoryBySlug,
   getCategoryByParentAndChildSlug,
   filterCategoriesByQuery,
+   getCategoriesByShopId,
 };

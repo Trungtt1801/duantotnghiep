@@ -43,6 +43,33 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/shop/:shopId", async (req, res) => {
+  try {
+    const categories = await categoryController.getCategoriesByShopId(req.params.shopId);
+
+    // convert images -> baseUrl giống các route khác của bạn
+    const updated = categories.map((c) => ({
+      _id: c._id,
+      name: c.name,
+      slug: c.slug,
+      parentId: c.parentId,
+      type: c.type,
+      images: Array.isArray(c.images)
+        ? c.images.map((img) => (img?.startsWith("http") ? img : baseUrl + img))
+        : c.images
+        ? [baseUrl + c.images]
+        : [],
+    }));
+
+    return res.status(200).json({ status: true, categories: updated });
+  } catch (error) {
+    console.error("Lỗi lấy danh mục theo shopId:", error.message);
+    return res
+      .status(400)
+      .json({ status: false, message: error.message || "Lỗi lấy danh mục theo shopId" });
+  }
+});
+
 // [GET] Lấy danh mục cha
 router.get("/parents", async (req, res) => {
   try {

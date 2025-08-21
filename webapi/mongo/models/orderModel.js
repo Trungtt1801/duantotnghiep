@@ -6,12 +6,13 @@ const OrderSchema = new Schema(
   {
     total_price: { type: Number, required: true },
 
+    cancel_reason: { type: String, default: "" }, 
     status_order: {
       type: String,
       enum: [
         "unpending",
         "pending",
-        "confirmed",  
+        "confirmed",
         "preparing",
         "awaiting_shipment",
         "shipping",
@@ -22,6 +23,7 @@ const OrderSchema = new Schema(
       ],
       required: true,
     },
+    
     status_history: [
       {
         status: {
@@ -30,7 +32,7 @@ const OrderSchema = new Schema(
             "pending",
             "preparing",
             "awaiting_shipment",
-  "confirmed",
+            "confirmed",
             "shipping",
             "delivered",
             "failed",
@@ -68,7 +70,6 @@ const OrderSchema = new Schema(
       required: false,
     },
 
-    // ✅ Người dùng nếu đã đăng nhập
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: false },
 
     evaluate: { type: String },
@@ -101,7 +102,16 @@ const OrderSchema = new Schema(
       {
         status: {
           type: String,
-          enum: ["pending", "preparing", "awaiting_shipment", "shipping", "delivered","failed", "cancelled", "refund"],
+          enum: [
+            "pending",
+            "preparing",
+            "awaiting_shipment",
+            "shipping",
+            "delivered",
+            "failed",
+            "cancelled",
+            "refund",
+          ],
           required: true,
         },
         updatedAt: { type: Date, default: Date.now },
