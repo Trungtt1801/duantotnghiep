@@ -8,7 +8,8 @@ const OrderShopModel = require("../models/orderShopModel");
 const Product = require("../models/productsModel");         
 const userModels = require("../models/userModels");
 const { createVnpayPaymentForGuest } = require("../untils/vnpayForGuest");
-require("dotenv").config();
+require("../models/addressModel");
+
 // --- Helpers ---
 function toIPv4(ip) {
   if (!ip) return "127.0.0.1";
@@ -20,7 +21,6 @@ function normalizeLocale(loc) {
   return l === "en" ? "en" : "vn";
 }
 
-require("../models/addressModel");
 
 const statusTranslations = {
   unpending: "Chưa xác nhận",
@@ -97,6 +97,7 @@ async function groupItemsByShop(items) {
 
   return byShop;
 }
+
 
 
 async function addOrder(data) {
@@ -191,13 +192,14 @@ async function addOrder(data) {
    if (payment_method.toLowerCase() === "vnpay") {
   const ipAddr = toIPv4(ip || "127.0.0.1");
   const vnpLocale = normalizeLocale(locale);       
-  const vnpayRes = await createVnpayPayment(
-    total_price,
-    user_id,
-    ipAddr,
-    savedOrder._id.toString(),
-    vnpLocale                               
-  );
+ const vnpayRes = await createVnpayPayment(
+  total_price,
+  user_id,
+  ipAddr,
+  vnpLocale,                       
+  process.env.VNP_RETURN_URL        
+);
+
   transaction_code = vnpayRes.transaction_code;
   payment_url = vnpayRes.payment_url;
 }
@@ -326,12 +328,14 @@ async function addOrderForGuest(data) {
    if (payment_method.toLowerCase() === "vnpay") {
   const clientIP = toIPv4(ip || "127.0.0.1");
   const vnpLocale = normalizeLocale(locale);        // 'vn' | 'en'
-  const vnpayRes = await createVnpayPaymentForGuest(
-    total_price,
-    clientIP,
-    savedOrder._id.toString(),
-    vnpLocale                                   // <--- truyền locale
-  );
+const vnpayRes = await createVnpayPaymentForGuest(
+  total_price,
+  clientIP,
+  savedOrder._id.toString(),
+  vnpLocale,
+  process.env.VNP_RETURN_GUESS_URL   
+);
+
   transaction_code = vnpayRes.transaction_code;
   payment_url = vnpayRes.payment_url;
 }
