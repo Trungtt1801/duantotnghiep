@@ -13,7 +13,7 @@ const userSchema = new Schema(
       required: false,
       match: /^[0-9]{10,15}$/,
     },
-    gender: { type: String, enum: ["nam", "nữ", "khác"], default: "khác" },
+    gender: { type: String, enum: ["Nam", "Nữ", "Khác"], default: "khác" },
 
    role: {type: Number, required: true, enum: [0, 1, 2], default: 1,},
 // 0: Admin, 1: User, 2: Shipper
