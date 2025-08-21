@@ -99,6 +99,35 @@ router.get("/:id", async (req, res) => {
       .json({ status: false, message: "Lỗi lấy OrderShop" });
   }
 });
+// [PATCH] Xác nhận 1 OrderShop (pending -> preparing, trừ tồn kho theo shop)
+router.patch("/:id/confirm", async (req, res) => {
+  try {
+    const result = await orderShopController.confirmOrderShop(req.params.id);
+    return res.status(200).json({
+      status: true,
+      message: "Xác nhận OrderShop thành công",
+      result,
+    });
+  } catch (err) {
+    return res.status(400).json({ status: false, message: err.message });
+  }
+});
+
+// [PATCH] Xác nhận tất cả OrderShop của 1 đơn cha (bulk)
+router.patch("/order/:orderId/confirm-all", async (req, res) => {
+  try {
+    const result = await orderShopController.confirmAllOrderShopsOfOrder(
+      req.params.orderId
+    );
+    return res.status(200).json({
+      status: true,
+      message: "Xác nhận tất cả OrderShop của đơn cha thành công",
+      result,
+    });
+  } catch (err) {
+    return res.status(400).json({ status: false, message: err.message });
+  }
+});
 
 // [PATCH] Cập nhật trạng thái OrderShop
 router.patch("/:id/status", async (req, res) => {

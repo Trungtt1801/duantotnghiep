@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const OrderShop = require("../models/orderShopModel");
 const Order = require("../models/orderModel");
 const OrderDetail = require("../models/orderDetailModel");
+const productvariantModel = require("../models/productVariantModel");
 
 const statusTranslations = {
   pending: "Đang chờ xử lý",
@@ -247,6 +248,85 @@ async function deleteOrderShop(id) {
     throw err;
   }
 }
+// [PATCH] Xác nhận 1 OrderShop: pending -> preparing 
+async function confirmOrderShop(orderShopId) {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const os = await OrderShop.findById(orderShopId).session(session);
+    if (!os) throw new Error("Không tìm thấy OrderShop");
+
+    if (os.status_order !== "pending") {
+      throw new Error("Chỉ OrderShop ở trạng thái pending mới được xác nhận");
+    }
+
+    if (Array.isArray(os.status_history) && os.status_history.some(h => h.status === "preparing")) {
+      throw new Error("OrderShop đã được xác nhận trước đó");
+    }
+
+    if (!os.stock_deducted) {
+      const details = await OrderDetail.find({ order_shop_id: os._id }).session(session);
+
+      for (const d of details) {
+        const variantDoc = await productvariantModel
+          .findOne({ "variants._id": d.variant_id })
+          .session(session);
+
+        if (!variantDoc) throw new Error("Không tìm thấy variant sản phẩm");
+
+        let matched = false;
+        for (const v of variantDoc.variants) {
+          const sizeItem = v.sizes.find(s => String(s._id) === String(d.size_id));
+          if (sizeItem) {
+            if (sizeItem.quantity < d.quantity) {
+              throw new Error(`Sản phẩm màu ${v.color}, size ${sizeItem.size} không đủ hàng`);
+            }
+            sizeItem.quantity -= d.quantity;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) throw new Error("Không tìm thấy size tương ứng để cập nhật số lượng");
+
+        await variantDoc.save({ session, validateBeforeSave: false });
+      }
+
+      os.stock_deducted = true;
+    }
+
+    os.status_order = "preparing";
+    if (!Array.isArray(os.status_history)) os.status_history = [];
+    os.status_history.push({
+      status: "preparing",
+      updatedAt: new Date(),
+      note: "Seller xác nhận đơn con, chuyển sang chuẩn bị hàng",
+    });
+
+    await os.save({ session, validateBeforeSave: false });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    await syncParentOrderStatus(os.order_id);
+
+    return os;
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    throw err;
+  }
+}
+async function confirmAllOrderShopsOfOrder(orderId) {
+  const items = await OrderShop.find({ order_id: orderId });
+  const results = [];
+  for (const os of items) {
+    if (os.status_order === "pending") {
+      const updated = await confirmOrderShop(os._id);
+      results.push(updated);
+    }
+  }
+  return results;
+}
 
 module.exports = {
   getAllOrderShops,
@@ -259,4 +339,6 @@ module.exports = {
   cancelOrderShop,
   refundOrderShop,
   deleteOrderShop,
+  confirmOrderShop,               
+  confirmAllOrderShopsOfOrder,      
 };
