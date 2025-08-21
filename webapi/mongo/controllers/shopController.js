@@ -39,17 +39,17 @@ async function getAllShops() {
 
 async function getShopById(id) {
   try {
-    const shop = await Shop.findById(id).populate("user_id", "name email phone");
-    if (!shop) {
-      throw new Error("Không tìm thấy shop");
-    }
-    return shop;
+    const shop = await Shop.findById(id).populate("user_id", "name email phone").lean();
+    if (!shop) throw new Error("Không tìm thấy shop");
+
+    const total = await countProductsByShop(id, /* onlyActive? */ false);
+
+    return { ...shop, total_products: total };
   } catch (error) {
     console.error("Lỗi lấy shop theo ID:", error.message);
     throw new Error("Lỗi lấy shop theo ID");
   }
 }
-
 async function updateShop(id, data) {
   try {
     const { name, address, phone, email, status, description, avatar } = data;
@@ -192,32 +192,22 @@ async function getCategoriesByShop(shopId) {
   }
 }
 // Lấy thông tin shop từ productId
+
 async function getShopByProductId(productId) {
   try {
-    // 1) Lấy shop_id từ sản phẩm
-    const product = await Product.findById(productId)
-      .select("shop_id")
-      .lean();
+    const product = await Product.findById(productId).select("shop_id").lean();
+    if (!product) throw new Error("Không tìm thấy sản phẩm");
+    if (!product.shop_id) throw new Error("Sản phẩm chưa gắn shop");
 
-    if (!product) {
-      throw new Error("Không tìm thấy sản phẩm");
-    }
-    if (!product.shop_id) {
-      throw new Error("Sản phẩm chưa gắn shop");
-    }
-
-    // 2) Lấy thông tin shop theo shop_id
     const shop = await Shop.findById(product.shop_id)
       .select("name address phone email status description avatar banner rating sale_count followers created_at updated_at user_id")
-      .populate("user_id", "name email phone avatar")         // chủ shop
-      .populate("followers", "name email avatar")             // người theo dõi
+      .populate("user_id", "name email phone avatar")
+      .populate("followers", "name email avatar")
       .lean();
+    if (!shop) throw new Error("Không tìm thấy shop");
 
-    if (!shop) {
-      throw new Error("Không tìm thấy shop");
-    }
+    const total = await countProductsByShop(shop._id, /* onlyActive? */ false);
 
-    // 3) Chuẩn hoá dữ liệu trả về (giống getShopByUserId để tái sử dụng frontend)
     return {
       _id: shop._id,
       name: shop.name,
@@ -238,8 +228,10 @@ async function getShopByProductId(productId) {
       },
       followers_count: Array.isArray(shop.followers) ? shop.followers.length : 0,
       followers: shop.followers || [],
+      owner: shop.user_id,
 
-      owner: shop.user_id, // { _id, name, email, phone, avatar }
+      // 🟢 thêm số sản phẩm
+      total_products: total,
     };
   } catch (err) {
     console.error("Lỗi lấy shop theo productId:", err.message);
@@ -247,6 +239,13 @@ async function getShopByProductId(productId) {
   }
 }
 
+
+async function countProductsByShop(shopId, onlyActive = false) {
+  const q = { shop_id: shopId };
+  if (onlyActive) q.status = "active"; // nếu có field status
+  const total = await Product.countDocuments(q);
+  return total;
+}
 
 module.exports = {
   createShop,
@@ -258,5 +257,6 @@ module.exports = {
   toggleShopStatus,
   getShopByUserId,
   getCategoriesByShop,
-  getShopByProductId
+  getShopByProductId,
+  countProductsByShop
 };
