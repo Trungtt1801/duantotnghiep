@@ -2,8 +2,6 @@ const express = require("express");
 const router = express.Router();
 const orderController = require("../mongo/controllers/orderController");
 const orderModel = require("../mongo/models/orderModel");
-console.log("[ROUTER] loaded:", __filename);
-console.log("[ROUTER] controller path:", require.resolve("../mongo/controllers/orderController"));
 
 // ---- helpers: IPv4 + locale ----
 function toIPv4(ip) {
@@ -50,7 +48,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// [POST] Tạo đơn hàng guest  ❗️/guest (đổi từ /guess)
+// [POST] Tạo đơn hàng guest 
 router.post("/guest", async (req, res) => {
   try {
     const ipAddr =
@@ -285,10 +283,10 @@ router.get("/vnpay_return", async (req, res) => {
   try {
     console.log("📥 VNPay return query:", req.query);
     await orderController.vnpayCallback(req.query);
-    return res.redirect(`${process.env.CLIENT_URL}/page/payment/success/${req.query.vnp_TxnRef}`);
+    return res.redirect(`thanh toán thành công`);
   } catch (err) {
     console.error("❌ VNPay Callback Lỗi:", err.message);
-    return res.redirect("/page/payment/fail");
+    return res.redirect(`thanh toán thất bại`);
   }
 });
 
@@ -297,10 +295,10 @@ router.get("/vnpay_return_guest", async (req, res) => {
   try {
     console.log("📥 VNPay return query:", req.query);
     await orderController.vnpayCallbackForGuest(req.query);
-    return res.redirect(`${process.env.CLIENT_URL}/page/payment_guess/success/${req.query.vnp_TxnRef}`);
+      return res.redirect(`thanh toán thành công`);
   } catch (err) {
     console.error("❌ VNPay Callback Lỗi:", err.message);
-    return res.redirect("/page/payment/fail");
+    return res.redirect(`thanh toán thất bại`);
   }
 });
 
