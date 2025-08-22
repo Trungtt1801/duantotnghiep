@@ -1,5 +1,4 @@
-// controllers/chatbot.controller.js
-// ────────────────────────────────────────────────────────────────────────────────
+
 require("dotenv").config();
 const OpenAI = require("openai");
 const Product = require("../models/productsModel");
@@ -12,14 +11,11 @@ const OrderModel = require("../models/orderModel");
 const OrderDetailModel = require("../models/orderDetailModel");
 const { normalizeImageUrl } = require("../untils/url");
 
-// ── OpenAI Client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// =============================
-// 1) OPENAI HELPERS + FALLBACK
-// =============================
+
 function isQuota429(err) {
   return (
     err &&
