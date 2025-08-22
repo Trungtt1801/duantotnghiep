@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const orderDetailController = require('../mongo/controllers/orderDetailController');
 
@@ -74,6 +75,34 @@ router.get("/:orderId", async (req, res) => {
     return res.status(500).json({
       status: false,
       message: "Lỗi server"
+    });
+  }
+});
+
+router.get("/order-shops/:orderShopId/details", async (req, res) => {
+  try {
+    const { orderShopId } = req.params;
+
+    // check ObjectId hợp lệ
+    if (!mongoose.Types.ObjectId.isValid(orderShopId)) {
+      return res.status(400).json({
+        status: false,
+        message: "orderShopId không hợp lệ",
+      });
+    }
+
+    const result = await orderDetailController.getOrderDetailsByOrderShopId(orderShopId);
+
+    if (!result.status) {
+      return res.status(404).json(result);
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("❌ GET /order-shops/:orderShopId/details error:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Lỗi server",
     });
   }
 });
