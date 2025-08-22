@@ -61,7 +61,6 @@ async function askChatGPT(
   }
 }
 
-// Helper: bắt buộc JSON (thử cắt JSON trong nội dung nếu model trả kèm chữ)
 async function askChatGPTJSON(
   prompt,
   { system, temperature = 0.2, model = "gpt-4o-mini" } = {}
