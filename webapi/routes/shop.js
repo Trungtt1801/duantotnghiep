@@ -51,6 +51,14 @@ router.post(
     }
   }
 );
+router.get("/by-product/:productId", async (req, res) => {
+  try {
+    const data = await shopController.getShopByProductId(req.params.productId);
+    return res.status(200).json({ status: true, shop: data });
+  } catch (e) {
+    return res.status(400).json({ status: false, message: e.message || "Lỗi" });
+  }
+});
 
 // Lấy tất cả shop
 router.get("/", async (req, res) => {
