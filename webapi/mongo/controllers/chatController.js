@@ -33,7 +33,8 @@ function isQuota429(err) {
 function normalizeVN(str = "") {
   return String(str)
     .toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 }
@@ -93,7 +94,10 @@ YÊU CẦU QUAN TRỌNG:
     let text = (completion.choices?.[0]?.message?.content || "").trim();
 
     // Cắt khối JSON nếu có kèm chữ
-    text = text.replace(/^```json/i, "").replace(/```$/i, "").trim();
+    text = text
+      .replace(/^```json/i, "")
+      .replace(/```$/i, "")
+      .trim();
     const start = text.indexOf("{");
     const end = text.lastIndexOf("}");
     if (start !== -1 && end !== -1 && end > start) {
@@ -123,9 +127,6 @@ const knownIntents = [
   "add_to_cart",
 ];
 
-// =============================
-// 2) LOCAL HELPERS (KHÔNG DÙNG AI)
-// =============================
 function toVND(n) {
   try {
     return new Intl.NumberFormat("vi-VN").format(Number(n || 0)) + "đ";
@@ -166,7 +167,12 @@ function buildProductCards(products, variantsByProduct = {}) {
       url: p.slug ? `/product/${p.slug}` : `/product/${p._id}`,
       variants: variantOptions,
       actions: [
-        { type: "add_to_cart", label: "Thêm vào giỏ", productId: p._id, quantity: 1 },
+        {
+          type: "add_to_cart",
+          label: "Thêm vào giỏ",
+          productId: p._id,
+          quantity: 1,
+        },
         { type: "buy_now", label: "Mua ngay", productId: p._id },
       ],
     };
@@ -219,7 +225,8 @@ function recommendSize({ height, weight, gender = "unisex" }) {
   for (const row of table) {
     const [h1, h2] = row.h;
     const [w1, w2] = row.w;
-    if (height >= h1 && height <= h2 && weight >= w1 && weight <= w2) return row.size;
+    if (height >= h1 && height <= h2 && weight >= w1 && weight <= w2)
+      return row.size;
   }
   if (weight < 50) return "S";
   if (weight < 58) return "M";
@@ -228,7 +235,6 @@ function recommendSize({ height, weight, gender = "unisex" }) {
   return "2XL";
 }
 
-// Tạo đoạn text tư vấn size theo variants (không dùng AI)
 function buildSizeAdviceText({ products, vmap, message }) {
   const { height, weight } = extractMetrics(message);
   const gender = detectGenderFromText(message);
@@ -237,20 +243,30 @@ function buildSizeAdviceText({ products, vmap, message }) {
   const lines = [];
   if (height || weight) {
     lines.push(
-      `Thông tin của bạn${height ? `, cao ${height}cm` : ""}${weight ? `, nặng ${weight}kg` : ""}${gender !== "unisex" ? `, ${gender === "male" ? "nam" : "nữ"}` : ""}.`
+      `Thông tin của bạn${height ? `, cao ${height}cm` : ""}${
+        weight ? `, nặng ${weight}kg` : ""
+      }${gender !== "unisex" ? `, ${gender === "male" ? "nam" : "nữ"}` : ""}.`
     );
     if (rec) lines.push(`Size đề xuất: ${rec}.`);
   } else {
-    lines.push("Để tư vấn chuẩn hơn, bạn cho mình xin chiều cao (cm) và cân nặng (kg) nhé.");
+    lines.push(
+      "Để tư vấn chuẩn hơn, bạn cho mình xin chiều cao (cm) và cân nặng (kg) nhé."
+    );
   }
 
   for (const p of products) {
     const pv = vmap[p._id.toString()];
-    if (!pv || !Array.isArray(pv.variants) || pv.variants.length === 0) continue;
+    if (!pv || !Array.isArray(pv.variants) || pv.variants.length === 0)
+      continue;
     lines.push(`\n• ${p.name}:`);
     for (const v of pv.variants) {
-      const inStockSizes = (v.sizes || []).filter((s) => (s.quantity || 0) > 0).map((s) => s.size);
-      if (inStockSizes.length) lines.push(`  - Màu ${v.color}: còn các size ${inStockSizes.join(", ")}`);
+      const inStockSizes = (v.sizes || [])
+        .filter((s) => (s.quantity || 0) > 0)
+        .map((s) => s.size);
+      if (inStockSizes.length)
+        lines.push(
+          `  - Màu ${v.color}: còn các size ${inStockSizes.join(", ")}`
+        );
       else lines.push(`  - Màu ${v.color}: tạm hết hàng`);
     }
   }
@@ -281,12 +297,23 @@ Chỉ trả lời đúng 1 từ: product / shipping / return / general / order /
     if (err.code === "AI_QUOTA") {
       const t = normalizeVN(message || "");
       if (/\b(xin )?chao\b|\bhello\b|\bhi\b/.test(t)) return "greeting";
-      if (/\b(giao hang|phi ship|van chuyen|ship|tien ship|phi van chuyen)\b/.test(t)) return "shipping";
+      if (
+        /\b(giao hang|phi ship|van chuyen|ship|tien ship|phi van chuyen)\b/.test(
+          t
+        )
+      )
+        return "shipping";
       if (/\b(doi tra|hoan hang|tra hang|doi size)\b/.test(t)) return "return";
       if (/\b(dat|mua|order)\b/.test(t)) return "order";
       if (/\b(xac nhan)\b/.test(t)) return "order_confirm";
-      if (/\b(them vao gio|add to cart|gio hang)\b/.test(t)) return "add_to_cart";
-      if (/\b(ao|quan|vay|so mi|polo|dam|hoodie|quan jean|quan tay|ao thun|jacket|cardigan)\b/.test(t)) return "product";
+      if (/\b(them vao gio|add to cart|gio hang)\b/.test(t))
+        return "add_to_cart";
+      if (
+        /\b(ao|quan|vay|so mi|polo|dam|hoodie|quan jean|quan tay|ao thun|jacket|cardigan)\b/.test(
+          t
+        )
+      )
+        return "product";
       if (/\b(danh muc|ban gi|co gi)\b/.test(t)) return "general";
       return "other";
     }
@@ -311,21 +338,26 @@ const chatWithBot = async (req, res) => {
       return kwWordNorm && msgNorm.includes(kwWordNorm);
     });
     const matchedIntent = matched
-      .map((k) => String(k.intent || "").toLowerCase().trim())
+      .map((k) =>
+        String(k.intent || "")
+          .toLowerCase()
+          .trim()
+      )
       .filter(Boolean);
 
     // intent ưu tiên DB, nếu không có thì hỏi AI (có fallback)
-    let intent = matchedIntent.find(Boolean) || (await detectIntentByAI(message));
+    let intent =
+      matchedIntent.find(Boolean) || (await detectIntentByAI(message));
 
     // Set cờ theo intent (không dựa vào matchedIntent nữa)
-    const isProduct      = intent === "product";
-    const isShipping     = intent === "shipping";
-    const isReturn       = intent === "return";
-    const isGeneral      = intent === "general";
-    const isOrder        = intent === "order";
+    const isProduct = intent === "product";
+    const isShipping = intent === "shipping";
+    const isReturn = intent === "return";
+    const isGeneral = intent === "general";
+    const isOrder = intent === "order";
     const isOrderConfirm = intent === "order_confirm";
-    const isGreeting     = intent === "greeting";
-    const isAddToCart    = intent === "add_to_cart";
+    const isGreeting = intent === "greeting";
+    const isAddToCart = intent === "add_to_cart";
 
     let prompt = "";
     let reply = "";
@@ -360,7 +392,8 @@ Viết câu trả lời rõ ràng, thân thiện, KHÔNG dùng Markdown.
 `;
         reply = await askChatGPT(prompt);
       } catch {
-        reply = "Bên mình miễn phí nội thành khi mua từ 3 sản phẩm trở lên. Khu vực ngoại thành phí ship 30.000đ bạn nhé.";
+        reply =
+          "Bên mình miễn phí nội thành khi mua từ 3 sản phẩm trở lên. Khu vực ngoại thành phí ship 30.000đ bạn nhé.";
       }
       if (userId) await saveChatHistory(userId, message, reply);
       return res.status(200).json({ reply, type: "message" });
@@ -376,7 +409,8 @@ Viết câu trả lời thân thiện, dễ hiểu, KHÔNG dùng ký tự ** ho�
 `;
         reply = await askChatGPT(prompt);
       } catch {
-        reply = "Shop hỗ trợ đổi trả trong 7 ngày nếu còn tem mác và chưa sử dụng (không áp dụng cho đồ lót/hàng giảm giá) nhé bạn.";
+        reply =
+          "Shop hỗ trợ đổi trả trong 7 ngày nếu còn tem mác và chưa sử dụng (không áp dụng cho đồ lót/hàng giảm giá) nhé bạn.";
       }
       if (userId) await saveChatHistory(userId, message, reply);
       return res.status(200).json({ reply, type: "message" });
@@ -400,12 +434,19 @@ KHÔNG dùng dấu ** hoặc *.
 
     // 5) Product (+ tư vấn size fallback không AI)
     if (isProduct) {
-      const hasFemale = /(nữ|phụ nữ|women|woman|girl|con gái|bé gái)/i.test(message);
-      const hasMale = /(nam|đàn ông|men|man|boy|con trai|bé trai)/i.test(message);
-      const hasKids = /(trẻ em|kid|kids|thiếu nhi|nhi đồng|bé trai|bé gái)/i.test(message);
+      const hasFemale = /(nữ|phụ nữ|women|woman|girl|con gái|bé gái)/i.test(
+        message
+      );
+      const hasMale = /(nam|đàn ông|men|man|boy|con trai|bé trai)/i.test(
+        message
+      );
+      const hasKids =
+        /(trẻ em|kid|kids|thiếu nhi|nhi đồng|bé trai|bé gái)/i.test(message);
 
       const allCats = await Category.find().select("_id name").lean();
-      const matchedCat = allCats.find((c) => new RegExp(c.name, "i").test(message));
+      const matchedCat = allCats.find((c) =>
+        new RegExp(c.name, "i").test(message)
+      );
 
       const orKeywordConds = matched
         .filter((k) => k.intent === "product")
@@ -436,7 +477,9 @@ KHÔNG dùng dấu ** hoặc *.
             { gender: /female|nữ/i },
             { target: /female|nữ|women|girl|phụ nữ|con gái|bé gái/i },
             { name: { $regex: /(nữ|women|girl|phụ nữ|con gái|bé gái)/i } },
-            { description: { $regex: /(nữ|women|girl|phụ nữ|con gái|bé gái)/i } },
+            {
+              description: { $regex: /(nữ|women|girl|phụ nữ|con gái|bé gái)/i },
+            },
           ],
         });
       }
@@ -446,7 +489,11 @@ KHÔNG dùng dấu ** hoặc *.
             { gender: /male|nam/i },
             { target: /male|nam|men|boy|đàn ông|con trai|bé trai/i },
             { name: { $regex: /(nam|men|boy|đàn ông|con trai|bé trai)/i } },
-            { description: { $regex: /(nam|men|boy|đàn ông|con trai|bé trai)/i } },
+            {
+              description: {
+                $regex: /(nam|men|boy|đàn ông|con trai|bé trai)/i,
+              },
+            },
           ],
         });
       }
@@ -456,7 +503,9 @@ KHÔNG dùng dấu ** hoặc *.
             { gender: /kids|child|children|trẻ em/i },
             { target: /kids|child|children|trẻ em|thiếu nhi|nhi đồng/i },
             { name: { $regex: /(trẻ em|kid|kids|thiếu nhi|nhi đồng)/i } },
-            { description: { $regex: /(trẻ em|kid|kids|thiếu nhi|nhi đồng)/i } },
+            {
+              description: { $regex: /(trẻ em|kid|kids|thiếu nhi|nhi đồng)/i },
+            },
           ],
         });
       }
@@ -476,23 +525,28 @@ KHÔNG dùng dấu ** hoặc *.
       // Nếu là câu hỏi về size → không gọi AI, trả lời từ DB
       if (isSizeInquiry(message)) {
         if (!products.length) {
-          const rep = "Mình chưa thấy sản phẩm phù hợp. Bạn mô tả rõ hơn mẫu, màu, size hoặc tầm giá để mình tư vấn size chính xác nha?";
-        if (userId) await saveChatHistory(userId, message, rep);
+          const rep =
+            "Mình chưa thấy sản phẩm phù hợp. Bạn mô tả rõ hơn mẫu, màu, size hoặc tầm giá để mình tư vấn size chính xác nha?";
+          if (userId) await saveChatHistory(userId, message, rep);
           return res.status(200).json({ type: "message", reply: rep });
         }
 
         const advise = buildSizeAdviceText({ products, vmap, message });
-        const rep = advise || "Bạn cho mình xin chiều cao (cm) và cân nặng (kg) để mình tư vấn size chuẩn theo từng màu/size còn hàng nhé!";
+        const rep =
+          advise ||
+          "Bạn cho mình xin chiều cao (cm) và cân nặng (kg) để mình tư vấn size chuẩn theo từng màu/size còn hàng nhé!";
         if (userId) await saveChatHistory(userId, message, rep);
 
         const cards = buildProductCards(products, vmap);
-        return res.status(200).json({ type: "product_cards", reply: rep, cards });
+        return res
+          .status(200)
+          .json({ type: "product_cards", reply: rep, cards });
       }
 
-      // Không phải hỏi size → logic cũ
       const cards = buildProductCards(products, vmap);
       if (!cards.length) {
-        const rep = "Mình chưa thấy sản phẩm phù hợp. Bạn mô tả rõ hơn mẫu, màu, size, đối tượng (nam/nữ/trẻ em) hoặc tầm giá giúp mình nha?";
+        const rep =
+          "Mình chưa thấy sản phẩm phù hợp. Bạn mô tả rõ hơn mẫu, màu, size, đối tượng (nam/nữ/trẻ em) hoặc tầm giá giúp mình nha?";
         if (userId) await saveChatHistory(userId, message, rep);
         return res.status(200).json({ type: "message", reply: rep });
       }
@@ -520,7 +574,8 @@ Nếu thiếu thông tin, để trống chuỗi. CHỈ TRẢ JSON hợp lệ.
         extracted = await askChatGPTJSON(jsonPrompt);
       } catch {
         return res.status(200).json({
-          reply: "Bạn cho mình biết rõ tên sản phẩm, số lượng, màu và size để mình tạo đơn liền nhé.",
+          reply:
+            "Bạn cho mình biết rõ tên sản phẩm, số lượng, màu và size để mình tạo đơn liền nhé.",
           type: "message",
         });
       }
@@ -528,14 +583,19 @@ Nếu thiếu thông tin, để trống chuỗi. CHỈ TRẢ JSON hợp lệ.
       const { product, quantity, color, size } = extracted;
       if (!product || !quantity || !color || !size) {
         return res.status(200).json({
-          reply: "Bạn vui lòng cung cấp đầy đủ: tên sản phẩm, số lượng, màu và size nhé.",
+          reply:
+            "Bạn vui lòng cung cấp đầy đủ: tên sản phẩm, số lượng, màu và size nhé.",
           type: "message",
         });
       }
 
-      const foundProduct = await Product.findOne({ name: new RegExp(product, "i") });
+      const foundProduct = await Product.findOne({
+        name: new RegExp(product, "i"),
+      });
       if (!foundProduct) {
-        return res.status(200).json({ reply: `Tui không tìm thấy sản phẩm "${product}" rồi 🥲` });
+        return res
+          .status(200)
+          .json({ reply: `Tui không tìm thấy sản phẩm "${product}" rồi 🥲` });
       }
 
       const variant = await ProductVariant.findOne({
@@ -544,13 +604,21 @@ Nếu thiếu thông tin, để trống chuỗi. CHỈ TRẢ JSON hợp lệ.
         "variants.sizes.size": size,
       });
       if (!variant) {
-        return res.status(200).json({ reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".` });
+        return res
+          .status(200)
+          .json({
+            reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".`,
+          });
       }
 
-      const matchedVariant = variant.variants.find((v) => v.color?.toLowerCase?.() === color.toLowerCase());
+      const matchedVariant = variant.variants.find(
+        (v) => v.color?.toLowerCase?.() === color.toLowerCase()
+      );
       const sizeObj = matchedVariant?.sizes?.find((s) => s.size === size);
       if (!sizeObj || sizeObj.quantity < quantity) {
-        return res.status(200).json({ reply: `Số lượng sản phẩm không đủ trong kho 😢` });
+        return res
+          .status(200)
+          .json({ reply: `Số lượng sản phẩm không đủ trong kho 😢` });
       }
 
       const variantId = variant._id;
@@ -563,7 +631,9 @@ Nếu thiếu thông tin, để trống chuỗi. CHỈ TRẢ JSON hợp lệ.
         isGuest: !userId,
       });
       if (!resultOrder.success) {
-        return res.status(200).json({ reply: `Tạo đơn hàng thất bại: ${resultOrder.message}` });
+        return res
+          .status(200)
+          .json({ reply: `Tạo đơn hàng thất bại: ${resultOrder.message}` });
       }
 
       const finalReply = `Tui đã tạo đơn: ${quantity} x ${product} (màu ${color}, size ${size}). Cảm ơn bạn nha! 🛍️`;
@@ -573,18 +643,30 @@ Nếu thiếu thông tin, để trống chuỗi. CHỈ TRẢ JSON hợp lệ.
 
     // 7) Order Confirm
     if (isOrderConfirm) {
-      const chat = await ChatHistory.findOne({ userId }).sort({ updatedAt: -1 });
+      const chat = await ChatHistory.findOne({ userId }).sort({
+        updatedAt: -1,
+      });
       if (!chat || !chat.messages || chat.messages.length < 2) {
-        return res.status(200).json({ reply: "Hiện tại không có đơn hàng nào để xác nhận." });
+        return res
+          .status(200)
+          .json({ reply: "Hiện tại không có đơn hàng nào để xác nhận." });
       }
 
-      const lastBotMsg = [...chat.messages].reverse().find(
-        (m) =>
-          m.role === "bot" &&
-          /Tổng cộng|đã tạo đơn|da tao don|đã xác nhận đơn|da xac nhan don/i.test(m.content || "")
-      );
+      const lastBotMsg = [...chat.messages]
+        .reverse()
+        .find(
+          (m) =>
+            m.role === "bot" &&
+            /Tổng cộng|đã tạo đơn|da tao don|đã xác nhận đơn|da xac nhan don/i.test(
+              m.content || ""
+            )
+        );
       if (!lastBotMsg) {
-        return res.status(200).json({ reply: "Tui không thấy thông tin đơn hàng để xác nhận nha 😅" });
+        return res
+          .status(200)
+          .json({
+            reply: "Tui không thấy thông tin đơn hàng để xác nhận nha 😅",
+          });
       }
 
       let extracted = {};
@@ -602,17 +684,27 @@ Chỉ trả về JSON hợp lệ.
 `;
         extracted = await askChatGPTJSON(jsonPrompt);
       } catch {
-        return res.status(200).json({ reply: "Tui không hiểu rõ đơn hàng bạn muốn xác nhận 😥" });
+        return res
+          .status(200)
+          .json({ reply: "Tui không hiểu rõ đơn hàng bạn muốn xác nhận 😥" });
       }
 
       const { product, quantity, color, size } = extracted;
       if (!product || !quantity || !color || !size) {
-        return res.status(200).json({ reply: `Thiếu thông tin rồi, tui chưa xác nhận được đơn 😓` });
+        return res
+          .status(200)
+          .json({
+            reply: `Thiếu thông tin rồi, tui chưa xác nhận được đơn 😓`,
+          });
       }
 
-      const foundProduct = await Product.findOne({ name: new RegExp(product, "i") });
+      const foundProduct = await Product.findOne({
+        name: new RegExp(product, "i"),
+      });
       if (!foundProduct) {
-        return res.status(200).json({ reply: `Tui không tìm thấy sản phẩm "${product}" rồi 🥲` });
+        return res
+          .status(200)
+          .json({ reply: `Tui không tìm thấy sản phẩm "${product}" rồi 🥲` });
       }
 
       const variant = await ProductVariant.findOne({
@@ -621,13 +713,21 @@ Chỉ trả về JSON hợp lệ.
         "variants.sizes.size": size,
       });
       if (!variant) {
-        return res.status(200).json({ reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".` });
+        return res
+          .status(200)
+          .json({
+            reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".`,
+          });
       }
 
-      const matchedVariant = variant.variants.find((v) => v.color?.toLowerCase?.() === color.toLowerCase());
+      const matchedVariant = variant.variants.find(
+        (v) => v.color?.toLowerCase?.() === color.toLowerCase()
+      );
       const sizeObj = matchedVariant?.sizes?.find((s) => s.size === size);
       if (!sizeObj || sizeObj.quantity < quantity) {
-        return res.status(200).json({ reply: `Số lượng không đủ trong kho để đặt hàng.` });
+        return res
+          .status(200)
+          .json({ reply: `Số lượng không đủ trong kho để đặt hàng.` });
       }
 
       const variantId = variant._id;
@@ -640,7 +740,9 @@ Chỉ trả về JSON hợp lệ.
         isGuest: !userId,
       });
       if (!resultOrder.success) {
-        return res.status(200).json({ reply: `Tạo đơn hàng thất bại: ${resultOrder.message}` });
+        return res
+          .status(200)
+          .json({ reply: `Tạo đơn hàng thất bại: ${resultOrder.message}` });
       }
 
       const replyConfirm = `Tui đã xác nhận đơn: ${quantity} x ${product} (màu ${color}, size ${size}). Cảm ơn bạn nha! 🛒`;
@@ -650,15 +752,34 @@ Chỉ trả về JSON hợp lệ.
 
     // 8) Add to cart (chuẩn hoá ảnh)
     if (isAddToCart) {
-      const product = await Product.findOne({ name: { $regex: message, $options: "i" } }).lean();
+      const product = await Product.findOne({
+        name: { $regex: message, $options: "i" },
+      }).lean();
       if (!product) {
-        return res.status(200).json({ type: "message", reply: "Xin lỗi, mình không tìm thấy sản phẩm bạn muốn thêm vào giỏ hàng." });
+        return res
+          .status(200)
+          .json({
+            type: "message",
+            reply:
+              "Xin lỗi, mình không tìm thấy sản phẩm bạn muốn thêm vào giỏ hàng.",
+          });
       }
-      const raw = Array.isArray(product.images) && product.images.length ? product.images[0] : product.image || "";
+      const raw =
+        Array.isArray(product.images) && product.images.length
+          ? product.images[0]
+          : product.image || "";
       const image = normalizeImageUrl(raw);
       return res.status(200).json({
         type: "add_to_cart",
-        products: [{ id: product._id, name: product.name, image, price: product.price, quantity: 1 }],
+        products: [
+          {
+            id: product._id,
+            name: product.name,
+            image,
+            price: product.price,
+            quantity: 1,
+          },
+        ],
         reply: `Mình đã thêm ${product.name} vào giỏ hàng giúp bạn!`,
       });
     }
@@ -667,23 +788,30 @@ Chỉ trả về JSON hợp lệ.
     const existing = await Keyword.findOne({ word: msgNorm });
     if (!existing) {
       const aiIntent = await detectIntentByAI(message);
-      const intentLearn = knownIntents.includes(aiIntent) ? aiIntent : "unknown";
+      const intentLearn = knownIntents.includes(aiIntent)
+        ? aiIntent
+        : "unknown";
       await Keyword.create({ word: msgNorm, intent: intentLearn });
-      console.log(`🧠 Bot học từ mới: "${msgNorm}" với intent "${intentLearn}"`);
+      console.log(
+        `🧠 Bot học từ mới: "${msgNorm}" với intent "${intentLearn}"`
+      );
     }
 
-    reply = "Hiện tại shop mình chưa có sản phẩm bạn cần tìm chỉ có các danh mục như: Áo phông, Áo sơ mi, Áo thun, Áo polo,... cho Nam, Nữ và Trẻ em. Bạn có thể tham khảo các mặt hàng như trên để mình tư vấn rõ cho bạn nhé!";
+    reply =
+      "Hiện tại shop mình chưa có sản phẩm bạn cần tìm chỉ có các danh mục như: Áo phông, Áo sơ mi, Áo thun, Áo polo,... cho Nam, Nữ và Trẻ em. Bạn có thể tham khảo các mặt hàng như trên để mình tư vấn rõ cho bạn nhé!";
     await saveChatHistory(userId, message, reply);
     return res.status(200).json({ reply, type: "message" });
   } catch (err) {
     console.error("❌ ChatBot Error:", err);
-    return res.status(500).json({ error: "Lỗi xử lý yêu cầu", detail: err.message || "Không rõ lỗi" });
+    return res
+      .status(500)
+      .json({
+        error: "Lỗi xử lý yêu cầu",
+        detail: err.message || "Không rõ lỗi",
+      });
   }
 };
 
-// =============================
-// 4) HELPERS DB
-// =============================
 async function saveChatHistory(userId, userMsg, botReply) {
   try {
     if (!userId) return;
@@ -729,7 +857,10 @@ async function autoCreateOrderFromChat({
     if (isGuest && guestAddress) {
       address_guess = guestAddress;
     } else {
-      const userAddress = await AddressModel.findOne({ user_id: userId, is_default: true });
+      const userAddress = await AddressModel.findOne({
+        user_id: userId,
+        is_default: true,
+      });
       if (!userAddress) throw new Error("Không tìm thấy địa chỉ người dùng");
       address_id = userAddress._id;
     }
@@ -760,9 +891,6 @@ async function autoCreateOrderFromChat({
   }
 }
 
-// =============================
-// 5) WELCOME
-// =============================
 const welcomeMessage = async (req, res) => {
   try {
     const categories = await Category.find().select("name");
@@ -781,7 +909,12 @@ Viết câu trả lời tự nhiên, KHÔNG dùng Markdown (** hoặc *).
     return res.status(200).json({ reply, type: "message" });
   } catch (err) {
     console.error("❌ Welcome Error:", err);
-    return res.status(500).json({ error: "Lỗi tạo lời chào", detail: err.message || "Không rõ lỗi" });
+    return res
+      .status(500)
+      .json({
+        error: "Lỗi tạo lời chào",
+        detail: err.message || "Không rõ lỗi",
+      });
   }
 };
 
