@@ -224,109 +224,96 @@ async function refundOrderShop(id, note = "") {
   return await updateOrderShopStatus(id, "refund", note || "Hoàn tiền đơn");
 }
 
-// [DELETE] Xoá một OrderShop + chi tiết của nó (transaction an toàn)
+// [DELETE] Xoá một OrderShop + chi tiết của nó 
 async function deleteOrderShop(id) {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  try {
-    const os = await OrderShop.findById(id).session(session);
-    if (!os) throw new Error("Không tìm thấy OrderShop");
+  const os = await OrderShop.findById(id);
+  if (!os) throw new Error("Không tìm thấy OrderShop");
 
-    await OrderDetail.deleteMany({ order_shop_id: id }, { session });
-    await OrderShop.findByIdAndDelete(id, { session });
+  await OrderDetail.deleteMany({ order_shop_id: id });
+  await OrderShop.findByIdAndDelete(id);
 
-    await session.commitTransaction();
-    session.endSession();
-
-    // Đồng bộ trạng thái đơn cha
-    await syncParentOrderStatus(os.order_id);
-
-    return true;
-  } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
-    throw err;
-  }
+  await syncParentOrderStatus(os.order_id);
+  return true;
 }
-// [PATCH] Xác nhận 1 OrderShop: pending -> preparing 
+
+// [PATCH] Xác nhận 1 OrderShop: pending -> preparing
 async function confirmOrderShop(orderShopId) {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  try {
-    const os = await OrderShop.findById(orderShopId).session(session);
-    if (!os) throw new Error("Không tìm thấy OrderShop");
-
-    if (os.status_order !== "pending") {
-      throw new Error("Chỉ OrderShop ở trạng thái pending mới được xác nhận");
-    }
-
-    if (Array.isArray(os.status_history) && os.status_history.some(h => h.status === "preparing")) {
-      throw new Error("OrderShop đã được xác nhận trước đó");
-    }
-
-    if (!os.stock_deducted) {
-      const details = await OrderDetail.find({ order_shop_id: os._id }).session(session);
-
-      for (const d of details) {
-        const variantDoc = await productvariantModel
-          .findOne({ "variants._id": d.variant_id })
-          .session(session);
-
-        if (!variantDoc) throw new Error("Không tìm thấy variant sản phẩm");
-
-        let matched = false;
-        for (const v of variantDoc.variants) {
-          const sizeItem = v.sizes.find(s => String(s._id) === String(d.size_id));
-          if (sizeItem) {
-            if (sizeItem.quantity < d.quantity) {
-              throw new Error(`Sản phẩm màu ${v.color}, size ${sizeItem.size} không đủ hàng`);
-            }
-            sizeItem.quantity -= d.quantity;
-            matched = true;
-            break;
-          }
-        }
-        if (!matched) throw new Error("Không tìm thấy size tương ứng để cập nhật số lượng");
-
-        await variantDoc.save({ session, validateBeforeSave: false });
-      }
-
-      os.stock_deducted = true;
-    }
-
-    os.status_order = "preparing";
-    if (!Array.isArray(os.status_history)) os.status_history = [];
-    os.status_history.push({
-      status: "preparing",
-      updatedAt: new Date(),
-      note: "Seller xác nhận đơn con, chuyển sang chuẩn bị hàng",
-    });
-
-    await os.save({ session, validateBeforeSave: false });
-
-    await session.commitTransaction();
-    session.endSession();
-
-    await syncParentOrderStatus(os.order_id);
-
-    return os;
-  } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
-    throw err;
+  // 1) Lấy OrderShop
+  const os = await OrderShop.findById(orderShopId);
+  if (!os) throw new Error("Không tìm thấy OrderShop");
+  if (os.status_order !== "pending") {
+    throw new Error("Chỉ OrderShop ở trạng thái pending mới được xác nhận");
   }
+
+  // 2) Trừ tồn (idempotent bằng cờ stock_deducted)
+  if (!os.stock_deducted) {
+    const items = await OrderDetail.find({ order_shop_id: os._id })
+      .select("variant_id size_id quantity")
+      .lean();
+
+    if (!items.length) throw new Error("OrderShop không có item để xác nhận");
+
+    for (const it of items) {
+      const vId = new mongoose.Types.ObjectId(it.variant_id);
+      const sId = new mongoose.Types.ObjectId(it.size_id);
+
+      const upd = await productvariantModel.updateOne(
+        {
+          "variants._id": vId,
+          "variants.sizes._id": sId,
+          "variants.sizes.quantity": { $gte: it.quantity },
+        },
+        {
+          $inc: {
+            "variants.$[v].sizes.$[s].quantity": -it.quantity,
+            // "variants.$[v].sizes.$[s].sold": it.quantity, // mở nếu có field sold
+          },
+        },
+        { arrayFilters: [{ "v._id": vId }, { "s._id": sId }] }
+      );
+
+      if (upd.matchedCount === 0 || upd.modifiedCount === 0) {
+        throw new Error("Sản phẩm không đủ tồn hoặc không khớp variant/size");
+      }
+    }
+
+    os.stock_deducted = true;
+  }
+
+  // 3) Cập nhật trạng thái + lịch sử
+  os.status_order = "preparing";
+  os.confirmed_at = new Date();
+  if (!Array.isArray(os.status_history)) os.status_history = [];
+  os.status_history.push({
+    status: "preparing",
+    updatedAt: new Date(),
+    note: "Xác nhận đơn con: chuyển sang 'Đang chuẩn bị hàng'",
+  });
+
+  await os.save({ validateBeforeSave: false });
+
+  // 4) (tuỳ chọn) cập nhật trạng thái item
+  // await OrderDetail.updateMany({ order_shop_id: os._id }, { $set: { status: "preparing" } });
+
+  // 5) Đồng bộ trạng thái đơn cha
+  await syncParentOrderStatus(os.order_id);
+
+  // 6) Trả về bản đã populate cho FE
+  return await OrderShop.findById(orderShopId)
+    .populate("order_id", "_id code status_order")
+    .populate("shop_id", "_id name avatar");
 }
+
+
 async function confirmAllOrderShopsOfOrder(orderId) {
-  const items = await OrderShop.find({ order_id: orderId });
+  const items = await OrderShop.find({ order_id: orderId, status_order: "pending" }).select("_id");
   const results = [];
   for (const os of items) {
-    if (os.status_order === "pending") {
-      const updated = await confirmOrderShop(os._id);
-      results.push(updated);
-    }
+    results.push(await confirmOrderShop(os._id));
   }
   return results;
 }
+
 
 module.exports = {
   getAllOrderShops,
