@@ -265,6 +265,28 @@ const updateUserInfo = async (id, data) => {
   await user.save();
   return user;
 };
+async function updateUserRole(userId, newRole) {
+  try {
+    const user = await usersModel.findById(userId);
+    if (!user) {
+      throw new Error("Không tìm thấy người dùng");
+    }
+
+    // Kiểm tra role hợp lệ (tuỳ bạn định nghĩa, ví dụ: 0 = admin, 1 = user)
+    if (![0, 1, 2].includes(Number(newRole))) {
+      throw new Error("Role không hợp lệ");
+    }
+
+    user.role = newRole;
+    await user.save();
+
+    // Ẩn password khi trả về
+    const { password, ...userData } = user.toObject();
+    return userData;
+  } catch (error) {
+    throw new Error(error.message || "Lỗi khi cập nhật role");
+  }
+}
 module.exports = {
   register,
   updateUserInfo,
@@ -275,6 +297,7 @@ module.exports = {
   resetPassword,
   findOrCreateGoogleUser,
   findOrCreateFacebookUser,
-  getUserById
+  getUserById,
+  updateUserRole
 };
 

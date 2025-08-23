@@ -1,0 +1,1128 @@
+[{
+  "_id": {
+    "$oid": "64531a001111111111111001"
+  },
+  "name": "Quang Thắng",
+  "email": "quangthang@gmail.com",
+  "password": "123456",
+  "phone": "0123456789",
+  "role": 1,
+  "authType": "local",
+  "avatar": "",
+  "gender": "Khác",
+  "point": 285000,
+  "rank": "silver",
+  "resetPasswordCount": 0,
+  "updatedAt": {
+    "$date": "2025-08-20T19:34:24.400Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "64531a001111111111111002"
+  },
+  "name": "Admin",
+  "email": "admin@gmail.com",
+  "password": "adminpass",
+  "phone": "0987654321",
+  "role": 0
+},
+{
+  "_id": {
+    "$oid": "64531a001111111111111004"
+  },
+  "name": "Trí Trung",
+  "email": "tritrung@gmail.com",
+  "password": "password2",
+  "phone": "0902345678",
+  "role": 1
+},
+{
+  "_id": {
+    "$oid": "64531a001111111111111005"
+  },
+  "name": "Xuân Hương",
+  "email": "xuanhuong@gmail.com",
+  "password": "password3",
+  "phone": "0903456789",
+  "role": 1
+},
+{
+  "_id": {
+    "$oid": "64531a001111111111111006"
+  },
+  "name": "Trọng Vinh",
+  "email": "trongvinh@gmail.com",
+  "password": "password4",
+  "phone": "0904567890",
+  "role": 1
+},
+{
+  "_id": {
+    "$oid": "6835b37d3dc985430cbb0692"
+  },
+  "name": "bí te",
+  "email": "huongtretrau123@gmail.com",
+  "password": "$2b$10$a0dU9wwUsWfWjXTGS9UxX.KPIXhMXu2ZjJ9kJ6IyC9cCKdUFivzxi",
+  "phone": "0383198917",
+  "role": 1,
+  "createdAt": {
+    "$date": "2025-05-27T12:43:41.241Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-27T12:43:41.241Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "683d74cb7d4fe3380e2dca00"
+  },
+  "name": "chun",
+  "email": "chun@gmail.com",
+  "password": "$2b$10$JoyIZTiLEeBuwy2nz83eLOsy/Kul1pTvNinaY./Aswjw2kL0yYy4i",
+  "phone": "0563435668",
+  "role": 1,
+  "createdAt": {
+    "$date": "2025-06-02T09:54:19.560Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-02T09:54:19.560Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "683ef22fa145b162374a21c7"
+  },
+  "name": "Huong",
+  "email": "huongphxps39408@gmail.com",
+  "password": "$2b$10$UBodIPrxz3TuN0S1Sue/ouxb04IiGqt2qwm.D.OAkQhwois8nYx0e",
+  "phone": "0909898721",
+  "role": 1,
+  "createdAt": {
+    "$date": "2025-06-03T13:01:35.316Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-03T13:25:27.582Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684011ffa7afa11b7c301f15"
+  },
+  "name": "Thang",
+  "email": "thangtqps39500@gmail.com",
+  "password": "$2b$10$dxmV0nDO/vghOK0YHgtgOeDI38NgBhlcN5H.YLgTMmr9of//SIJOq",
+  "phone": "09097882712",
+  "role": 1,
+  "createdAt": {
+    "$date": "2025-06-04T09:29:35.930Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-04T09:29:35.930Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6859100c2b1849cc4f7d6f9d"
+  },
+  "name": "nhi",
+  "email": "nhi@gmail.com",
+  "password": "$2b$10$vkmR8oZlIfYJf5puliJty.WUhGEjFuSMtZgjXHYPAn2Me5mCCus5W",
+  "phone": "09092881901",
+  "role": 1,
+  "authType": "local",
+  "createdAt": {
+    "$date": "2025-06-23T08:27:56.414Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-23T08:27:56.414Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6859177c2b1849cc4f7d6fa2"
+  },
+  "name": "Trương trí trung",
+  "email": "tritrung18012005@gmail.com",
+  "password": "$2b$10$zQ8RIPU17To9VHH.u4t08ef4NgSqKe2DZS/fAZgHhS0CC82DLmxZe",
+  "phone": "0563435668",
+  "role": 0,
+  "authType": "local",
+  "createdAt": {
+    "$date": "2025-06-23T08:59:40.933Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-23T11:48:26.410Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68592f32aee13d052adfafdd"
+  },
+  "name": "Xuân Hương",
+  "email": "huong@gmail.com",
+  "password": "$2b$10$CK9ZNUrs.yndQLPCrzmTaOZ/3f2NYDHuJdCOAukxMDY0qVoY2LKDC",
+  "phone": "0909088291",
+  "role": 1,
+  "authType": "local",
+  "createdAt": {
+    "$date": "2025-06-23T10:40:50.475Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-23T10:40:50.475Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6867dce34d246bec3bef52a9"
+  },
+  "name": "anhphuong",
+  "email": "Phuong394@gmail.com",
+  "password": "$2b$10$ru/oE5rQ5xcuOPmdBTPOBelEIrX5y7VVq5lxHW7fjHVB2MjjCJdMa",
+  "role": 1,
+  "authType": "local",
+  "createdAt": {
+    "$date": "2025-07-04T13:53:39.210Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-04T13:53:39.210Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6867e04b569b5aa31dc11e60"
+  },
+  "name": "username",
+  "email": "phuongndps39487s@gmail.com",
+  "password": "$2b$10$dbCNyHSUCuVCgVGnJF9gLO6CLALsX8aw7H1capVGFvbI5.Earc2ly",
+  "role": 1,
+  "authType": "local",
+  "createdAt": {
+    "$date": "2025-07-04T14:08:11.172Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-04T14:08:11.172Z"
+  },
+  "__v": 0,
+  "phone": "0982677054"
+},
+{
+  "_id": {
+    "$oid": "6868339d55f4d9b24d038822"
+  },
+  "name": "ajan",
+  "email": "test@gmail.com",
+  "password": "$2b$10$TDpumUTg8OYQs6iII0Qb3es/E9UhWU0jXFSgV8Dwj6iD1tI0ql6gG",
+  "role": 1,
+  "authType": "local",
+  "createdAt": {
+    "$date": "2025-07-04T20:03:41.620Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-04T20:03:41.620Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6868f3696fa68dc54dad294c"
+  },
+  "name": "Phương",
+  "email": "123@gmail.com",
+  "password": "$2b$10$Q4Uy/70zDrKG.Jnek1IWpOLe3ttLRTC4oDVTi4vdwc.HMNqX.Mw/.",
+  "role": 1,
+  "authType": "local",
+  "createdAt": {
+    "$date": "2025-07-05T09:42:01.768Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-03T18:57:35.055Z"
+  },
+  "__v": 0,
+  "avatar": "",
+  "gender": "Khác",
+  "point": 219000,
+  "rank": "silver",
+  "resetPasswordCount": 0
+},
+{
+  "_id": {
+    "$oid": "68690d076fa68dc54dad4caa"
+  },
+  "name": "phuong",
+  "email": "phuongndps39487@gmail.com",
+  "password": "$2b$10$VTBig28GcawYSN4.hF.hM.KWCf4xg7x43vgqWyei4Y3yKzItTQPEy",
+  "role": 1,
+  "authType": "local",
+  "createdAt": {
+    "$date": "2025-07-05T11:31:19.867Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-15T00:50:30.345Z"
+  },
+  "__v": 0,
+  "avatar": "https://fiyo.click/api/images/FIYO.png",
+  "gender": "Nam",
+  "point": 1166000,
+  "rank": "platinum",
+  "resetPasswordCount": 5,
+  "resetPasswordDate": {
+    "$date": "2025-08-14T20:15:36.158Z"
+  },
+  "phone": "0865181657"
+},
+{
+  "_id": {
+    "$oid": "6870fd4e03a0a15e3b0d8f72"
+  },
+  "name": "Phương King",
+  "email": "duyphuong21062005@gmail.com",
+  "password": "$2b$10$vzsDNFGiLOBuVPDC4qVgmeLUKQveWd6vmE3sUDK.UsOtMdOwJdLh2",
+  "phone": "0865181657",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 4,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-07-11T12:02:22.840Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-15T10:05:08.425Z"
+  },
+  "__v": 0,
+  "gender": "other",
+  "resetPasswordDate": {
+    "$date": "2025-07-15T10:05:05.809Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "687bf499b5906fcd38dcaf34"
+  },
+  "name": "Phuong Duy",
+  "email": "phuongps39487@gmail.com",
+  "password": null,
+  "role": 1,
+  "authType": "google",
+  "gender": "other",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-07-19T19:40:09.954Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-19T19:40:09.954Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688d0bec0dcc4af92ab16bc1"
+  },
+  "avatar": "",
+  "name": "Phương Nguyễn Duya",
+  "email": "phuongndps39487a@gmail.com",
+  "password": "$2b$10$xiBxVjVV7MGOrGwYoypcxO3DNMm8MY3FnFyH14sbO1Yas9zz9izZW",
+  "phone": "0865181657",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-01T18:48:12.341Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-01T18:48:12.341Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688d0dabe8dc96f8640fbf6a"
+  },
+  "avatar": "",
+  "name": "Phương Nguyễn Dusy",
+  "email": "phuongndps39487sss@gmail.com",
+  "password": "$2b$10$qJbV8pGP5cE82RrMxovlxurFU/PFI9.GYsFjLzS4XGE5OLqQ5FSWO",
+  "phone": "0865181657",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-01T18:55:39.840Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-01T18:55:39.840Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688fc57d316b334532982413"
+  },
+  "avatar": "",
+  "name": "2BAR BABY TEE - BLUES",
+  "email": "vanlong0988019661@gmail.com",
+  "password": "$2b$10$4z5LR4FuEMX8M7gxfK6NxufV9jutmeJBeIUX7pl/8HnGSOsoJ5AB.",
+  "phone": "01718111111",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-03T20:24:29.620Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-03T20:24:29.620Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688fca59316b33453298241f"
+  },
+  "avatar": "",
+  "name": "2BAR BABY TEE - BLUESqq",
+  "email": "vanlong09880196a61@gmail.com",
+  "password": "$2b$10$ygeNK653WVEMjN875PSgxurbwlstWvQ4Z8xBLAAE4PbUTvr1t0jHe",
+  "phone": "0865181657",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-03T20:45:13.482Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-03T20:45:13.482Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688fca7c316b33453298242b"
+  },
+  "avatar": "",
+  "name": "phuong21062005@gmail.com",
+  "email": "phuong21062005@gmail.com",
+  "password": "$2b$10$8mgBwoUIefmPBYAYvyX84.ykFM2.VKpDAOqV.By/GYUhQQlfFCIRW",
+  "phone": "0865181657",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-03T20:45:48.842Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-03T20:45:48.842Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688fcadd316b334532982436"
+  },
+  "avatar": "",
+  "name": "vanlong098801aaa9661@gmail.com",
+  "email": "vanlong098801aaa9661@gmail.com",
+  "password": "$2b$10$1jdYoisA669qKvU/QBADWOPFi.113aknnFIDfLM8EChS6VZuBl2Ai",
+  "phone": "0865181657",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-03T20:47:25.930Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-03T20:47:25.930Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689085d5d57f5ce05e7a1f20"
+  },
+  "avatar": "",
+  "name": "Phương Nguyễn Duy1",
+  "email": "phuongndps3948ss7@gmail.com",
+  "password": "$2b$10$zChOMrjIdnmv0gvG.JiUk.I8GNG9Xb.eP0dYGTkjtRphbLhtVwhIG",
+  "phone": "0865181657",
+  "gender": "Nam",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-04T10:05:09.270Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-04T10:05:09.270Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689086f3d57f5ce05e7a1f32"
+  },
+  "avatar": "",
+  "name": "Phương Nguyễn Duyaaa",
+  "email": "phuongndps39487aaa@gmail.com",
+  "password": "$2b$10$JkshVhszR8hNdKhinCBhYuoH3j7az9ZJtXzOmnUsog/RpXLC14sli",
+  "phone": "08651816572",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-04T10:09:55.110Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-04T10:09:55.110Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6891d6b89939f8dd3b272efb"
+  },
+  "avatar": "",
+  "name": "Phú Trần Trường",
+  "email": "phu612006p@gmail.com",
+  "password": null,
+  "gender": "Khác",
+  "role": 1,
+  "authType": "google",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-05T10:02:32.211Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-05T10:02:32.211Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68930e79de5cdbea9344980c"
+  },
+  "avatar": "https://fiyo.click/api/images/Screenshot 2025-07-23 194804.png",
+  "name": "mmm",
+  "email": "onlyp2910@gmail.com",
+  "password": null,
+  "gender": "Nam",
+  "role": 1,
+  "authType": "google",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-06T08:12:41.882Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-06T09:04:34.052Z"
+  },
+  "__v": 0,
+  "phone": "0865181657"
+},
+{
+  "_id": {
+    "$oid": "6893150391c00645fe4433fb"
+  },
+  "avatar": "https://fiyo.click/api/images/Screenshot 2025-08-06 154403.png",
+  "name": "Duy Phuong",
+  "email": "phuongxxcoolboyzz@gmail.com",
+  "password": null,
+  "gender": "Khác",
+  "role": 1,
+  "authType": "google",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-06T08:40:35.197Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-06T08:56:03.689Z"
+  },
+  "__v": 0,
+  "phone": "086518189122"
+},
+{
+  "_id": {
+    "$oid": "6899a03d5f0aacf887d86fe9"
+  },
+  "avatar": "https://fiyo.click/api/images/512730212_4030220290599805_2612737192451036513_n - Copy.jpg",
+  "name": "vinh",
+  "email": "123trongvinh456@gmail.com",
+  "password": "$2b$10$JdhtNI.D3PBlgu2i7TX0UOKeCqDNhxtKb2xMo/wa.gAG0xSNAcI4.",
+  "phone": "0333790891",
+  "gender": "Nam",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-11T07:48:13.553Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-18T14:55:14.829Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899a5185f0aacf887d92815"
+  },
+  "avatar": "",
+  "name": "Trung Trương Trí",
+  "email": "trungttps39433@gmail.com",
+  "password": "$2b$10$XDrwlCajgfLbeggxdy6Eye6LjbExC041Kh0I9fOiSUYgrtri5nVmS",
+  "gender": "Khác",
+  "role": 1,
+  "authType": "google",
+  "resetPasswordCount": 1,
+  "point": 169000,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-11T08:08:56.302Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-19T10:16:09.079Z"
+  },
+  "__v": 0,
+  "phone": "0563435668",
+  "resetPasswordDate": {
+    "$date": "2025-08-14T23:49:32.509Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6899df8c8fbd49e59ff86b01"
+  },
+  "avatar": "",
+  "name": "Admin",
+  "email": "admintest@gmail.com",
+  "password": "$2b$10$k9EcBMKG16VBs2PYn4qkkOdAQAtA/4kmMVFOKBSB/3xGl7tUKjb/K",
+  "phone": "0865181657",
+  "gender": "Khác",
+  "role": 0,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 219000,
+  "rank": "silver",
+  "createdAt": {
+    "$date": "2025-08-11T12:18:20.411Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T19:53:59.254Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899ed35b6538bdcef647abd"
+  },
+  "avatar": "https://fiyo.click/api/images/akagai-1.jpg",
+  "name": "Khải Đỗ",
+  "email": "khaihuynh08062005@gmail.com",
+  "password": null,
+  "gender": "Nam",
+  "role": 1,
+  "authType": "google",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-11T13:16:37.124Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T13:19:57.742Z"
+  },
+  "__v": 0,
+  "phone": "0367438455"
+},
+{
+  "_id": {
+    "$oid": "6899ed9db6538bdcef64b384"
+  },
+  "avatar": "",
+  "name": "Phạm Phước Thịnh",
+  "email": "phamphuocthinh2042005@gmail.com",
+  "password": "$2b$10$nGlMDhE6E.NNpnYuqE/l7uzdXQiplbzdYOdlw1heDHmpLYt.qyzx.",
+  "phone": "0919919810",
+  "gender": "Khác",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-11T13:18:21.733Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T13:25:21.915Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899edbbb6538bdcef64b38a"
+  },
+  "avatar": "https://fiyo.click/api/images/thanhqui.jpg",
+  "name": "Nguyễn Thanh Quii",
+  "email": "quintps39335@gmail.com",
+  "password": null,
+  "gender": "Nam",
+  "role": 1,
+  "authType": "google",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-11T13:18:51.097Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T13:31:40.825Z"
+  },
+  "__v": 0,
+  "phone": "0353525920"
+},
+{
+  "_id": {
+    "$oid": "6899eeb7b6538bdcef65de21"
+  },
+  "avatar": "",
+  "name": "aád",
+  "email": "phamtri1@gmail.com",
+  "password": "$2b$10$55FysSipqj43KwpArzI/zuPV6XPAEIURUzSOU4aOr09.6W79.E.jW",
+  "phone": "0349152560",
+  "gender": "Nam",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-11T13:23:03.151Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T13:23:03.151Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899f1cbb6538bdcef683bce"
+  },
+  "avatar": "",
+  "name": "Nam Kim",
+  "email": "khacmnam8@gmail.com",
+  "password": null,
+  "gender": "Khác",
+  "role": 1,
+  "authType": "google",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-11T13:36:11.398Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T13:36:11.398Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899f3d8b6538bdcef6b0067"
+  },
+  "avatar": "",
+  "name": "Kiet Nguyen",
+  "email": "kiet93274@gmail.com",
+  "password": null,
+  "gender": "Khác",
+  "role": 1,
+  "authType": "google",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-11T13:44:56.877Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T13:44:56.877Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899f647b6538bdcef6d0c07"
+  },
+  "avatar": "",
+  "name": "Tùng Nguyễn Thanh",
+  "email": "tungntps39379@gmail.com",
+  "password": null,
+  "gender": "Khác",
+  "role": 1,
+  "authType": "google",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-11T13:55:19.573Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T13:55:19.573Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899f967b6538bdcef715df4"
+  },
+  "avatar": "",
+  "name": "Văn",
+  "email": "namvan1522004@gmail.com",
+  "password": "$2b$10$xHtQjdfjtlvZ4DDkiRZhNOM03tMybhFGn0bt9RKC4c410pSW.Fp/e",
+  "phone": "0585820475",
+  "gender": "Nam",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-11T14:08:39.605Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T14:08:39.605Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899fa09b6538bdcef71b4d4"
+  },
+  "avatar": "",
+  "name": "Văn",
+  "email": "nam@gmail.com",
+  "password": "$2b$10$9Z71ukgGNqsIraPfjuNoiOTo03w1dmdyVwzPBqREhdSVq2axx0L5C",
+  "phone": "0585820234",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-11T14:11:21.668Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T14:11:21.668Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899fbf1b6538bdcef72bdb6"
+  },
+  "avatar": "",
+  "name": "Văn",
+  "email": "nam@example.com",
+  "password": "$2b$10$r79NFo5D9YSdGH0MaphJ3OFBNGoR6qd3aeW79klAw9mnRMKwqZDNi",
+  "phone": "0585820455",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-11T14:19:29.289Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T14:19:29.289Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689c4540b6538bdcef8d8fc5"
+  },
+  "avatar": "",
+  "name": "Dương Văn Hiếu",
+  "email": "hieugay123@gmail.com",
+  "password": "$2b$10$1aM.4vnu/et3Uz0th3pPsOHicWi2JuT9uwk5OIoTtI3OdJ5I.WusK",
+  "phone": "0865181657",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-13T07:56:48.825Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-13T07:56:48.825Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689cc868b6538bdcef9204ef"
+  },
+  "avatar": "",
+  "name": "Nguyen Thai",
+  "email": "thaithathu52@gmail.com",
+  "password": null,
+  "gender": "Khác",
+  "role": 1,
+  "authType": "google",
+  "resetPasswordCount": 0,
+  "point": 399000,
+  "rank": "silver",
+  "createdAt": {
+    "$date": "2025-08-13T17:16:24.725Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-14T13:41:46.285Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689dc3b7b6538bdcef99df88"
+  },
+  "avatar": "",
+  "name": "Phương Nguyễn Duyddddddddddddxx",
+  "email": "phuongndps39487aaaaa@gmail.com",
+  "password": "$2b$10$8fEdHL04gL.6MAUXUaEzg.mLpDBSqmmOxBJ70/uUkLrife3tztNEq",
+  "phone": "0865181657",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-14T11:08:39.628Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-14T11:09:09.491Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689dc647b6538bdcef9ad67b"
+  },
+  "avatar": "",
+  "name": "Phương Nguyễn Duywsssssssss",
+  "email": "123sssss@gmail.com",
+  "password": "$2b$10$lZIV89ggR60rD7VR5N4X..QCPcG9BCf3.na4YokWI7y2xYyyzbzC2",
+  "phone": "0865181657",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-14T11:19:35.008Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-14T11:19:35.008Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689de54cb9ad2c25c0348b46"
+  },
+  "avatar": "",
+  "name": "hehe",
+  "email": "hehe@gmail.com",
+  "password": "$2b$10$7vOa/gIKf8GKMRL02R9xHuldD54KiTHkaV8.FKfHm/hxyLMXRZABq",
+  "phone": "0909098821",
+  "gender": "Nam",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-14T13:31:56.359Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-14T13:31:56.359Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68a0ecf23fce64ab8c6ee550"
+  },
+  "avatar": "",
+  "name": "Phương Nguyễn Duy",
+  "email": "123test@gmail.com",
+  "password": "$2b$10$mIV2mOIbp5gmCoAAMH407ONsfYyX6PqBwyvMVDSlZd3r2i2ChbLlS",
+  "phone": "0865181657",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-16T20:41:22.835Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-16T20:41:22.835Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68a319823fce64ab8c7d8737"
+  },
+  "avatar": "",
+  "name": "Tie",
+  "email": "tiexitinn2705@gmail.com",
+  "password": null,
+  "gender": "Khác",
+  "role": 1,
+  "authType": "google",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-18T12:16:02.305Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-18T12:16:02.305Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68a31f0ac57c0276dfa3543f"
+  },
+  "avatar": "",
+  "name": "Nguyễn Duy Phương",
+  "email": "phuong39487@gmail.comphu",
+  "password": "$2b$10$512QFa429sBm81jXCpIrgON4gIjClsu8Lv2J5Qm2g0wTkP5m76lSO",
+  "phone": "0865181657",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-18T12:39:38.045Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-18T12:39:38.045Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68a33eb83fce64ab8c7f26ee"
+  },
+  "avatar": "",
+  "name": "Xuan Huong",
+  "email": "huongcutee2005@gmail.com",
+  "password": null,
+  "gender": "Khác",
+  "role": 1,
+  "authType": "google",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-18T14:54:48.758Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-18T14:54:48.758Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68a443b28956384e0d07de0e"
+  },
+  "avatar": "",
+  "name": "Phương Nguyễn Duysa",
+  "email": "phuongndps3948227@gmail.com",
+  "password": "$2b$10$RmLhQDvzOdpfsxz5QhwKy.k56rQFSTvOIhHxUNkuViBN61/Plno5u",
+  "phone": "0865181657",
+  "gender": "Nữ",
+  "role": 1,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-19T09:28:18.666Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-19T09:28:18.666Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68a44b323fce64ab8c8291dd"
+  },
+  "avatar": "",
+  "name": "shop",
+  "email": "shoptest@gmail.com",
+  "password": "$2b$10$uRrnmINaMYsKCQ5QSYOstuPJNSEZytdwa7wU.jRbaBW7moUb26N02",
+  "phone": "0333790891",
+  "gender": "Nam",
+  "role": 2,
+  "authType": "local",
+  "resetPasswordCount": 0,
+  "point": 0,
+  "rank": "bronze",
+  "createdAt": {
+    "$date": "2025-08-19T10:00:18.856Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-19T10:00:18.856Z"
+  },
+  "__v": 0
+}]

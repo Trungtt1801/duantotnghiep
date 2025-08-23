@@ -245,7 +245,7 @@ router.put("/:id", upload.array("images", 5), async (req, res) => {
 });
 
 
-// [DELETE] Xóa danh mục
+// [DELETE] Xóa danh mụcy
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
