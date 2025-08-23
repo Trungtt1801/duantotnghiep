@@ -283,12 +283,12 @@ router.post("/vnpay-guest", async (req, res) => {
 // [GET] VNPAY return (user)
 router.get("/vnpay_return", async (req, res) => {
   try {
-    console.log("📥 VNPay return query:", req.query);
+    console.log("📥 VNPay return query:", req.query); // ✅ Log query
     await orderController.vnpayCallback(req.query);
-    return res.redirect(`thanh toán thành công`);
+    return res.redirect(`${process.env.CLIENT_URL}/page/payment/success/${req.query.vnp_TxnRef}`);
   } catch (err) {
-    console.error("❌ VNPay Callback Lỗi:", err.message);
-    return res.redirect(`thanh toán thất bại`);
+    console.error("❌ VNPay Callback Lỗi:", err.message); // ✅ Log lỗi rõ hơn
+    return res.redirect("/page/payment/fail");
   }
 });
 
