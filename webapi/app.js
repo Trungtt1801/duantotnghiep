@@ -62,15 +62,15 @@ app.use(function (req, res, next) {
   next(createError(404));
 });
 
-// Kết nối database mongoose
-// mongoose
-//     .connect(process.env.MONGODB_URI)
-//   .then(() => console.log("✅ Kết nối Database thành công"))
-//   .catch((err) => console.error("❌ Lỗi kết nối Database:", err));
+
 mongoose
-  .connect("mongodb://localhost:27017/DATN")
-  .then(() => console.log("Kết nối Database thành công"))
-  .catch((err) => console.log(err));
+    .connect(process.env.MONGODB_URI)
+  .then(() => console.log("✅ Kết nối Database thành công"))
+  .catch((err) => console.error("❌ Lỗi kết nối Database:", err));
+// mongoose
+//   .connect("mongodb://localhost:27017/DATN")
+//   .then(() => console.log("Kết nối Database thành công"))
+//   .catch((err) => console.log(err));
     
 // Error handler
 app.use(function (err, req, res, next) {
