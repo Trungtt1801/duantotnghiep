@@ -53,6 +53,7 @@ app.use("/api/orders", orderRouter);
 app.use("/api/voucher", voucherRouter);
 app.use("/api/review", reviewRouter);
 app.use("/api/orderDetail", orderDetailRouter);
+app.use("/api/orderShop", orderShopRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/messeger", messengerRouter);
