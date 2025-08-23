@@ -171,7 +171,7 @@ if (payment_method.toLowerCase() === "vnpay") {
       total_price,
       payment_method,
       transaction_status,
-      status_order: "unpending",
+      status_order: "pending",
     });
     const savedOrder = await newOrder.save();
 

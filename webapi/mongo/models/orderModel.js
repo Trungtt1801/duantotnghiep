@@ -80,6 +80,7 @@ const OrderSchema = new Schema(
         status: {
           type: String,
           enum: [
+            "unpending",
             "pending",
             "preparing",
             "awaiting_shipment",
