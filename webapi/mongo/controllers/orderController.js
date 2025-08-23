@@ -328,6 +328,7 @@ async function addOrderForGuest(data) {
    if (payment_method.toLowerCase() === "vnpay") {
   const clientIP = toIPv4(ip || "127.0.0.1");
   const vnpLocale = normalizeLocale(locale);        // 'vn' | 'en'
+  
 const vnpayRes = await createVnpayPaymentForGuest(
   total_price,
   clientIP,
