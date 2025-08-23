@@ -19,6 +19,7 @@ const OrderShopSchema = new Schema(
     status_order: {
       type: String,
       enum: [
+        "unpending",
         "pending",
         "confirmed",
         "preparing",
@@ -37,6 +38,7 @@ const OrderShopSchema = new Schema(
         status: {
           type: String,
           enum: [
+            "unpending",
             "pending",
             "confirmed",
             "preparing",
