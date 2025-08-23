@@ -25,7 +25,7 @@ const upload = multer({ storage: storage });
 router.get("/", async (req, res) => {
   try {
     const result = await productController.getProducts();
-    const baseUrl = "http://localhost:3000/api/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
    
     const updatedProducts = await Promise.all(
       result.map(async (product) => {
@@ -66,7 +66,7 @@ router.get("/", async (req, res) => {
 // http://localhost:3000/api/products?page=1&limit=10
 router.get("/pro", async (req, res) => {
   try {
-    const baseUrl = "http://localhost:3000/api/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
 
     // Lấy page & limit từ query, mặc định page=1, limit=10
     const page = parseInt(req.query.page) || 1;
@@ -179,7 +179,7 @@ router.post("/filter", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const productId = req.params.id;
-  const baseUrl = "http://localhost:3000/api/images/";
+  const baseUrl = "https://fiyo.click/api/images/";
 
     const { product, variants } = await productController.getProductById(
       productId
@@ -348,7 +348,7 @@ router.put("/update/:id", upload.array("images", 10), async (req, res) => {
 router.get("/category/:categoryId", async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
-    const baseUrl = "http://localhost:3000/api/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
 
     const products = await productController.getProductsByCategoryTree(
       categoryId
@@ -441,7 +441,7 @@ router.get("/shop/:shopId", async (req, res) => {
       return res.status(400).json({ status: false, message: "ID của shop không hợp lệ" });
     }
 
-    const baseUrl = "http://localhost:3000/api/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
     const filter = { shop_id: new mongoose.Types.ObjectId(shopId) };
     if (!includeHidden) filter.isHidden = { $ne: true };
 

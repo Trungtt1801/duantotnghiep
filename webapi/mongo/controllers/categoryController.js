@@ -2,7 +2,7 @@ const categoriesModel = require("../models/categoryModel");
 const productsModel = require("../models/productsModel");
 const mongoose = require("mongoose");
 
-const baseUrl = "http://localhost:3000/api/images/";
+const baseUrl = "https://fiyo.click/api/images/";
 
 // Hàm định dạng đường dẫn ảnh
 function formatImages(images) {

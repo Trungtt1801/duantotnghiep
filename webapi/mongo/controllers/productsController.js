@@ -46,7 +46,7 @@ async function getProductsByShopId(shopId) {
       throw new Error("ID của shop không hợp lệ");
     }
 
-    const baseUrl = "http://localhost:3000/api/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
 
     // ⬇️ Không lọc isHidden nữa
     const filter = { shop_id: new mongoose.Types.ObjectId(shopId) };
@@ -163,7 +163,7 @@ async function searchProductsByName(nameKeyword) {
       .lean();
 
 
-    const baseUrl = "http://localhost:3000/api/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
 
     // Lấy danh sách product_id để fetch variant
     const productIds = products.map((p) => p._id);
@@ -316,7 +316,7 @@ async function getRelatedProducts(productId) {
       .limit(12);
 
     // ✅ Gắn URL ảnh
-    const baseUrl = "http://localhost:3000/api/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
 
     const updatedProducts = relatedProducts.map((product) => {
       const productObj = product.toObject();
@@ -415,7 +415,7 @@ async function filterFromList(productList, filters) {
     }
 
     // Bước 5: Thêm base URL vào hình ảnh nếu chưa có
-    const baseUrl = "http://localhost:3000/api/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
     products = products.map((product) => {
       const updated = { ...product };
       if (Array.isArray(updated.images)) {
@@ -577,7 +577,7 @@ async function getProductsByShop(shopId) {
       .find({ shop_id: shopId, isHidden: { $ne: true } })
       .lean();
 
-    const baseUrl = "http://localhost:3000/api/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
 
     // lấy tất cả product_id để lấy variants
     const productIds = products.map((p) => p._id);
@@ -614,7 +614,7 @@ async function getProductsByShopId(shopId) {
       throw new Error("ID của shop không hợp lệ");
     }
 
-    const baseUrl = "http://localhost:3000/api/images/";
+    const baseUrl = "https://fiyo.click/api/images/";
 
     // ⬇️ Không lọc isHidden nữa
     const filter = { shop_id: new mongoose.Types.ObjectId(shopId) };
