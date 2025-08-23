@@ -4,17 +4,73 @@ const ProductVariant = require("../models/productVariantModel");
 const OrderModel = require("../models/orderModel");
 const User = require("../models/userModels");
 const AddressModel = require("../models/addressModel");
+const OrderShopModel = require("../models/orderShopModel");
 
+const BASE_URL = "http://localhost:3000/api/images/";
+
+function httpifyImages(images) {
+  if (!Array.isArray(images)) return [];
+  return images.map((img) =>
+    /^https?:\/\//i.test(img) ? img : `${BASE_URL}${img}`
+  );
+}
+
+// Tìm đúng variant và size theo ID trong tài liệu ProductVariant
+function pickVariantAndSize(variantDoc, variantId, sizeId) {
+  let variantData = null;
+  let sizeData = null;
+
+  const v = variantDoc?.variants?.find(
+    (x) => x?._id?.toString() === variantId?.toString()
+  );
+  if (v) {
+    variantData = { _id: v._id, color: v.color };
+    const s = v.sizes?.find(
+      (x) => x?._id?.toString() === sizeId?.toString()
+    );
+    if (s) {
+      sizeData = {
+        _id: s._id,
+        sku: s.sku,
+        quantity: s.quantity,
+        size: s.size,
+      };
+    }
+  }
+  return { variantData, sizeData };
+}
 
 async function addOrderDetail(data) {
   try {
-    const { order_id, product_id, quantity } = data;
+    const required = [
+      "order_id",
+      "order_shop_id",
+      "shop_id",
+      "product_id",
+      "variant_id",
+      "size_id",
+      "quantity",
+    ];
 
-    if (!order_id || !product_id || !quantity) {
-      throw new Error("Thiếu thông tin chi tiết đơn hàng");
+    for (const f of required) {
+      if (
+        data[f] === undefined ||
+        data[f] === null ||
+        (typeof data[f] === "string" && data[f].trim() === "")
+      ) {
+        throw new Error(`Thiếu field bắt buộc: ${f}`);
+      }
     }
 
-    const newDetail = new OrderDetailModel({ order_id, product_id, quantity });
+    const newDetail = new OrderDetailModel({
+      order_id: data.order_id,
+      order_shop_id: data.order_shop_id,
+      shop_id: data.shop_id,
+      product_id: data.product_id,
+      variant_id: data.variant_id,
+      size_id: data.size_id,
+      quantity: data.quantity,
+    });
     return await newDetail.save();
   } catch (error) {
     console.error("Lỗi thêm chi tiết đơn hàng:", error.message);
@@ -25,7 +81,7 @@ async function addOrderDetail(data) {
 
 // async function getDetailsByOrderId(orderId) {
 //   try {
-//     const BASE_URL = "https://fiyo.click/api/images/";
+//     const BASE_URL = "http://localhost:3000/api/images/";
 
 //     const details = await OrderDetailModel.aggregate([
 //       {
@@ -128,7 +184,6 @@ async function getOrderDetailByOrderId(orderId) {
       };
     }
 
-    // 3. Lấy thông tin user
     // 3. Xử lý thông tin user hoặc address_guess
     let userInfo = null;
 
@@ -171,12 +226,13 @@ async function getOrderDetailByOrderId(orderId) {
     }
 
     // 4. Xử lý chi tiết sản phẩm
+    const BASE_URL = "http://localhost:3000/api/images/";
     const result = [];
 
     for (const item of orderDetails) {
       const [product, variantDoc] = await Promise.all([
-        Product.findById(item.product_id),
-        ProductVariant.findOne({ product_id: item.product_id }),
+        Product.findById(item.product_id).lean(),
+        ProductVariant.findOne({ product_id: item.product_id }).lean(),
       ]);
 
       if (!product) continue;
@@ -208,6 +264,10 @@ async function getOrderDetailByOrderId(orderId) {
         }
       }
 
+      const images = Array.isArray(product.images)
+        ? product.images.map((img) => (/^http/.test(img) ? img : `${BASE_URL}${img}`))
+        : [];
+
       result.push({
         order_id: item.order_id,
         createdAt: item.createdAt,
@@ -217,9 +277,7 @@ async function getOrderDetailByOrderId(orderId) {
           name: product.name,
           description: product.description,
           price: product.price,
-          images: product.images.map(
-            (img) => `https://fiyo.click/api/images/${img}`
-          ),
+          images,
           variant: variantData,
           size: sizeData,
         },
@@ -235,6 +293,7 @@ async function getOrderDetailByOrderId(orderId) {
         payment_method: order.payment_method,
         status_order: order.status_order,
         transaction_status: order.transaction_status || null,
+        transaction_code: order.transaction_code || null, // 👈 thêm dòng này
         total_price: order.total_price || 0,
         createdAt: order.createdAt,
         status_history: order.status_history || [],
@@ -249,7 +308,6 @@ async function getOrderDetailByOrderId(orderId) {
   }
 }
 
-
 async function deleteDetailsByOrderId(orderId) {
   try {
     return await OrderDetailModel.deleteMany({ order_id: orderId });
@@ -259,11 +317,216 @@ async function deleteDetailsByOrderId(orderId) {
   }
 }
 
+/** Báo cáo: sản phẩm bán ít nhất trong khoảng thời gian */
+function parseTimePeriod(tp) {
+  // hỗ trợ: 7d, 30d, 90d, 180d, 365d, all
+  if (!tp || tp === "30d") return 30;
+  if (tp === "7d") return 7;
+  if (tp === "90d") return 90;
+  if (tp === "180d") return 180;
+  if (tp === "365d") return 365;
+  if (tp === "all") return null; // không filter thời gian
+  return 30;
+}
+
+async function getLeastSoldProducts(timePeriod) {
+  try {
+    const days = parseTimePeriod(timePeriod);
+    const match = {};
+    if (days) {
+      const from = new Date();
+      from.setDate(from.getDate() - days);
+      match.createdAt = { $gte: from };
+    }
+
+    const rows = await OrderDetailModel.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: "$product_id",
+          total_qty: { $sum: "$quantity" },
+        },
+      },
+      { $sort: { total_qty: 1 } }, // ít nhất trước
+      { $limit: 20 },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      { $unwind: "$product" },
+      {
+        $project: {
+          product_id: "$_id",
+          total_qty: 1,
+          name: "$product.name",
+          price: "$product.price",
+          images: "$product.images",
+        },
+      },
+    ]);
+
+    const BASE_URL = "http://localhost:3000/api/images/";
+
+    const result = rows.map((r) => ({
+      product_id: r.product_id,
+      name: r.name,
+      price: r.price,
+      total_qty: r.total_qty,
+      images: Array.isArray(r.images)
+        ? r.images.map((img) => (/^http/.test(img) ? img : `${BASE_URL}${img}`))
+        : [],
+    }));
+
+    return { status: true, result };
+  } catch (error) {
+    console.error("Lỗi lấy sản phẩm bán ít nhất:", error.message);
+    throw new Error("Lỗi lấy sản phẩm bán ít nhất");
+  }
+}
+
+// helper chuẩn hoá địa chỉ
+function shapeAddress(addr) {
+  if (!addr) return null;
+  return {
+    _id: addr._id || null,
+    name: addr.name || null,
+    phone: addr.phone || null,
+    address: addr.address || null,
+    detail: addr.detail || null,
+    type: addr.type || null,
+  };
+}
+
+async function getOrderDetailsByOrderShopId(orderShopId) {
+  try {
+    // 1) Lấy OrderShop + order cha
+    const orderShop = await OrderShopModel.findById(orderShopId).lean();
+    if (!orderShop) {
+      return { status: false, message: "Không tìm thấy OrderShop" };
+    }
+
+    const order = await OrderModel.findById(orderShop.order_id).lean();
+    if (!order) {
+      return { status: false, message: "Không tìm thấy Order cha của OrderShop" };
+    }
+
+    // 2) Lấy chi tiết thuộc OrderShop
+    const details = await OrderDetailModel.find({ order_shop_id: orderShopId }).lean();
+    if (details.length === 0) {
+      return { status: false, message: "Không có chi tiết cho OrderShop này" };
+    }
+
+    // 3) Batch products & variants
+    const productIds = [...new Set(details.map((d) => d.product_id?.toString()))];
+    const [products, variantDocs] = await Promise.all([
+      Product.find({ _id: { $in: productIds } }).lean(),
+      ProductVariant.find({ product_id: { $in: productIds } }).lean(),
+    ]);
+    const productMap = new Map(products.map((p) => [p._id.toString(), p]));
+    const variantMap = new Map(variantDocs.map((v) => [v.product_id.toString(), v]));
+
+    // 4) User/guest info + shipping_address từ order
+    let userInfo = null;
+    let shippingAddress = null;
+
+    if (order.user_id) {
+      const [user, address] = await Promise.all([
+        User.findById(order.user_id).lean(),
+        AddressModel.findById(order.address_id).lean(),
+      ]);
+      shippingAddress = shapeAddress(address);
+
+      if (user) {
+        userInfo = {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          address: shippingAddress, // giữ để tương thích
+        };
+      }
+    } else if (order.address_guess) {
+      const g = order.address_guess;
+      shippingAddress = shapeAddress(g);
+      userInfo = {
+        name: g.name,
+        email: g.email,
+        phone: g.phone,
+        address: shippingAddress,
+      };
+    }
+
+    // 5) Build items
+    const items = details
+      .map((it) => {
+        const product = productMap.get(it.product_id?.toString());
+        if (!product) return null;
+
+        const vdoc = variantMap.get(it.product_id?.toString());
+        const { variantData, sizeData } = pickVariantAndSize(vdoc, it.variant_id, it.size_id);
+
+        return {
+          order_id: it.order_id,
+          order_shop_id: it.order_shop_id,
+          createdAt: it.createdAt,
+          quantity: it.quantity,
+          product: {
+            product_id: product._id,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            images: httpifyImages(product.images),
+            variant: variantData,
+            size: sizeData,
+          },
+        };
+      })
+      .filter(Boolean);
+
+    // 6) Trả về kèm shipping_address
+    return {
+      status: true,
+      order_shop: {
+        _id: orderShop._id,
+        shop_id: orderShop.shop_id,
+        order_id: orderShop.order_id,
+        status: orderShop.status_order || orderShop.status,
+        total_price: orderShop.total_price,
+        createdAt: orderShop.createdAt,
+        status_history: orderShop.status_history || [],
+      },
+      order_parent: {
+        _id: order._id,
+        payment_method: order.payment_method,
+        status_order: order.status_order,
+        transaction_status: order.transaction_status || null,
+        transaction_code: order.transaction_code || null,
+        total_price: order.total_price || 0,
+        createdAt: order.createdAt,
+        status_history: order.status_history || [],
+        address_id: order.address_id || null, // (tuỳ chọn) trả kèm id để debug
+      },
+      shipping_address: shippingAddress, // 👈 THÊM TRƯỜNG NÀY
+      user: userInfo,
+      items,
+    };
+  } catch (err) {
+    console.error("❌ Lỗi getOrderDetailsByOrderShopId:", err);
+    return { status: false, message: "Lỗi server" };
+  }
+}
+
+
 
 
 module.exports = {
   addOrderDetail,
   getOrderDetailByOrderId,
   deleteDetailsByOrderId,
-  
+  getLeastSoldProducts,
+  getOrderDetailsByOrderShopId,
 };

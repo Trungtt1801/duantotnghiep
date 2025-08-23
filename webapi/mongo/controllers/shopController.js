@@ -247,6 +247,51 @@ async function countProductsByShop(shopId, onlyActive = false) {
   return total;
 }
 
+async function followShop(shopId, userId) {
+  const shop = await Shop.findById(shopId);
+  if (!shop) throw new Error("Không tìm thấy shop");
+  await shop.follow(userId);
+  await shop.populate("followers", "name email avatar");
+  return { message: "Đã follow shop", followers_count: shop.followers_count, shop };
+}
+
+async function unfollowShop(shopId, userId) {
+  const shop = await Shop.findById(shopId);
+  if (!shop) throw new Error("Không tìm thấy shop");
+  await shop.unfollow(userId);
+  await shop.populate("followers", "name email avatar");
+  return { message: "Đã bỏ follow shop", followers_count: shop.followers_count, shop };
+}
+
+async function toggleFollow(shopId, userId) {
+  const shop = await Shop.findById(shopId);
+  if (!shop) throw new Error("Không tìm thấy shop");
+  await shop.toggleFollow(userId);
+  await shop.populate("followers", "name email avatar");
+  const following = shop.isFollowing(userId);
+  return {
+    message: following ? "Đã follow shop" : "Đã bỏ follow shop",
+    followers_count: shop.followers_count,
+    following,
+    shop,
+  };
+}
+
+async function isFollowing(shopId, userId) {
+  const shop = await Shop.findById(shopId).select("followers");
+  if (!shop) throw new Error("Không tìm thấy shop");
+  return { following: shop.followers?.some((f) => String(f) === String(userId)) || false };
+}
+
+async function listFollowers(shopId, page = 1, limit = 20) {
+  const skip = (Math.max(1, page) - 1) * Math.max(1, limit);
+  const shop = await Shop.findById(shopId)
+    .populate({ path: "followers", select: "name email avatar", options: { skip, limit } })
+    .lean();
+  if (!shop) throw new Error("Không tìm thấy shop");
+  return { followers_count: shop.followers?.length || 0, followers: shop.followers || [] };
+}
+
 module.exports = {
   createShop,
   getAllShops,
@@ -258,5 +303,10 @@ module.exports = {
   getShopByUserId,
   getCategoriesByShop,
   getShopByProductId,
-  countProductsByShop
+  countProductsByShop,
+  listFollowers,
+  toggleFollow,
+  unfollowShop,
+  followShop,
+    isFollowing,  
 };

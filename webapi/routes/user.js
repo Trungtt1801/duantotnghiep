@@ -239,7 +239,7 @@ router.patch("/update/:id", upload.single("avatar"), async (req, res) => {
 
     let avatar;
     if (req.file) {
-      const baseUrl = "https://fiyo.click/api/images/";
+      const baseUrl = "http://localhost:3000/api/images/";
       avatar = baseUrl + req.file.filename;
     }
 
@@ -267,6 +267,26 @@ router.patch("/update/:id", upload.single("avatar"), async (req, res) => {
   }
 });
 
+  router.patch("/update-role/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+
+      const updatedUser = await userController.updateUserRole(id, role);
+
+      res.status(200).json({
+        status: true,
+        message: "Cập nhật role thành công",
+        data: updatedUser,
+      });
+    } catch (err) {
+      console.error("Lỗi cập nhật role:", err.message);
+      res.status(400).json({
+        status: false,
+        message: err.message,
+      });
+    }
+  });
 
 
 module.exports = router;

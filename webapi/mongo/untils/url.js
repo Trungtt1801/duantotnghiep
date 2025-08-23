@@ -1,4 +1,4 @@
-const IMG_BASE = process.env.BASE_IMAGE_URL || "http://localhost:3000/images/";
+const IMG_BASE = process.env.BASE_IMAGE_URL || "http://localhost:3000/api/images/";
 
 function normalizeImageUrl(u) {
   if (!u) return "";

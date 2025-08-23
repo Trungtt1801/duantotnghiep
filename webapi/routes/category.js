@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const categoryController = require("../mongo/controllers/categoryController");
 
-const baseUrl = "https://fiyo.click/api/images/";
+const baseUrl = "http://localhost:3000/api/images/";
 const multer = require("multer");
 
 // Multer config
@@ -245,7 +245,7 @@ router.put("/:id", upload.array("images", 5), async (req, res) => {
 });
 
 
-// [DELETE] Xóa danh mục
+// [DELETE] Xóa danh mụcy
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
