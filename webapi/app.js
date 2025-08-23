@@ -9,6 +9,7 @@ var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const mongoose = require("mongoose");
 const helmet = require("helmet");
+const cors = require("cors");
 
 // Import các router
 const indexRouter = require("./routes/index");
