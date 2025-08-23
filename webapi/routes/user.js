@@ -239,7 +239,7 @@ router.patch("/update/:id", upload.single("avatar"), async (req, res) => {
 
     let avatar;
     if (req.file) {
-      const baseUrl = "https://fiyo.click/api/images/";
+      const baseUrl = "http://localhost:3000/api/images/";
       avatar = baseUrl + req.file.filename;
     }
 
