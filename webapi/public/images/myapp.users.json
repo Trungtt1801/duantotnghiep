@@ -269,7 +269,7 @@
     "$date": "2025-08-15T00:50:30.345Z"
   },
   "__v": 0,
-  "avatar": "https://fiyo.click/api/images/FIYO.png",
+  "avatar": "http://localhost:3000/api/images/FIYO.png",
   "gender": "Nam",
   "point": 1166000,
   "rank": "platinum",
@@ -535,7 +535,7 @@
   "_id": {
     "$oid": "68930e79de5cdbea9344980c"
   },
-  "avatar": "https://fiyo.click/api/images/Screenshot 2025-07-23 194804.png",
+  "avatar": "http://localhost:3000/api/images/Screenshot 2025-07-23 194804.png",
   "name": "mmm",
   "email": "onlyp2910@gmail.com",
   "password": null,
@@ -558,7 +558,7 @@
   "_id": {
     "$oid": "6893150391c00645fe4433fb"
   },
-  "avatar": "https://fiyo.click/api/images/Screenshot 2025-08-06 154403.png",
+  "avatar": "http://localhost:3000/api/images/Screenshot 2025-08-06 154403.png",
   "name": "Duy Phuong",
   "email": "phuongxxcoolboyzz@gmail.com",
   "password": null,
@@ -581,7 +581,7 @@
   "_id": {
     "$oid": "6899a03d5f0aacf887d86fe9"
   },
-  "avatar": "https://fiyo.click/api/images/512730212_4030220290599805_2612737192451036513_n - Copy.jpg",
+  "avatar": "http://localhost:3000/api/images/512730212_4030220290599805_2612737192451036513_n - Copy.jpg",
   "name": "vinh",
   "email": "123trongvinh456@gmail.com",
   "password": "$2b$10$JdhtNI.D3PBlgu2i7TX0UOKeCqDNhxtKb2xMo/wa.gAG0xSNAcI4.",
@@ -653,7 +653,7 @@
   "_id": {
     "$oid": "6899ed35b6538bdcef647abd"
   },
-  "avatar": "https://fiyo.click/api/images/akagai-1.jpg",
+  "avatar": "http://localhost:3000/api/images/akagai-1.jpg",
   "name": "Khải Đỗ",
   "email": "khaihuynh08062005@gmail.com",
   "password": null,
@@ -699,7 +699,7 @@
   "_id": {
     "$oid": "6899edbbb6538bdcef64b38a"
   },
-  "avatar": "https://fiyo.click/api/images/thanhqui.jpg",
+  "avatar": "http://localhost:3000/api/images/thanhqui.jpg",
   "name": "Nguyễn Thanh Quii",
   "email": "quintps39335@gmail.com",
   "password": null,

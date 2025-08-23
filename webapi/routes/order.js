@@ -5,7 +5,7 @@ const { createVnpayPayment } = require("../mongo/untils/vnpay");
 const orderModel = require("../mongo/models/orderModel");
 
 // [GET] Lấy tất cả đơn hàng
-// URL: https://fiyo.click/api/orders
+// URL: http://localhost:3000/api/orders
 router.get("/", async (req, res) => {
   try {
     const result = await orderController.getAllOrders();
@@ -19,7 +19,7 @@ router.get("/", async (req, res) => {
 });
 
 // [POST] Tạo đơn hàng
-// URL: https://fiyo.click/api/orders
+// URL: http://localhost:3000/api/orders
 router.post("/", async (req, res) => {
   try {
     const result = await orderController.addOrder(req.body);
@@ -67,7 +67,7 @@ router.get("/confirm-order/:id", async (req, res) => {
 });
 
 // [patch] Xác nhận đơn hàng
-// URL: https://fiyo.click/api/orders/:id/confirm
+// URL: http://localhost:3000/api/orders/:id/confirm
 router.patch("/:id/confirm", async (req, res) => {
   try {
     const { id } = req.params;
@@ -82,7 +82,7 @@ router.patch("/:id/confirm", async (req, res) => {
 });
 
 // [patch] Cập nhật trạng thái đơn hàng
-// URL: https://fiyo.click/api/orders/:id/status
+// URL: http://localhost:3000/api/orders/:id/status
 router.patch("/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
@@ -97,7 +97,7 @@ router.patch("/:id/status", async (req, res) => {
 });
 
 // [patch] Cập nhật thanh toán
-// URL: https://fiyo.click/api/orders/:id/payment
+// URL: http://localhost:3000/api/orders/:id/payment
 router.patch("/:id/payment", async (req, res) => {
   try {
     const result = await orderController.updatePayment(req.params.id, req.body);
@@ -108,7 +108,7 @@ router.patch("/:id/payment", async (req, res) => {
 });
 
 // [patch] Hủy đơn hàng
-// URL: https://fiyo.click/api/orders/:id/cancel?admin=true
+// URL: http://localhost:3000/api/orders/:id/cancel?admin=true
 router.patch("/:id/cancel", async (req, res) => {
   try {
     const isAdmin = req.query.admin === "true";
@@ -122,7 +122,7 @@ router.patch("/:id/cancel", async (req, res) => {
 });
 
 // [GET] Lọc đơn hàng
-// URL: https://fiyo.click/api/orders/filter?status=delivered&customerId=abc123
+// URL: http://localhost:3000/api/orders/filter?status=delivered&customerId=abc123
 router.get("/filter", async (req, res) => {
   try {
     const result = await orderController.filterOrders(req.query);
@@ -323,7 +323,7 @@ router.get("/user/:userId", async (req, res) => {
   }
 });
 // [GET] Lấy đơn hàng theo ID
-// URL: https://fiyo.click/api/orders/:id
+// URL: http://localhost:3000/api/orders/:id
 router.get("/:id", async (req, res) => {
   try {
     const result = await orderController.getOrderById(req.params.id);
@@ -340,7 +340,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // [DELETE] Xóa đơn hàng
-// URL: https://fiyo.click/api/orders/:id
+// URL: http://localhost:3000/api/orders/:id
 router.delete("/:id", async (req, res) => {
   try {
     const result = await orderController.deleteOrder(req.params.id);

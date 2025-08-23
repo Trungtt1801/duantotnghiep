@@ -17,7 +17,7 @@ const ChatMessageSchema = new Schema(
     // file đính kèm (ảnh / video / pdf...)
     attachments: [
       {
-        url:  { type: String },  // link public: https://fiyo.click/api/images/xxx.png|.mp4
+        url:  { type: String },  // link public: http://localhost:3000/api/images/xxx.png|.mp4
         name: { type: String },  // tên file gốc
         type: { type: String },  // "image" | "video" | "file"
         size: { type: Number },  // dung lượng bytes
