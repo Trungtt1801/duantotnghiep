@@ -144,4 +144,12 @@ router.patch("/:id/toggle-status", async (req, res) => {
   }
 });
 
+router.get("/user/:userId", async (req, res) => {
+  try {
+    const shop = await shopController.getShopByUserId(req.params.userId);
+    res.status(200).json(shop);
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+});
 module.exports = router;

@@ -116,6 +116,21 @@ async function toggleShopStatus(id) {
     throw new Error("Lỗi toggle trạng thái shop");
   }
 }
+async function getShopByUserId(userId) {
+  try {
+    const shop = await Shop.findOne({ user_id: userId })
+      .populate("user_id", "name email phone");
+    
+    if (!shop) {
+      throw new Error("Không tìm thấy shop theo userId");
+    }
+
+    return shop;
+  } catch (error) {
+    console.error("Lỗi lấy shop theo userId:", error.message);
+    throw new Error("Lỗi lấy shop theo userId");
+  }
+}
 module.exports = {
   createShop,
   getAllShops,
@@ -123,5 +138,6 @@ module.exports = {
   updateShop,
   deleteShop,
   activateShop,
-  toggleShopStatus
+  toggleShopStatus,
+  getShopByUserId,
 };

@@ -419,4 +419,64 @@ router.get("/reports/least-sold", async (req, res) => {
   }
 });
 
+// https://fiyo.click/api/products/shop/:shopId
+// Optional: ?includeHidden=true để lấy cả sản phẩm đang ẩn (mặc định false)
+router.get("/shop/:shopId", async (req, res) => {
+  try {
+    const { shopId } = req.params;
+    const includeHidden =
+      req.query.includeHidden === "true" ||
+      req.query.includeHidden === true ||
+      req.query.includeHidden === 1;
+
+    if (!mongoose.Types.ObjectId.isValid(shopId)) {
+      return res.status(400).json({ status: false, message: "ID của shop không hợp lệ" });
+    }
+
+    const baseUrl = "https://fiyo.click/api/images/";
+    const filter = { shop_id: new mongoose.Types.ObjectId(shopId) };
+    if (!includeHidden) filter.isHidden = { $ne: true };
+
+    // Lấy toàn bộ sản phẩm của shop (không phân trang), sort mới → cũ
+    const result = await productsModel
+      .find(filter)
+      .sort({ create_at: -1, _id: -1 });
+
+    const updatedProducts = await Promise.all(
+      result.map(async (product) => {
+        const variantsDoc = await productVariantModel.findOne({
+          product_id: product._id,
+        });
+
+        return {
+          _id: product._id,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          sale: product.sale,
+          sale_count: product.sale_count,
+          material: product.material,
+          shop_id: product.shop_id,
+          category_id: product.category_id,
+          isHidden: product.isHidden,
+          create_at: product.create_at,
+          images: product.images?.map((imgName) =>
+            String(imgName).startsWith("http") ? imgName : baseUrl + imgName
+          ),
+          variants: variantsDoc ? variantsDoc.variants : [],
+        };
+      })
+    );
+
+    // Giữ đúng format mảng: [ {status:true}, ...items ]
+    return res.status(200).json([{ status: true }, ...updatedProducts]);
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm theo shop:", error);
+    return res
+      .status(500)
+      .json({ status: false, message: "Lỗi lấy sản phẩm theo shop" });
+  }
+});
+
+
 module.exports = router;
