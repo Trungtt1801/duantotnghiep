@@ -17,7 +17,6 @@ function calcRank(point = 0) {
 }
 
 const addReview = async (req, res) => {
-  // Có thể dùng transaction để đảm bảo tính nhất quán (review + cộng điểm)
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
