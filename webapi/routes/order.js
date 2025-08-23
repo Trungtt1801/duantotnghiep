@@ -49,7 +49,7 @@ router.post("/", async (req, res) => {
 });
 
 // [POST] Tạo đơn hàng guest 
-router.post("/guest", async (req, res) => {
+router.post("/guess", async (req, res) => {
   try {
     const ipAddr =
       req.headers["x-forwarded-for"] ||
