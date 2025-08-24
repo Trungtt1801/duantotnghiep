@@ -40,6 +40,54 @@ async function getProductById(id) {
   }
 }
 
+async function getProductsByShopId(shopId) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(shopId)) {
+      throw new Error("ID của shop không hợp lệ");
+    }
+
+    const baseUrl = "http://localhost:3000/api/images/";
+
+    // ⬇️ Không lọc isHidden nữa
+    const filter = { shop_id: new mongoose.Types.ObjectId(shopId) };
+
+    // Lấy tất cả sản phẩm của shop (không phân trang), sort mới → cũ
+    const products = await productsModel
+      .find(filter)
+      .sort({ create_at: -1, _id: -1 })
+      .lean();
+
+    if (products.length === 0) return [];
+
+    // Lấy variants cho tất cả product_id trong 1 lần
+    const productIds = products.map((p) => p._id);
+    const variantsDocs = await productVariantModel
+      .find({ product_id: { $in: productIds } })
+      .lean();
+
+    const variantsByProduct = variantsDocs.reduce((acc, doc) => {
+      acc[String(doc.product_id)] = doc.variants || [];
+      return acc;
+    }, {});
+
+    // Gắn variants + chuẩn hoá ảnh
+    return products.map((p) => ({
+      ...p,
+      images: Array.isArray(p.images)
+        ? p.images.map((img) =>
+            String(img).startsWith("http") ? img : baseUrl + img
+          )
+        : [],
+      variants: variantsByProduct[String(p._id)] || [],
+    }));
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm theo shop:", error);
+    throw error;
+  }
+}
+
+
+
 async function addProduct(data) {
   try {
     const {
@@ -115,7 +163,7 @@ async function searchProductsByName(nameKeyword) {
       .lean();
 
 
-    const baseUrl = "https://fiyo.click/api/images/";
+    const baseUrl = "http://localhost:3000/api/images/";
 
     // Lấy danh sách product_id để fetch variant
     const productIds = products.map((p) => p._id);
@@ -268,7 +316,7 @@ async function getRelatedProducts(productId) {
       .limit(12);
 
     // ✅ Gắn URL ảnh
-    const baseUrl = "https://fiyo.click/api/images/";
+    const baseUrl = "http://localhost:3000/api/images/";
 
     const updatedProducts = relatedProducts.map((product) => {
       const productObj = product.toObject();
@@ -367,7 +415,7 @@ async function filterFromList(productList, filters) {
     }
 
     // Bước 5: Thêm base URL vào hình ảnh nếu chưa có
-    const baseUrl = "https://fiyo.click/api/images/";
+    const baseUrl = "http://localhost:3000/api/images/";
     products = products.map((product) => {
       const updated = { ...product };
       if (Array.isArray(updated.images)) {
@@ -460,7 +508,7 @@ async function getLeastSoldProducts(timePeriod) {
     ]);
     return result.map(item => ({
       ...item,
-      images: item.images.map(img => img.startsWith("http") ? img : `https://fiyo.click/api/images/${img}`)
+      images: item.images.map(img => img.startsWith("http") ? img : `http://localhost:3000/api/images/${img}`)
     }));
   } catch (error) {
     console.error("Lỗi khi lấy sản phẩm bán ít nhất:", error);
@@ -519,7 +567,92 @@ async function updateProductVariants(productId, incomingVariants) {
     throw error;
   }
 }
+async function getProductsByShop(shopId) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(shopId)) {
+      throw new Error("ID shop không hợp lệ");
+    }
 
+    const products = await productsModel
+      .find({ shop_id: shopId, isHidden: { $ne: true } })
+      .lean();
+
+    const baseUrl = "http://localhost:3000/api/images/";
+
+    // lấy tất cả product_id để lấy variants
+    const productIds = products.map((p) => p._id);
+    const variantsDocs = await productVariantModel
+      .find({ product_id: { $in: productIds } })
+      .lean();
+
+    // chuẩn hóa dữ liệu trả về
+    const updatedProducts = products.map((product) => {
+      if (Array.isArray(product.images)) {
+        product.images = product.images.map((img) =>
+          img.startsWith("http") ? img : baseUrl + img
+        );
+      }
+
+      const match = variantsDocs.find(
+        (v) => v.product_id.toString() === product._id.toString()
+      );
+      product.variants = match?.variants || [];
+
+      return product;
+    });
+
+    return updatedProducts;
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm theo shop:", error.message);
+    throw error;
+  }
+}
+
+async function getProductsByShopId(shopId) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(shopId)) {
+      throw new Error("ID của shop không hợp lệ");
+    }
+
+    const baseUrl = "http://localhost:3000/api/images/";
+
+    // ⬇️ Không lọc isHidden nữa
+    const filter = { shop_id: new mongoose.Types.ObjectId(shopId) };
+
+    // Lấy tất cả sản phẩm của shop (không phân trang), sort mới → cũ
+    const products = await productsModel
+      .find(filter)
+      .sort({ create_at: -1, _id: -1 })
+      .lean();
+
+    if (products.length === 0) return [];
+
+    // Lấy variants cho tất cả product_id trong 1 lần
+    const productIds = products.map((p) => p._id);
+    const variantsDocs = await productVariantModel
+      .find({ product_id: { $in: productIds } })
+      .lean();
+
+    const variantsByProduct = variantsDocs.reduce((acc, doc) => {
+      acc[String(doc.product_id)] = doc.variants || [];
+      return acc;
+    }, {});
+
+    // Gắn variants + chuẩn hoá ảnh
+    return products.map((p) => ({
+      ...p,
+      images: Array.isArray(p.images)
+        ? p.images.map((img) =>
+            String(img).startsWith("http") ? img : baseUrl + img
+          )
+        : [],
+      variants: variantsByProduct[String(p._id)] || [],
+    }));
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm theo shop:", error);
+    throw error;
+  }
+}
 
 module.exports = {
   getProducts,
@@ -533,4 +666,6 @@ module.exports = {
   updateProductVisibility,
   getLeastSoldProducts,
   updateProductVariants,
+  getProductsByShop,
+  getProductsByShopId
 };

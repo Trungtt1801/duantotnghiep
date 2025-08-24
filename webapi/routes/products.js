@@ -20,12 +20,12 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// https://fiyo.click/api/products/
+// http://localhost:3000/api/products/
 
 router.get("/", async (req, res) => {
   try {
     const result = await productController.getProducts();
-    const baseUrl = "https://fiyo.click/api/images/";
+    const baseUrl = "http://localhost:3000/api/images/";
    
     const updatedProducts = await Promise.all(
       result.map(async (product) => {
@@ -63,10 +63,10 @@ router.get("/", async (req, res) => {
 });
 
 
-// https://fiyo.click/api/products?page=1&limit=10
+// http://localhost:3000/api/products?page=1&limit=10
 router.get("/pro", async (req, res) => {
   try {
-    const baseUrl = "https://fiyo.click/api/images/";
+    const baseUrl = "http://localhost:3000/api/images/";
 
     // Lấy page & limit từ query, mặc định page=1, limit=10
     const page = parseInt(req.query.page) || 1;
@@ -121,8 +121,18 @@ router.get("/pro", async (req, res) => {
   }
 });
 
+router.get("/shop/:shopId", async (req, res) => {
+  try {
+    const { shopId } = req.params;
+    const products = await productController.getProductsByShop(shopId);
+    res.status(200).json({ status: true, products });
+  } catch (error) {
+    res.status(400).json({ status: false, message: error.message });
+  }
+});
 
-// https://fiyo.click/api/products/search?name=Áo
+
+// http://localhost:3000/api/products/search?name=Áo
 router.get("/search", async (req, res) => {
   const nameKeyword = req.query.name;
 
@@ -133,8 +143,8 @@ router.get("/search", async (req, res) => {
     res.status(500).json({ message: "Lỗi server khi tìm kiếm sản phẩm." });
   }
 });
-// https://fiyo.click/api/filter
-// vidu https://fiyo.click/api/products/filter?size=M
+// http://localhost:3000/api/filter
+// vidu http://localhost:3000/api/products/filter?size=M
 router.post("/filter", async (req, res) => {
   try {
     const { products, filters } = req.body;
@@ -164,12 +174,12 @@ router.post("/filter", async (req, res) => {
 });
 
 
-//https://fiyo.click/api/products/:id
+//http://localhost:3000/api/products/:id
 
 router.get("/:id", async (req, res) => {
   try {
     const productId = req.params.id;
-  const baseUrl = "https://fiyo.click/api/images/";
+  const baseUrl = "http://localhost:3000/api/images/";
 
     const { product, variants } = await productController.getProductById(
       productId
@@ -210,7 +220,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// https://fiyo.click/api/products/create
+// http://localhost:3000/api/products/create
 router.post("/create", upload.array("images", 10), async (req, res) => {
   try {
     const data = req.body;
@@ -281,7 +291,7 @@ router.post("/create", upload.array("images", 10), async (req, res) => {
     });
   }
 });
-// https://fiyo.click/api/products/update/:id
+// http://localhost:3000/api/products/update/:id
 router.put("/update/:id", upload.array("images", 10), async (req, res) => {
   try {
     const productId = req.params.id;
@@ -334,11 +344,11 @@ router.put("/update/:id", upload.array("images", 10), async (req, res) => {
     });
   }
 });
-// https://fiyo.click/api/products/category/:categoryId
+// http://localhost:3000/api/products/category/:categoryId
 router.get("/category/:categoryId", async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
-    const baseUrl = "https://fiyo.click/api/images/";
+    const baseUrl = "http://localhost:3000/api/images/";
 
     const products = await productController.getProductsByCategoryTree(
       categoryId
@@ -418,5 +428,63 @@ router.get("/reports/least-sold", async (req, res) => {
     res.status(500).json({ status: false, error: err.message });
   }
 });
+
+router.get("/shop/:shopId", async (req, res) => {
+  try {
+    const { shopId } = req.params;
+    const includeHidden =
+      req.query.includeHidden === "true" ||
+      req.query.includeHidden === true ||
+      req.query.includeHidden === 1;
+
+    if (!mongoose.Types.ObjectId.isValid(shopId)) {
+      return res.status(400).json({ status: false, message: "ID của shop không hợp lệ" });
+    }
+
+    const baseUrl = "http://localhost:3000/api/images/";
+    const filter = { shop_id: new mongoose.Types.ObjectId(shopId) };
+    if (!includeHidden) filter.isHidden = { $ne: true };
+
+    // Lấy toàn bộ sản phẩm của shop (không phân trang), sort mới → cũ
+    const result = await productsModel
+      .find(filter)
+      .sort({ create_at: -1, _id: -1 });
+
+    const updatedProducts = await Promise.all(
+      result.map(async (product) => {
+        const variantsDoc = await productVariantModel.findOne({
+          product_id: product._id,
+        });
+
+        return {
+          _id: product._id,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          sale: product.sale,
+          sale_count: product.sale_count,
+          material: product.material,
+          shop_id: product.shop_id,
+          category_id: product.category_id,
+          isHidden: product.isHidden,
+          create_at: product.create_at,
+          images: product.images?.map((imgName) =>
+            String(imgName).startsWith("http") ? imgName : baseUrl + imgName
+          ),
+          variants: variantsDoc ? variantsDoc.variants : [],
+        };
+      })
+    );
+
+    // Giữ đúng format mảng: [ {status:true}, ...items ]
+    return res.status(200).json([{ status: true }, ...updatedProducts]);
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm theo shop:", error);
+    return res
+      .status(500)
+      .json({ status: false, message: "Lỗi lấy sản phẩm theo shop" });
+  }
+});
+
 
 module.exports = router;

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const categoryController = require("../mongo/controllers/categoryController");
 
-const baseUrl = "https://fiyo.click/api/images/";
+    const baseUrl = "http://localhost:3000/api/images/";
 const multer = require("multer");
 
 // Multer config
@@ -40,6 +40,33 @@ router.get("/", async (req, res) => {
   } catch (error) {
     console.error("Lỗi lấy danh mục:", error);
     res.status(500).json({ status: false, message: "Lỗi server" });
+  }
+});
+
+router.get("/shop/:shopId", async (req, res) => {
+  try {
+    const categories = await categoryController.getCategoriesByShopId(req.params.shopId);
+
+    // convert images -> baseUrl giống các route khác của bạn
+    const updated = categories.map((c) => ({
+      _id: c._id,
+      name: c.name,
+      slug: c.slug,
+      parentId: c.parentId,
+      type: c.type,
+      images: Array.isArray(c.images)
+        ? c.images.map((img) => (img?.startsWith("http") ? img : baseUrl + img))
+        : c.images
+        ? [baseUrl + c.images]
+        : [],
+    }));
+
+    return res.status(200).json({ status: true, categories: updated });
+  } catch (error) {
+    console.error("Lỗi lấy danh mục theo shopId:", error.message);
+    return res
+      .status(400)
+      .json({ status: false, message: error.message || "Lỗi lấy danh mục theo shopId" });
   }
 });
 
@@ -218,7 +245,7 @@ router.put("/:id", upload.array("images", 5), async (req, res) => {
 });
 
 
-// [DELETE] Xóa danh mục
+// [DELETE] Xóa danh mụcy
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;

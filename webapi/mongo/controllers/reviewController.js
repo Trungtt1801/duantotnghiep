@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Review = require("../models/reviewModel");
-const baseUrl = "https://fiyo.click/api/images/";
+const baseUrl = "http://localhost:3000/api/images/";
 const Product = require("../models/productsModel");
 const User = require("../models/userModels");
 const OrderDetail = require("../models/orderDetailModel");
@@ -97,6 +97,7 @@ const checkIfReviewed = async (req, res) => {
 const getAllReviews = async (req, res) => {
   try {
     const { page = 1, limit = 10, rating, product_id, user_id, keyword } = req.query;
+
     const filter = {};
     if (rating) filter.rating = Number(rating);
     if (product_id) filter.product_id = product_id;
@@ -107,14 +108,18 @@ const getAllReviews = async (req, res) => {
     const total = await Review.countDocuments(filter);
 
     const reviews = await Review.find(filter)
-      .populate("user_id", "name avatar")
-      .populate("product_id", "name image")
+      .populate({ path: "user_id", select: "name avatar email" })
+      // 👇 chọn thêm shop_id từ product
+      .populate({ path: "product_id", select: "name images description shop_id" })
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(Number(limit));
+      .limit(Number(limit))
+      .lean(); // 👈 tiện để chỉnh sửa object
 
     const updated = reviews.map((r) => ({
-      ...r.toObject(),
+      ...r,
+      // 👇 đưa shop_id ra top-level (hoặc bạn để ở product_id.shop_id cũng được)
+      shop_id: r.product_id?.shop_id ?? null,
       images: (r.images || []).map((img) =>
         img.startsWith("http") ? img : `${baseUrl}/${img}`
       ),
@@ -133,6 +138,7 @@ const getAllReviews = async (req, res) => {
     });
   }
 };
+
 
 // Lấy đánh giá theo sản phẩm
 const getReviewByProduct = async (req, res) => {
