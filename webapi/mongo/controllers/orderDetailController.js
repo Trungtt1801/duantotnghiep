@@ -6,7 +6,7 @@ const User = require("../models/userModels");
 const AddressModel = require("../models/addressModel");
 const OrderShopModel = require("../models/orderShopModel");
 
-const BASE_URL = "http://localhost:3000/api/images/";
+const BASE_URL = "https://fiyo.click/api/images/";
 
 function httpifyImages(images) {
   if (!Array.isArray(images)) return [];
@@ -81,7 +81,7 @@ async function addOrderDetail(data) {
 
 // async function getDetailsByOrderId(orderId) {
 //   try {
-//     const BASE_URL = "http://localhost:3000/api/images/";
+//     const BASE_URL = "https://fiyo.click/api/images/";
 
 //     const details = await OrderDetailModel.aggregate([
 //       {
@@ -226,7 +226,7 @@ async function getOrderDetailByOrderId(orderId) {
     }
 
     // 4. Xử lý chi tiết sản phẩm
-    const BASE_URL = "http://localhost:3000/api/images/";
+    const BASE_URL = "https://fiyo.click/api/images/";
     const result = [];
 
     for (const item of orderDetails) {
@@ -369,7 +369,7 @@ async function getLeastSoldProducts(timePeriod) {
       },
     ]);
 
-    const BASE_URL = "http://localhost:3000/api/images/";
+    const BASE_URL = "https://fiyo.click/api/images/";
 
     const result = rows.map((r) => ({
       product_id: r.product_id,

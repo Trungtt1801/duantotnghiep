@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 function mapImagePath(file) {
-  return file ? `http://localhost:3000/api/images/${file.filename}` : "";
+  return file ? `https://fiyo.click/api/images/${file.filename}` : "";
 }
 
 /** ==========================

@@ -6,7 +6,7 @@ const orderDetailController = require('../mongo/controllers/orderDetailControlle
 // ⚠️ Đặt các route cụ thể TRƯỚC route param (/:orderId) để tránh bị nuốt
 
 // [GET] Lấy sản phẩm bán ít nhất trong khoảng thời gian
-// GET http://localhost:3000/api/orderDetail/reports/least-sold?timePeriod=7d|30d|90d|180d|365d|all
+// GET https://fiyo.click/api/orderDetail/reports/least-sold?timePeriod=7d|30d|90d|180d|365d|all
 router.get('/reports/least-sold', async (req, res) => {
   try {
     const { timePeriod } = req.query;

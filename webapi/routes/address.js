@@ -3,7 +3,7 @@ const router = express.Router();
 const addressController = require('../mongo/controllers/addressController');
 
 // [GET] Lấy tất cả địa chỉ
-// URL: http://localhost:3000/api/address
+// URL: https://fiyo.click/api/address
 router.get('/add', async (req, res) => {
   try {
     const result = await addressController.getAllAddresses();
@@ -13,7 +13,7 @@ router.get('/add', async (req, res) => {
   }
 });
 // [GET] Lấy tất cả địa chỉ hoặc theo user_id
-// URL: http://localhost:3000/api/address?user_id=64531a...
+// URL: https://fiyo.click/api/address?user_id=64531a...
 // router.get('/', async (req, res) => {
 //   try {
 //     const { user_id } = req.query;
@@ -46,7 +46,7 @@ router.get('/user/:userId', async (req, res) => {
 });
 
 // [GET] Lấy địa chỉ theo userId (đường dẫn khác)
-// URL: http://localhost:3000/api/address/user/:userId
+// URL: https://fiyo.click/api/address/user/:userId
 router.get('/user/:userId', async (req, res) => {
   try {
     const addresses = await addressController.getAddressesByUserId(req.params.userId);
@@ -61,7 +61,7 @@ router.get('/user/:userId', async (req, res) => {
 });
 
 // [GET] Lấy địa chỉ theo ID
-// URL: http://localhost:3000/api/address/:id
+// URL: https://fiyo.click/api/address/:id
 router.get('/:id', async (req, res) => {
   try {
     const address = await addressController.getAddressById(req.params.id);
@@ -75,7 +75,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // [POST] Tạo địa chỉ
-// URL: http://localhost:3000/api/address/create
+// URL: https://fiyo.click/api/address/create
 router.post("/create", async (req, res) => {
   try {
     const result = await addressController.createAddress(req.body);
@@ -86,7 +86,7 @@ router.post("/create", async (req, res) => {
 });
 
 // [PUT] Cập nhật địa chỉ
-// URL: http://localhost:3000/api/address/:id
+// URL: https://fiyo.click/api/address/:id
 router.put("/:id", async (req, res) => {
   try {
     const result = await addressController.updateAddress(req.params.id, req.body);
@@ -106,7 +106,7 @@ router.patch("/:id", async (req, res) => {
 });
 
 // [DELETE] Xoá địa chỉ
-// URL: http://localhost:3000/api/address/:id
+// URL: https://fiyo.click/api/address/:id
 router.delete('/:id', async (req, res) => {
   try {
     const result = await addressController.deleteAddress(req.params.id);

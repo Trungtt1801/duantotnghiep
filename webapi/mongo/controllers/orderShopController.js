@@ -155,7 +155,7 @@ async function getOrderShopById(id) {
 
 // [GET] Lấy các OrderDetail thuộc một OrderShop
 async function getDetailsByOrderShopId(orderShopId) {
-  const BASE_URL = "http://localhost:3000/api/images/";
+  const BASE_URL = "https://fiyo.click/api/images/";
 
   const details = await OrderDetail.find({ order_shop_id: orderShopId })
     .populate({
