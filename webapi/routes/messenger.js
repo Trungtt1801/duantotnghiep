@@ -27,7 +27,8 @@
 
   // helper để tạo URL ảnh
   function mapImagePath(file) {
-    return file ? `http://localhost:3000/api/images/${file.filename}` : "";
+    return file ? `http://localhost:3000/api/images/
+${file.filename}` : "";
   }
 
   // =============== CHAT API ===============
