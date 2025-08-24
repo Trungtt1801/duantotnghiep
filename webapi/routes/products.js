@@ -22,6 +22,7 @@ const upload = multer({ storage: storage });
 
 // http://localhost:3000/api/products/
 
+
 router.get("/", async (req, res) => {
   try {
     const result = await productController.getProducts();
@@ -61,6 +62,7 @@ router.get("/", async (req, res) => {
       .json({ status: false, message: "Lỗi lấy dữ liệu sản phẩm" });
   }
 });
+
 
 
 // http://localhost:3000/api/products?page=1&limit=10
@@ -121,6 +123,15 @@ router.get("/pro", async (req, res) => {
   }
 });
 
+router.get('/shop/:shopId/category/:categoryId', async (req, res) => {
+  try {
+    const { shopId, categoryId } = req.params;
+    const products = await productController.getProductsByShopAndCategory(shopId, categoryId);
+    res.json(products);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
 router.get("/shop/:shopId", async (req, res) => {
   try {
     const { shopId } = req.params;

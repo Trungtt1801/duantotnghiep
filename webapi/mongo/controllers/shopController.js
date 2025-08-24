@@ -1,5 +1,6 @@
 const Shop = require("../models/shopModel");
 const Product = require("../models/productsModel");
+const User = require("../models/userModels");
 
 // 🟢 Tạo shop mới
 // 🟢 Tạo shop mới
@@ -282,14 +283,58 @@ async function isFollowing(shopId, userId) {
   if (!shop) throw new Error("Không tìm thấy shop");
   return { following: shop.followers?.some((f) => String(f) === String(userId)) || false };
 }
-
 async function listFollowers(shopId, page = 1, limit = 20) {
-  const skip = (Math.max(1, page) - 1) * Math.max(1, limit);
-  const shop = await Shop.findById(shopId)
-    .populate({ path: "followers", select: "name email avatar", options: { skip, limit } })
+  const p = Math.max(1, page);
+  const l = Math.max(1, limit);
+  const skip = (p - 1) * l;
+
+  // lấy mảng _id followers để đếm tổng
+  const base = await Shop.findById(shopId).select("followers").lean();
+  if (!base) throw new Error("Không tìm thấy shop");
+
+  const total_followers = Array.isArray(base.followers) ? base.followers.length : 0;
+
+  // nếu không có follower thì trả rỗng luôn
+  if (total_followers === 0) {
+    return { total_followers: 0, page: p, limit: l, items: [] };
+  }
+
+  // cắt mảng theo phân trang để lấy đúng _id cần populate
+  const followerIdsPage = base.followers.slice(skip, skip + l);
+  const users = await User.find({ _id: { $in: followerIdsPage } })
+    .select("name email avatar")
     .lean();
-  if (!shop) throw new Error("Không tìm thấy shop");
-  return { followers_count: shop.followers?.length || 0, followers: shop.followers || [] };
+
+  // giữ nguyên thứ tự theo followerIdsPage
+  const orderMap = new Map(followerIdsPage.map((id, i) => [String(id), i]));
+  users.sort((a, b) => (orderMap.get(String(a._id)) ?? 0) - (orderMap.get(String(b._id)) ?? 0));
+
+  return {
+    total_followers,
+    page: p,
+    limit: l,
+    items: users,
+  };
+}
+async function getAllFollowers(shopId) {
+  // lấy danh sách _id followers thô để đếm chính xác
+  const base = await Shop.findById(shopId).select("followers").lean();
+  if (!base) throw new Error("Không tìm thấy shop");
+
+  if (!Array.isArray(base.followers) || base.followers.length === 0) {
+    return { total: 0, items: [] };
+  }
+
+  // Lấy đầy đủ thông tin user theo danh sách _id
+  const users = await User.find({ _id: { $in: base.followers } })
+    .select("name email avatar")
+    .lean();
+
+  // (tuỳ chọn) giữ đúng thứ tự theo mảng followers trong shop
+  const orderMap = new Map(base.followers.map((id, i) => [String(id), i]));
+  users.sort((a, b) => (orderMap.get(String(a._id)) ?? 0) - (orderMap.get(String(b._id)) ?? 0));
+
+  return { total: base.followers.length, items: users };
 }
 
 module.exports = {
@@ -309,4 +354,5 @@ module.exports = {
   unfollowShop,
   followShop,
     isFollowing,  
+     getAllFollowers,  
 };
