@@ -293,7 +293,7 @@ router.get("/vnpay_return", async (req, res) => {
 });
 
 // [GET] VNPAY return (guest)  ❗️/vnpay_return_guest (đổi từ _guess)
-router.get("/vnpay_return_guess", async (req, res) => {
+router.get("/vnpay_return_guest", async (req, res) => {
   try {
     console.log("📥 VNPay return query:", req.query);
     await orderController.vnpayCallbackForGuest(req.query);
