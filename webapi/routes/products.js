@@ -440,6 +440,60 @@ router.get("/reports/least-sold", async (req, res) => {
   }
 });
 
+router.get("/shopadmin/:shopId", async (req, res) => {
+  try {
+    const { shopId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(shopId)) {
+      return res.status(400).json({ status: false, message: "ID của shop không hợp lệ" });
+    }
+
+    const baseUrl = "http://localhost:3000/api/images/"; // chỉnh theo env nếu cần
+    const filter = { shop_id: new mongoose.Types.ObjectId(shopId) }; // ❗ KHÔNG lọc isHidden
+
+    // Lấy toàn bộ sản phẩm của shop (admin xem hết), sort mới → cũ
+    const products = await productsModel
+      .find(filter)
+      .sort({ create_at: -1, _id: -1 })
+      .lean();
+
+    // Lấy variants theo lô để tránh N+1
+    const productIds = products.map((p) => p._id);
+    const variantsDocs = await productVariantModel
+      .find({ product_id: { $in: productIds } })
+      .lean();
+
+    const variantsMap = new Map(
+      variantsDocs.map((v) => [String(v.product_id), v.variants || []])
+    );
+
+    const updatedProducts = products.map((p) => ({
+      _id: p._id,
+      name: p.name,
+      description: p.description,
+      price: p.price,
+      sale: p.sale,
+      sale_count: p.sale_count,
+      material: p.material,
+      shop_id: p.shop_id,
+      category_id: p.category_id,
+      isHidden: p.isHidden,
+      create_at: p.create_at,
+      images: (p.images || []).map((img) => (/^https?:/i.test(img) ? img : baseUrl + img)),
+      variants: variantsMap.get(String(p._id)) || [],
+    }));
+
+    // Giữ nguyên format bạn đang dùng: [ {status:true}, ...items ]
+    return res.status(200).json([{ status: true }, ...updatedProducts]);
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm theo shop (admin):", error);
+    return res.status(500).json({
+      status: false,
+      message: "Lỗi lấy sản phẩm theo shop (admin)",
+    });
+  }
+});
+
 router.get("/shop/:shopId", async (req, res) => {
   try {
     const { shopId } = req.params;
