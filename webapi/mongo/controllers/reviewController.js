@@ -4,43 +4,82 @@ const baseUrl = "http://localhost:3000/api/images/";
 const Product = require("../models/productsModel");
 const User = require("../models/userModels");
 const OrderDetail = require("../models/orderDetailModel");
+
+// ===== CẤU HÌNH ĐIỂM THƯỞNG REVIEW =====
+const REVIEW_REWARD = 200;
+
+// (tuỳ chọn) Hàm tính rank theo tổng point
+function calcRank(point = 0) {
+  if (point >= 5000) return "platinum";
+  if (point >= 2000) return "gold";
+  if (point >= 800)  return "silver";
+  return "bronze";
+}
+
 const addReview = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
     const { product_id, user_id, content, rating } = req.body;
     const images = req.files?.map((file) => `${baseUrl}/${file.filename}`) || [];
 
-    if (!product_id || !user_id || !content || !rating) {
-      return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
+    if (!product_id || !user_id || !rating) {
+      return res.status(400).json({ message: "Thiếu thông tin bắt buộc (product_id, user_id, rating)" });
     }
 
-    // ✅ Kiểm tra xem user đã từng đánh giá sản phẩm này chưa
-    const existingReview = await Review.findOne({ product_id, user_id });
+    const user = await User.findById(user_id).session(session);
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
 
+    const existingReview = await Review.findOne({ product_id, user_id }).session(session);
     if (existingReview) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({
         message: "Bạn đã đánh giá sản phẩm này rồi.",
         review: existingReview,
       });
     }
 
-    // ✅ Nếu chưa có thì tiếp tục thêm mới
-    const newReview = new Review({
+    const newReview = await Review.create([{
       product_id,
       user_id,
       content,
-      rating,
+      rating: Number(rating),
       images,
-    });
+    }], { session });
+    const created = newReview[0];
 
-    await newReview.save();
+    // ✅ Cộng điểm cho user
+    // Lấy điểm mới sau khi cộng để tính rank
+    const updatedUser = await User.findByIdAndUpdate(
+      user_id,
+      { $inc: { point: REVIEW_REWARD } },
+      { new: true, session }
+    );
 
-    res.status(201).json({
-      message: "Thêm đánh giá thành công",
-      review: newReview,
+    // (tuỳ chọn) Cập nhật rank theo tổng điểm
+    const newRank = calcRank(updatedUser.point);
+    if (newRank !== updatedUser.rank) {
+      updatedUser.rank = newRank;
+      await updatedUser.save({ session });
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(201).json({
+      message: `Thêm đánh giá thành công, +${REVIEW_REWARD} điểm`,
+      review: created,
+      userPoint: updatedUser.point,
+      userRank: updatedUser.rank,
     });
   } catch (error) {
-    console.log("Lỗi:", error);
-    res.status(500).json({ message: "Lỗi server khi thêm đánh giá", error: error.message });
+    await session.abortTransaction();
+    session.endSession();
+    console.log("Lỗi addReview:", error);
+    return res.status(500).json({ message: "Lỗi server khi thêm đánh giá", error: error.message });
   }
 };
 

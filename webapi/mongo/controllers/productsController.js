@@ -654,6 +654,52 @@ async function getProductsByShopId(shopId) {
   }
 }
 
+async function getProductsByShopAndCategory(shopId, categoryId) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(shopId)) {
+      throw new Error("shopId không hợp lệ");
+    }
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      throw new Error("categoryId không hợp lệ");
+    }
+
+    const baseUrl = "http://localhost:3000/api/images/";
+
+    // Lọc theo shop_id và đúng danh mục
+    const products = await productsModel.find({
+      shop_id: new mongoose.Types.ObjectId(shopId),
+      "category_id.categoryId": new mongoose.Types.ObjectId(categoryId),
+      isHidden: { $ne: true } // loại bỏ sản phẩm ẩn nếu cần
+    }).sort({ create_at: -1 }).lean();
+
+    if (products.length === 0) return [];
+
+    // Lấy tất cả variants trong 1 lần query
+    const productIds = products.map(p => p._id);
+    const variantsDocs = await productVariantModel.find({
+      product_id: { $in: productIds }
+    }).lean();
+
+    const variantsByProduct = variantsDocs.reduce((acc, doc) => {
+      acc[String(doc.product_id)] = doc.variants || [];
+      return acc;
+    }, {});
+
+    // Chuẩn hoá ảnh và gắn variants
+    return products.map(p => ({
+      ...p,
+      images: Array.isArray(p.images)
+        ? p.images.map(img => (String(img).startsWith("http") ? img : baseUrl + img))
+        : [],
+      variants: variantsByProduct[String(p._id)] || []
+    }));
+  } catch (err) {
+    console.error("Lỗi khi lấy sản phẩm theo shop & category:", err);
+    throw err;
+  }
+}
+
+
 module.exports = {
   getProducts,
   getProductById,
@@ -667,5 +713,6 @@ module.exports = {
   getLeastSoldProducts,
   updateProductVariants,
   getProductsByShop,
-  getProductsByShopId
+  getProductsByShopId,
+  getProductsByShopAndCategory
 };

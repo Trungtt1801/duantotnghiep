@@ -33,6 +33,8 @@ function mapImagePath(file) {
  *  ========================== */
 
 // === Lấy shop theo productId (đặt trước /:id)
+
+
 router.get("/by-product/:productId", async (req, res) => {
   try {
     const data = await shopController.getShopByProductId(req.params.productId);
@@ -179,6 +181,14 @@ router.get("/", async (req, res) => {
     return res.status(200).json(shops);
   } catch (error) {
     return res.status(500).json({ message: error.message || "Lỗi lấy danh sách shop" });
+  }
+});
+router.get("/:id/followers/all", async (req, res) => {
+  try {
+    const data = await shopController.getAllFollowers(req.params.id);
+    return res.status(200).json(data); // { total, items: [...] }
+  } catch (error) {
+    return res.status(400).json({ message: error.message || "Lỗi lấy toàn bộ follower" });
   }
 });
 

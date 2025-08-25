@@ -63,7 +63,7 @@ app.use(function (req, res, next) {
   next(createError(404));
 });
 
-
+// Kết nối database mongoose
 mongoose
     .connect(process.env.MONGODB_URI)
   .then(() => console.log("✅ Kết nối Database thành công"))
