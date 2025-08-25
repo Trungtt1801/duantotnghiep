@@ -2,11 +2,23 @@ const Shop = require("../models/shopModel");
 const Product = require("../models/productsModel");
 const User = require("../models/userModels");
 
-// 🟢 Tạo shop mới
-// 🟢 Tạo shop mới
+/* =========================
+ *  CREATE SHOP
+ * ========================= */
 async function createShop(data) {
   try {
-    const { user_id, name, address, phone, email, status, description, avatar } = data;
+    // ❗ Thêm banner vào destructure để không bị ReferenceError
+    const {
+      user_id,
+      name,
+      address,
+      phone,
+      email,
+      status,
+      description,
+      avatar,
+      banner, // <- thêm
+    } = data;
 
     const shop = new Shop({
       user_id,
@@ -16,7 +28,8 @@ async function createShop(data) {
       email,
       status,
       description,
-      avatar: avatar || "", // có thể nhận avatar nếu frontend gửi kèm
+      avatar: avatar || "",
+      banner: banner || "", // có thể nhận banner nếu frontend gửi kèm
     });
 
     await shop.save();
@@ -27,7 +40,9 @@ async function createShop(data) {
   }
 }
 
-
+/* =========================
+ *  READ ALL SHOPS
+ * ========================= */
 async function getAllShops() {
   try {
     const shops = await Shop.find().populate("user_id", "name email phone");
@@ -38,12 +53,17 @@ async function getAllShops() {
   }
 }
 
+/* =========================
+ *  READ SHOP BY ID
+ * ========================= */
 async function getShopById(id) {
   try {
-    const shop = await Shop.findById(id).populate("user_id", "name email phone").lean();
+    const shop = await Shop.findById(id)
+      .populate("user_id", "name email phone")
+      .lean();
     if (!shop) throw new Error("Không tìm thấy shop");
 
-    const total = await countProductsByShop(id, /* onlyActive? */ false);
+    const total = await countProductsByShop(id, false);
 
     return { ...shop, total_products: total };
   } catch (error) {
@@ -51,20 +71,46 @@ async function getShopById(id) {
     throw new Error("Lỗi lấy shop theo ID");
   }
 }
+
+/* =========================
+ *  UPDATE SHOP
+ *  - Giữ nguyên banner khi không upload
+ * ========================= */
 async function updateShop(id, data) {
   try {
-    const { name, address, phone, email, status, description, avatar } = data;
+    const {
+      name,
+      address,
+      phone,
+      email,
+      status,
+      description,
+      avatar,
+      banner, // FE sẽ có nếu upload banner
+    } = data;
 
-    const shop = await Shop.findByIdAndUpdate(
-      id,
-      { name, address, phone, email, status, description, avatar },
-      { new: true, runValidators: true }
-    );
+    // Chỉ set các field có mặt trong payload
+    const updateData = {
+      name,
+      address,
+      phone,
+      email,
+      status,
+      description,
+    };
 
-    if (!shop) {
-      throw new Error("Không tìm thấy shop để cập nhật");
+    if (typeof avatar !== "undefined") updateData.avatar = avatar || "";
+    // ❗ Giữ nguyên banner nếu FE không gửi
+    if (typeof banner !== "undefined" && banner) {
+      updateData.banner = banner;
     }
 
+    const shop = await Shop.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!shop) throw new Error("Không tìm thấy shop để cập nhật");
     return shop;
   } catch (error) {
     console.error("Lỗi cập nhật shop:", error.message);
@@ -72,18 +118,23 @@ async function updateShop(id, data) {
   }
 }
 
+/* =========================
+ *  DELETE SHOP
+ * ========================= */
 async function deleteShop(id) {
   try {
     const shop = await Shop.findByIdAndDelete(id);
-    if (!shop) {
-      throw new Error("Không tìm thấy shop để xóa");
-    }
+    if (!shop) throw new Error("Không tìm thấy shop để xóa");
     return { message: "Xóa shop thành công" };
   } catch (error) {
     console.error("Lỗi xóa shop:", error.message);
     throw new Error("Lỗi xóa shop");
   }
 }
+
+/* =========================
+ *  ACTIVATE SHOP
+ * ========================= */
 async function activateShop(id) {
   try {
     const shop = await Shop.findByIdAndUpdate(
@@ -91,44 +142,40 @@ async function activateShop(id) {
       { status: "active" },
       { new: true, runValidators: true }
     );
-
-    if (!shop) {
-      throw new Error("Không tìm thấy shop để mở khóa");
-    }
-
+    if (!shop) throw new Error("Không tìm thấy shop để mở khóa");
     return shop;
   } catch (error) {
     console.error("Lỗi kích hoạt shop:", error.message);
     throw new Error("Lỗi kích hoạt shop");
   }
 }
+
+/* =========================
+ *  TOGGLE SHOP STATUS
+ * ========================= */
 async function toggleShopStatus(id) {
   try {
     const shop = await Shop.findById(id);
-    if (!shop) {
-      throw new Error("Không tìm thấy shop");
-    }
-
+    if (!shop) throw new Error("Không tìm thấy shop");
     shop.status = shop.status === "active" ? "inactive" : "active";
     await shop.save();
-
     return shop;
   } catch (error) {
     console.error("Lỗi toggle trạng thái shop:", error.message);
     throw new Error("Lỗi toggle trạng thái shop");
   }
 }
-// shop theo userid
-// shop theo userid
+
+/* =========================
+ *  READ SHOP BY USER ID
+ * ========================= */
 async function getShopByUserId(userId) {
   try {
     const shop = await Shop.findOne({ user_id: userId })
       .populate("user_id", "name email phone avatar")
       .populate("followers", "name email avatar");
 
-    if (!shop) {
-      throw new Error("Người dùng này chưa có shop");
-    }
+    if (!shop) throw new Error("Người dùng này chưa có shop");
 
     return {
       _id: shop._id,
@@ -143,7 +190,6 @@ async function getShopByUserId(userId) {
       created_at: shop.created_at,
       updated_at: shop.updated_at,
 
-      // 🟢 các trường mới
       sale_count: shop.sale_count || 0,
       rating: {
         average: shop.rating?.average || 0,
@@ -152,7 +198,6 @@ async function getShopByUserId(userId) {
       followers_count: shop.followers?.length || 0,
       followers: shop.followers,
 
-      // chủ shop
       owner: shop.user_id,
     };
   } catch (error) {
@@ -161,19 +206,18 @@ async function getShopByUserId(userId) {
   }
 }
 
+/* =========================
+ *  READ CATEGORIES BY SHOP
+ * ========================= */
 async function getCategoriesByShop(shopId) {
   try {
-    // lấy tất cả sản phẩm theo shopId
-    const products = await Product.find({ shop_id: shopId })
-      .populate("category_id.categoryId", "name"); // populate Category
+    const products = await Product.find({ shop_id: shopId }).populate(
+      "category_id.categoryId",
+      "name"
+    );
+    if (!products || products.length === 0) return [];
 
-    if (!products || products.length === 0) {
-      return [];
-    }
-
-    // gom nhóm danh mục
     const categoriesMap = new Map();
-
     products.forEach((p) => {
       if (p.category_id && p.category_id.categoryId) {
         const id = String(p.category_id.categoryId._id);
@@ -192,8 +236,10 @@ async function getCategoriesByShop(shopId) {
     throw new Error("Lỗi lấy danh mục theo shop");
   }
 }
-// Lấy thông tin shop từ productId
 
+/* =========================
+ *  READ SHOP BY PRODUCT ID
+ * ========================= */
 async function getShopByProductId(productId) {
   try {
     const product = await Product.findById(productId).select("shop_id").lean();
@@ -201,13 +247,15 @@ async function getShopByProductId(productId) {
     if (!product.shop_id) throw new Error("Sản phẩm chưa gắn shop");
 
     const shop = await Shop.findById(product.shop_id)
-      .select("name address phone email status description avatar banner rating sale_count followers created_at updated_at user_id")
+      .select(
+        "name address phone email status description avatar banner rating sale_count followers created_at updated_at user_id"
+      )
       .populate("user_id", "name email phone avatar")
       .populate("followers", "name email avatar")
       .lean();
     if (!shop) throw new Error("Không tìm thấy shop");
 
-    const total = await countProductsByShop(shop._id, /* onlyActive? */ false);
+    const total = await countProductsByShop(shop._id, false);
 
     return {
       _id: shop._id,
@@ -230,8 +278,6 @@ async function getShopByProductId(productId) {
       followers_count: Array.isArray(shop.followers) ? shop.followers.length : 0,
       followers: shop.followers || [],
       owner: shop.user_id,
-
-      // 🟢 thêm số sản phẩm
       total_products: total,
     };
   } catch (err) {
@@ -240,14 +286,19 @@ async function getShopByProductId(productId) {
   }
 }
 
-
+/* =========================
+ *  UTILS
+ * ========================= */
 async function countProductsByShop(shopId, onlyActive = false) {
   const q = { shop_id: shopId };
-  if (onlyActive) q.status = "active"; // nếu có field status
+  if (onlyActive) q.status = "active";
   const total = await Product.countDocuments(q);
   return total;
 }
 
+/* =========================
+ *  FOLLOW APIs
+ * ========================= */
 async function followShop(shopId, userId) {
   const shop = await Shop.findById(shopId);
   if (!shop) throw new Error("Không tìm thấy shop");
@@ -283,41 +334,34 @@ async function isFollowing(shopId, userId) {
   if (!shop) throw new Error("Không tìm thấy shop");
   return { following: shop.followers?.some((f) => String(f) === String(userId)) || false };
 }
+
 async function listFollowers(shopId, page = 1, limit = 20) {
   const p = Math.max(1, page);
   const l = Math.max(1, limit);
   const skip = (p - 1) * l;
 
-  // lấy mảng _id followers để đếm tổng
   const base = await Shop.findById(shopId).select("followers").lean();
   if (!base) throw new Error("Không tìm thấy shop");
 
   const total_followers = Array.isArray(base.followers) ? base.followers.length : 0;
-
-  // nếu không có follower thì trả rỗng luôn
   if (total_followers === 0) {
     return { total_followers: 0, page: p, limit: l, items: [] };
   }
 
-  // cắt mảng theo phân trang để lấy đúng _id cần populate
   const followerIdsPage = base.followers.slice(skip, skip + l);
   const users = await User.find({ _id: { $in: followerIdsPage } })
     .select("name email avatar")
     .lean();
 
-  // giữ nguyên thứ tự theo followerIdsPage
   const orderMap = new Map(followerIdsPage.map((id, i) => [String(id), i]));
-  users.sort((a, b) => (orderMap.get(String(a._id)) ?? 0) - (orderMap.get(String(b._id)) ?? 0));
+  users.sort(
+    (a, b) => (orderMap.get(String(a._id)) ?? 0) - (orderMap.get(String(b._id)) ?? 0)
+  );
 
-  return {
-    total_followers,
-    page: p,
-    limit: l,
-    items: users,
-  };
+  return { total_followers, page: p, limit: l, items: users };
 }
+
 async function getAllFollowers(shopId) {
-  // lấy danh sách _id followers thô để đếm chính xác
   const base = await Shop.findById(shopId).select("followers").lean();
   if (!base) throw new Error("Không tìm thấy shop");
 
@@ -325,14 +369,14 @@ async function getAllFollowers(shopId) {
     return { total: 0, items: [] };
   }
 
-  // Lấy đầy đủ thông tin user theo danh sách _id
   const users = await User.find({ _id: { $in: base.followers } })
     .select("name email avatar")
     .lean();
 
-  // (tuỳ chọn) giữ đúng thứ tự theo mảng followers trong shop
   const orderMap = new Map(base.followers.map((id, i) => [String(id), i]));
-  users.sort((a, b) => (orderMap.get(String(a._id)) ?? 0) - (orderMap.get(String(b._id)) ?? 0));
+  users.sort(
+    (a, b) => (orderMap.get(String(a._id)) ?? 0) - (orderMap.get(String(b._id)) ?? 0)
+  );
 
   return { total: base.followers.length, items: users };
 }
@@ -353,6 +397,6 @@ module.exports = {
   toggleFollow,
   unfollowShop,
   followShop,
-    isFollowing,  
-     getAllFollowers,  
+  isFollowing,
+  getAllFollowers,
 };
