@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 const OpenAI = require("openai");
 const Product = require("../models/productsModel");
@@ -14,7 +13,6 @@ const { normalizeImageUrl } = require("../untils/url");
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
 
 function isQuota429(err) {
   return (
@@ -189,13 +187,70 @@ function detectGenderFromText(text) {
   return "unisex";
 }
 
-// Extract số liệu height/weight từ câu (đơn vị cm/kg)
+// ===== Bắt chiều cao/cân nặng tiếng Việt (1m7, 170cm, 40 cân/ký/kg) =====
 function extractMetrics(text) {
-  const t = (text || "").toLowerCase().replace(",", ".");
-  const heightMatch = t.match(/(\d{2,3})\s*cm/) || t.match(/cao\s*(\d{2,3})/i);
-  const weightMatch = t.match(/(\d{2,3})\s*kg/) || t.match(/nặng\s*(\d{2,3})/i);
-  const height = heightMatch ? Number(heightMatch[1]) : null;
-  const weight = weightMatch ? Number(weightMatch[1]) : null;
+  const t = String(text || "")
+    .toLowerCase()
+    .replace(",", ".")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  let height = null;
+  let weight = null;
+
+  // Chiều cao:
+  // 1) "1m70", "1m7", "1 m 72", "1.7m"
+  const mForm = t.match(/(\d+(?:[\.,]\d+)?)(?:\s*)m(?:\s*(\d{1,2}))?/);
+  if (mForm) {
+    const meter = parseFloat(mForm[1].replace(",", "."));
+    const extra = mForm[2] ? parseInt(mForm[2], 10) : 0; // "1m7" -> 170
+    if (!isNaN(meter) && meter < 3) {
+      height = Math.round(
+        meter * 100 + (extra >= 0 && extra < 10 ? extra * 10 : 0)
+      );
+    }
+  }
+  // 2) "170cm"
+  if (height == null) {
+    const cmForm = t.match(/(\d{2,3})\s*cm/);
+    if (cmForm) height = parseInt(cmForm[1], 10);
+  }
+  // 3) "cao 170"
+  if (height == null) {
+    const caoForm = t.match(/cao[^0-9]{0,6}(\d{2,3})/);
+    if (caoForm) height = parseInt(caoForm[1], 10);
+  }
+
+  // Cân nặng:
+  // 1) "40kg"
+  const kgForm = t.match(/(\d{2,3})\s*kg/);
+  if (kgForm) weight = parseInt(kgForm[1], 10);
+  // 2) "40 can/ky/ki/kilo/kilogram"
+  if (weight == null) {
+    const canKyForm = t.match(/(\d{2,3})\s*(can|ky|ki|kilo|kilogam|kilogram)/);
+    if (canKyForm) weight = parseInt(canKyForm[1], 10);
+  }
+  // 3) "nang 40"
+  if (weight == null) {
+    const nangForm = t.match(/nang[^0-9]{0,6}(\d{2,3})/);
+    if (nangForm) weight = parseInt(nangForm[1], 10);
+  }
+  // 4) Trần sau từ "nang" (tránh nhầm cm)
+  if (weight == null) {
+    const quick = t.match(/nang[^0-9]{0,3}(\d{2,3})(?!\s*(cm|m))/);
+    if (quick) weight = parseInt(quick[1], 10);
+  }
+
+  // Lọc biên
+  if (height != null) {
+    if (height < 120) height = Math.max(height, 120);
+    if (height > 210) height = Math.min(height, 210);
+  }
+  if (weight != null) {
+    if (weight < 30) weight = Math.max(weight, 30);
+    if (weight > 200) weight = Math.min(weight, 200);
+  }
+
   return { height, weight };
 }
 
@@ -319,6 +374,52 @@ Chỉ trả lời đúng 1 từ: product / shipping / return / general / order /
 // =============================
 // 3) CONTROLLER CHÍNH
 // =============================
+// ===== Keyword matching helpers (ưu tiên DB) =====
+function buildKeywordMatchers(kwDoc) {
+  const items = new Set();
+  const add = (s) => {
+    const v = normalizeVN(s || "");
+    if (v) items.add(v);
+  };
+
+  add(kwDoc.word);
+  (kwDoc.synonyms || []).forEach(add);
+
+  const patterns = [];
+
+  // 1) Nếu có pattern custom -> dùng thẳng (pattern nên viết theo normalizeVN)
+  if (kwDoc.pattern) {
+    try {
+      patterns.push(new RegExp(kwDoc.pattern, "i"));
+    } catch (e) {
+      console.warn("Keyword pattern invalid:", kwDoc.pattern, e?.message);
+    }
+  }
+
+  // 2) Tự sinh regex từ word/synonyms đã normalize
+  for (const token of items) {
+    if (!token) continue;
+    const re = token.trim().split(/\s+/).join("\\s+"); // "phi ship" -> "phi\\s+ship"
+    try {
+      patterns.push(new RegExp(`\\b${re}\\b`, "i"));
+    } catch {}
+  }
+
+  return patterns;
+}
+
+function scoreMatch({ messageNorm, kwDoc, patterns }) {
+  let hits = 0;
+  for (const r of patterns) {
+    if (r.test(messageNorm)) hits += 1;
+  }
+  if (!hits) return 0;
+
+  const w = Number(kwDoc.weight || 0);
+  const len = (kwDoc.word || "").length;
+  return hits * 10 + w * 5 + Math.min(len, 30) / 10;
+}
+
 const chatWithBot = async (req, res) => {
   const { message, userId } = req.body;
   if (!message) return res.status(400).json({ error: "Thiếu message" });
@@ -326,25 +427,52 @@ const chatWithBot = async (req, res) => {
   const msgNorm = normalizeVN(message);
 
   try {
-    // Match keyword đã học trong DB (đã normalize)
+    // ===== 1) Match keyword đã học trong DB (ưu tiên tuyệt đối) =====
     const allKeywords = await Keyword.find({}).lean();
-    const matched = allKeywords.filter((kw) => {
-      const kwWordNorm = normalizeVN(kw.word || "");
-      return kwWordNorm && msgNorm.includes(kwWordNorm);
+    const activeKeywords = allKeywords.filter((k) => k?.active !== false);
+
+    let best = { score: 0, intent: null, kw: null };
+    for (const kw of activeKeywords) {
+      const patterns = buildKeywordMatchers(kw);
+      const s = scoreMatch({ messageNorm: msgNorm, kwDoc: kw, patterns });
+      if (s > best.score) {
+        best = {
+          score: s,
+          intent: (kw.intent || "").toLowerCase().trim(),
+          kw,
+        };
+      }
+    }
+
+    // intent: ƯU TIÊN DB
+    let intent = best.intent || null;
+
+    // 👉 Nếu câu có nội dung hỏi size → ép intent = 'product'
+    if (isSizeInquiry(message)) {
+      intent = "product";
+    }
+
+    // Nếu vẫn chưa có intent → mới hỏi AI (fallback)
+    if (!intent) {
+      intent = (await detectIntentByAI(message))?.trim()?.toLowerCase();
+    }
+
+    // (debug log để check)
+    console.log("[BOT DEBUG]", {
+      msg: message,
+      msgNorm,
+      bestKeyword: best.kw?.word,
+      bestIntentFromDB: best.intent,
+      finalIntent: intent,
     });
-    const matchedIntent = matched
-      .map((k) =>
-        String(k.intent || "")
-          .toLowerCase()
-          .trim()
-      )
-      .filter(Boolean);
 
-    // intent ưu tiên DB, nếu không có thì hỏi AI (có fallback)
-    let intent =
-      matchedIntent.find(Boolean) || (await detectIntentByAI(message));
+    // ===== 1.1) Khôi phục danh sách keyword đã khớp để reuse bên dưới (FIX matched) =====
+    const keywordHits = activeKeywords
+      .map((k) => ({ kw: k, patterns: buildKeywordMatchers(k) }))
+      .filter((x) => x.patterns.some((r) => r.test(msgNorm)));
+    const matched = keywordHits.map((x) => x.kw); // << dùng như code cũ
 
-    // Set cờ theo intent (không dựa vào matchedIntent nữa)
+    // ===== 2) Cờ intent =====
     const isProduct = intent === "product";
     const isShipping = intent === "shipping";
     const isReturn = intent === "return";
@@ -357,7 +485,7 @@ const chatWithBot = async (req, res) => {
     let prompt = "";
     let reply = "";
 
-    // 1) General (danh mục)
+    // ===== 3) General (danh mục)
     if (isGeneral) {
       try {
         const categories = await Category.find().select("name");
@@ -377,7 +505,7 @@ Viết câu trả lời ngắn gọn, tự nhiên, KHÔNG dùng Markdown và ký
       return res.status(200).json({ reply, type: "message" });
     }
 
-    // 2) Shipping
+    // ===== 4) Shipping
     if (isShipping) {
       try {
         prompt = `
@@ -394,7 +522,7 @@ Viết câu trả lời rõ ràng, thân thiện, KHÔNG dùng Markdown.
       return res.status(200).json({ reply, type: "message" });
     }
 
-    // 3) Return
+    // ===== 5) Return
     if (isReturn) {
       try {
         prompt = `
@@ -411,7 +539,7 @@ Viết câu trả lời thân thiện, dễ hiểu, KHÔNG dùng ký tự ** ho�
       return res.status(200).json({ reply, type: "message" });
     }
 
-    // 4) Greeting
+    // ===== 6) Greeting
     if (isGreeting) {
       try {
         prompt = `
@@ -427,31 +555,30 @@ KHÔNG dùng dấu ** hoặc *.
       return res.status(200).json({ reply, type: "message" });
     }
 
-    // 5) Product (+ tư vấn size fallback không AI)
+    // ===== 7) Product (+ tư vấn size không cần AI)
     if (isProduct) {
-      const hasFemale = /(nữ|phụ nữ|women|woman|girl|con gái|bé gái)/i.test(
-        message
-      );
-      const hasMale = /(nam|đàn ông|men|man|boy|con trai|bé trai)/i.test(
-        message
-      );
-      const hasKids =
-        /(trẻ em|kid|kids|thiếu nhi|nhi đồng|bé trai|bé gái)/i.test(message);
+      const hasFemale = /(nữ|phụ nữ|women|woman|girl|con gái|bé gái)/i.test(message);
+      const hasMale = /(nam|đàn ông|men|man|boy|con trai|bé trai)/i.test(message);
+      const hasKids = /(trẻ em|kid|kids|thiếu nhi|nhi đồng|bé trai|bé gái)/i.test(message);
 
       const allCats = await Category.find().select("_id name").lean();
-      const matchedCat = allCats.find((c) =>
-        new RegExp(c.name, "i").test(message)
-      );
+      const matchedCat = allCats.find((c) => new RegExp(c.name, "i").test(message));
 
       const orKeywordConds = matched
-        .filter((k) => k.intent === "product")
-        .map((kw) => ({ name: { $regex: kw.word, $options: "i" } }));
+        .filter((k) => String(k.intent).toLowerCase() === "product")
+        .flatMap((kw) => ([
+          { name:        { $regex: kw.word, $options: "i" } },
+          { description: { $regex: kw.word, $options: "i" } },
+          { categoryName:{ $regex: kw.word, $options: "i" } },
+        ]));
+
       if (!orKeywordConds.length) {
         orKeywordConds.push(
           { name: { $regex: message, $options: "i" } },
           { description: { $regex: message, $options: "i" } }
         );
       }
+
       const andConds = [{ $or: orKeywordConds }];
 
       if (matchedCat) {
@@ -472,9 +599,7 @@ KHÔNG dùng dấu ** hoặc *.
             { gender: /female|nữ/i },
             { target: /female|nữ|women|girl|phụ nữ|con gái|bé gái/i },
             { name: { $regex: /(nữ|women|girl|phụ nữ|con gái|bé gái)/i } },
-            {
-              description: { $regex: /(nữ|women|girl|phụ nữ|con gái|bé gái)/i },
-            },
+            { description: { $regex: /(nữ|women|girl|phụ nữ|con gái|bé gái)/i } },
           ],
         });
       }
@@ -484,11 +609,7 @@ KHÔNG dùng dấu ** hoặc *.
             { gender: /male|nam/i },
             { target: /male|nam|men|boy|đàn ông|con trai|bé trai/i },
             { name: { $regex: /(nam|men|boy|đàn ông|con trai|bé trai)/i } },
-            {
-              description: {
-                $regex: /(nam|men|boy|đàn ông|con trai|bé trai)/i,
-              },
-            },
+            { description: { $regex: /(nam|men|boy|đàn ông|con trai|bé trai)/i } },
           ],
         });
       }
@@ -498,9 +619,7 @@ KHÔNG dùng dấu ** hoặc *.
             { gender: /kids|child|children|trẻ em/i },
             { target: /kids|child|children|trẻ em|thiếu nhi|nhi đồng/i },
             { name: { $regex: /(trẻ em|kid|kids|thiếu nhi|nhi đồng)/i } },
-            {
-              description: { $regex: /(trẻ em|kid|kids|thiếu nhi|nhi đồng)/i },
-            },
+            { description: { $regex: /(trẻ em|kid|kids|thiếu nhi|nhi đồng)/i } },
           ],
         });
       }
@@ -522,7 +641,7 @@ KHÔNG dùng dấu ** hoặc *.
         if (!products.length) {
           const rep =
             "Mình chưa thấy sản phẩm phù hợp. Bạn mô tả rõ hơn mẫu, màu, size hoặc tầm giá để mình tư vấn size chính xác nha?";
-          if (userId) await saveChatHistory(userId, message, rep);
+        if (userId) await saveChatHistory(userId, message, rep);
           return res.status(200).json({ type: "message", reply: rep });
         }
 
@@ -533,9 +652,7 @@ KHÔNG dùng dấu ** hoặc *.
         if (userId) await saveChatHistory(userId, message, rep);
 
         const cards = buildProductCards(products, vmap);
-        return res
-          .status(200)
-          .json({ type: "product_cards", reply: rep, cards });
+        return res.status(200).json({ type: "product_cards", reply: rep, cards });
       }
 
       const cards = buildProductCards(products, vmap);
@@ -551,7 +668,7 @@ KHÔNG dùng dấu ** hoặc *.
       return res.status(200).json({ type: "product_cards", reply: rep, cards });
     }
 
-    // 6) Order (trích JSON, có fallback text)
+    // ===== 8) Order (trích JSON, có fallback text)
     if (isOrder) {
       let extracted = {};
       try {
@@ -599,11 +716,9 @@ Nếu thiếu thông tin, để trống chuỗi. CHỈ TRẢ JSON hợp lệ.
         "variants.sizes.size": size,
       });
       if (!variant) {
-        return res
-          .status(200)
-          .json({
-            reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".`,
-          });
+        return res.status(200).json({
+          reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".`,
+        });
       }
 
       const matchedVariant = variant.variants.find(
@@ -636,11 +751,9 @@ Nếu thiếu thông tin, để trống chuỗi. CHỈ TRẢ JSON hợp lệ.
       return res.status(200).json({ reply: finalReply, type: "message" });
     }
 
-    // 7) Order Confirm
+    // ===== 9) Order Confirm
     if (isOrderConfirm) {
-      const chat = await ChatHistory.findOne({ userId }).sort({
-        updatedAt: -1,
-      });
+      const chat = await ChatHistory.findOne({ userId }).sort({ updatedAt: -1 });
       if (!chat || !chat.messages || chat.messages.length < 2) {
         return res
           .status(200)
@@ -657,11 +770,9 @@ Nếu thiếu thông tin, để trống chuỗi. CHỈ TRẢ JSON hợp lệ.
             )
         );
       if (!lastBotMsg) {
-        return res
-          .status(200)
-          .json({
-            reply: "Tui không thấy thông tin đơn hàng để xác nhận nha 😅",
-          });
+        return res.status(200).json({
+          reply: "Tui không thấy thông tin đơn hàng để xác nhận nha 😅",
+        });
       }
 
       let extracted = {};
@@ -688,9 +799,7 @@ Chỉ trả về JSON hợp lệ.
       if (!product || !quantity || !color || !size) {
         return res
           .status(200)
-          .json({
-            reply: `Thiếu thông tin rồi, tui chưa xác nhận được đơn 😓`,
-          });
+          .json({ reply: `Thiếu thông tin rồi, tui chưa xác nhận được đơn 😓` });
       }
 
       const foundProduct = await Product.findOne({
@@ -708,11 +817,9 @@ Chỉ trả về JSON hợp lệ.
         "variants.sizes.size": size,
       });
       if (!variant) {
-        return res
-          .status(200)
-          .json({
-            reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".`,
-          });
+        return res.status(200).json({
+          reply: `Không tìm thấy phiên bản phù hợp với màu "${color}" và size "${size}".`,
+        });
       }
 
       const matchedVariant = variant.variants.find(
@@ -745,19 +852,17 @@ Chỉ trả về JSON hợp lệ.
       return res.status(200).json({ reply: replyConfirm, type: "message" });
     }
 
-    // 8) Add to cart (chuẩn hoá ảnh)
+    // ===== 10) Add to cart (chuẩn hoá ảnh)
     if (isAddToCart) {
       const product = await Product.findOne({
         name: { $regex: message, $options: "i" },
       }).lean();
       if (!product) {
-        return res
-          .status(200)
-          .json({
-            type: "message",
-            reply:
-              "Xin lỗi, mình không tìm thấy sản phẩm bạn muốn thêm vào giỏ hàng.",
-          });
+        return res.status(200).json({
+          type: "message",
+          reply:
+            "Xin lỗi, mình không tìm thấy sản phẩm bạn muốn thêm vào giỏ hàng.",
+        });
       }
       const raw =
         Array.isArray(product.images) && product.images.length
@@ -779,17 +884,13 @@ Chỉ trả về JSON hợp lệ.
       });
     }
 
-    // 9) Không xác định => học từ mới (lưu keyword đã normalize)
+    // ===== 11) Không xác định => học từ mới (lưu keyword đã normalize)
     const existing = await Keyword.findOne({ word: msgNorm });
     if (!existing) {
       const aiIntent = await detectIntentByAI(message);
-      const intentLearn = knownIntents.includes(aiIntent)
-        ? aiIntent
-        : "unknown";
+      const intentLearn = knownIntents.includes(aiIntent) ? aiIntent : "unknown";
       await Keyword.create({ word: msgNorm, intent: intentLearn });
-      console.log(
-        `🧠 Bot học từ mới: "${msgNorm}" với intent "${intentLearn}"`
-      );
+      console.log(`🧠 Bot học từ mới: "${msgNorm}" với intent "${intentLearn}"`);
     }
 
     reply =
@@ -798,14 +899,13 @@ Chỉ trả về JSON hợp lệ.
     return res.status(200).json({ reply, type: "message" });
   } catch (err) {
     console.error("❌ ChatBot Error:", err);
-    return res
-      .status(500)
-      .json({
-        error: "Lỗi xử lý yêu cầu",
-        detail: err.message || "Không rõ lỗi",
-      });
+    return res.status(500).json({
+      error: "Lỗi xử lý yêu cầu",
+      detail: err.message || "Không rõ lỗi",
+    });
   }
 };
+
 
 async function saveChatHistory(userId, userMsg, botReply) {
   try {
@@ -904,12 +1004,10 @@ Viết câu trả lời tự nhiên, KHÔNG dùng Markdown (** hoặc *).
     return res.status(200).json({ reply, type: "message" });
   } catch (err) {
     console.error("❌ Welcome Error:", err);
-    return res
-      .status(500)
-      .json({
-        error: "Lỗi tạo lời chào",
-        detail: err.message || "Không rõ lỗi",
-      });
+    return res.status(500).json({
+      error: "Lỗi tạo lời chào",
+      detail: err.message || "Không rõ lỗi",
+    });
   }
 };
 
